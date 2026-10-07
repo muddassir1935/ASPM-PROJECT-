@@ -8,7 +8,7 @@ require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 
 echo "=================================================\n";
-echo "   CampusConnect - User Authentication Test Suite\n";
+echo "   User Authentication Test Suite\n";
 echo "=================================================\n\n";
 
 $db = Database::getInstance()->getConnection();
@@ -26,9 +26,9 @@ function runTest($testName, $actualResult, $expectedResult) {
     
     if ($passed) {
         $passedTests++;
-        echo "✅ [PASS] " . $testName . "\n";
+        echo " [PASS] " . $testName . "\n";
     } else {
-        echo "❌ [FAIL] " . $testName . "\n";
+        echo " [FAIL] " . $testName . "\n";
         echo "    Expected: " . var_export($expectedResult, true) . "\n";
         echo "    Actual:   " . var_export($actualResult, true) . "\n";
     }
