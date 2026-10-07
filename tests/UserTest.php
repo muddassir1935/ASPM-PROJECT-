@@ -40,7 +40,7 @@ function runTest($testName, $actualResult, $expectedResult) {
 echo "--- SIGNUP TESTS ---\n";
 
 $validEmail = "test_user_" . time() . "@nu.edu.pk";
-$validPass = "securePass123";
+$validPass = "Secure@Pass123!";
 
 // Test 1: Successful Registration
 runTest("Test 1: Valid User Registration", 
@@ -50,19 +50,19 @@ runTest("Test 1: Valid User Registration",
 
 // Test 2: Duplicate Email Registration
 runTest("Test 2: Duplicate Email Rejection", 
-    $user->register("Ali Duplicate", $validEmail, "anotherPass"), 
+    $user->register("Ali Duplicate", $validEmail, "anotherPass!1A"), 
     false
 );
 
 // Test 3: Empty Name
 runTest("Test 3: Empty Name Rejection", 
-    $user->register("", "new@nu.edu.pk", "pass123"), 
+    $user->register("", "new@nu.edu.pk", "Secure@Pass123!"), 
     false
 );
 
 // Test 4: Empty Email
 runTest("Test 4: Empty Email Rejection", 
-    $user->register("Ahmed", "", "pass123"), 
+    $user->register("Ahmed", "", "Secure@Pass123!"), 
     false
 );
 
@@ -76,13 +76,50 @@ runTest("Test 5: Empty Password Rejection",
 // It should sanitize via Prepared Statements and register safely without crashing DB
 $sqliEmail = "sqli_" . time() . "@nu.edu.pk";
 runTest("Test 6: SQL Injection immunity in Registration", 
-    $user->register("Robert'); DROP TABLE users;--", $sqliEmail, "pass123"), 
+    $user->register("Robert'); DROP TABLE users;--", $sqliEmail, "Secure@Pass123!"), 
     true
 );
 
+// ---------------------------------------------------------
+// SECTION 1.5: STRONG PASSWORD VALIDATION TESTS
+// ---------------------------------------------------------
+echo "\n--- STRONG PASSWORD VALIDATION TESTS ---\n";
+
+$testEmailPrefix = "pwtest_" . time();
+
+// Test 13: Password too short (7 chars)
+runTest("Test 13: Password too short (< 8 chars)", 
+    $user->register("Test", $testEmailPrefix."1@nu.edu.pk", "A1@abcd"), 
+    false
+);
+
+// Test 14: No uppercase letter
+runTest("Test 14: Password missing uppercase letter", 
+    $user->register("Test", $testEmailPrefix."2@nu.edu.pk", "secure@pass123"), 
+    false
+);
+
+// Test 15: No lowercase letter
+runTest("Test 15: Password missing lowercase letter", 
+    $user->register("Test", $testEmailPrefix."3@nu.edu.pk", "SECURE@PASS123"), 
+    false
+);
+
+// Test 16: No number
+runTest("Test 16: Password missing number", 
+    $user->register("Test", $testEmailPrefix."4@nu.edu.pk", "Secure@Password!"), 
+    false
+);
+
+// Test 17: No special character
+runTest("Test 17: Password missing special character", 
+    $user->register("Test", $testEmailPrefix."5@nu.edu.pk", "SecurePass123"), 
+    false
+);
 
 // ---------------------------------------------------------
 // SECTION 2: LOGIN (VERIFICATION) TESTS
+
 // ---------------------------------------------------------
 echo "\n--- LOGIN TESTS ---\n";
 

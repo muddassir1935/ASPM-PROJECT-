@@ -15,6 +15,15 @@ class User {
             return false;
         }
 
+        // Strong password validation: min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
+        if (strlen($password) < 8 || 
+            !preg_match('/[A-Z]/', $password) || 
+            !preg_match('/[a-z]/', $password) || 
+            !preg_match('/[0-9]/', $password) || 
+            !preg_match('/[\W_]/', $password)) {
+            return false;
+        }
+
         $hash = password_hash($password, PASSWORD_ARGON2ID);
         
         $stmt = $this->db->prepare("INSERT INTO users (name, email, password_hash) VALUES (:name, :email, :hash)");
@@ -34,7 +43,7 @@ class User {
      * Ideal for Unit Testing.
      */
     public function verifyPassword($email, $password) {
-        $stmt = $this->db->prepare("SELECT id, password_hash, role FROM users WHERE email = :email");
+        $stmt = $this->db->prepare("SELECT id, name, email, password_hash, role FROM users WHERE email = :email");
         $stmt->bindParam(':email', $email);
         $stmt->execute();
         
