@@ -1,7 +1,6 @@
 <?php
 /**
- * Comprehensive Unit Testing Suite for User Class (Sprint 1)
- * Agile SPM - CampusConnect
+ * Unit Testing 
  * Run via CLI: php tests/UserTest.php
  */
 require_once __DIR__ . '/../config/Database.php';
