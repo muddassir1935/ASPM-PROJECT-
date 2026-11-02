@@ -42,12 +42,21 @@ class Database {
                     content TEXT NOT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    deleted_at DATETIME DEFAULT NULL,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 );
 
                 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
                 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
             ");
+
+            // Migration for SQLite files created before soft-delete (WBS 2.3.6):
+            // add the deleted_at column when an older posts table does not have it yet.
+            $columns = $this->connection->query("PRAGMA table_info(posts)")->fetchAll(PDO::FETCH_ASSOC);
+            $columnNames = array_column($columns, 'name');
+            if (!in_array('deleted_at', $columnNames, true)) {
+                $this->connection->exec("ALTER TABLE posts ADD COLUMN deleted_at DATETIME DEFAULT NULL");
+            }
         }
     }
 
