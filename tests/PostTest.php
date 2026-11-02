@@ -158,6 +158,35 @@ $adminDelete = $postModel->delete($postId3, $adminId, 'admin');
 assertTest("Admin can moderate/delete any post (Role-based access)", $adminDelete === true);
 
 
+// --- SOFT-DELETE TESTS (WBS 2.3.6) ---
+echo PHP_EOL . "--- SOFT-DELETE TESTS ---" . PHP_EOL;
+
+$postId4 = $postModel->create($authorId, "Post that will be soft deleted");
+$countBeforeDelete = $postModel->countByUser($authorId);
+$softDelete = $postModel->delete($postId4, $authorId, 'student');
+assertTest("Soft-delete returns true for the author", $softDelete === true);
+
+// The row must still exist in the database, with deleted_at set
+$stmtSoft = $db->prepare("SELECT deleted_at FROM posts WHERE id = :id");
+$stmtSoft->bindParam(':id', $postId4, PDO::PARAM_INT);
+$stmtSoft->execute();
+$softRow = $stmtSoft->fetch(PDO::FETCH_ASSOC);
+assertTest("Soft-deleted row still exists in database with deleted_at set",
+    $softRow !== false && !empty($softRow['deleted_at']));
+
+// ...but it stays hidden from reads, feeds and counts
+assertTest("Soft-deleted post is hidden from getById", $postModel->getById($postId4) === false);
+assertTest("Soft-deleted post is excluded from countByUser",
+    $postModel->countByUser($authorId) === $countBeforeDelete - 1);
+$feedAfterDelete = $postModel->getFeed(50, 0);
+$feedIds = array_map(fn($p) => (int)$p['id'], $feedAfterDelete);
+assertTest("Soft-deleted post is excluded from the feed", !in_array($postId4, $feedIds, true));
+assertTest("Soft-deleted post cannot be updated",
+    $postModel->update($postId4, $authorId, "Trying to revive a deleted post") === false);
+assertTest("Soft-deleted post cannot be deleted twice",
+    $postModel->delete($postId4, $authorId, 'student') === false);
+
+
 echo PHP_EOL . "=================================================" . PHP_EOL;
 echo "TEST SUMMARY: {$passed} / {$total} Passed" . PHP_EOL;
 echo "=================================================" . PHP_EOL;

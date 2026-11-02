@@ -45,7 +45,7 @@ require_once 'includes/header.php';
             </div>
         <?php endif; ?>
 
-        <form method="POST" action="signup.php" autocomplete="off">
+        <form method="POST" action="signup.php" autocomplete="off" id="signup-form">
             <div class="form-group">
                 <label class="form-label" for="name">Full Name</label>
                 <input 
@@ -67,9 +67,10 @@ require_once 'includes/header.php';
                     name="email" 
                     class="form-control" 
                     placeholder="student@nu.edu.pk" 
-                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" 
+                    value="<?= htmlspecialchars($_POST['email'] ?? '') ?>"
                     required
                 >
+                <div id="email-hint" style="font-size: 0.8rem; margin-top: 6px; color: #64748b;"></div>
             </div>
 
             <div class="form-group">
@@ -79,10 +80,19 @@ require_once 'includes/header.php';
                     id="password" 
                     name="password" 
                     class="form-control" 
-                    placeholder="Min 8 chars, 1 uppercase, 1 special char" 
+                    placeholder="Min 8 chars, 1 uppercase, 1 special char"
                     required
                 >
+                <ul id="password-rules" style="list-style: none; margin-top: 8px; font-size: 0.8rem; color: #64748b; line-height: 1.7;">
+                    <li data-rule="length">○ At least 8 characters</li>
+                    <li data-rule="upper">○ One uppercase letter (A-Z)</li>
+                    <li data-rule="lower">○ One lowercase letter (a-z)</li>
+                    <li data-rule="number">○ One number (0-9)</li>
+                    <li data-rule="special">○ One special character (!@#$ etc.)</li>
+                </ul>
             </div>
+
+            <div id="signup-js-error" style="display: none; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 12px; font-size: 0.85rem; font-weight: 500; margin-bottom: 1rem;"></div>
 
             <button type="submit" class="btn-submit">
                 <span>Create Student Account</span>
@@ -95,5 +105,81 @@ require_once 'includes/header.php';
         </div>
     </div>
 </div>
+
+<script>
+    // Live signup validation (WBS 1.4.1) — server-side checks remain in place.
+    (function () {
+        var form = document.getElementById('signup-form');
+        var nameInput = document.getElementById('name');
+        var emailInput = document.getElementById('email');
+        var passwordInput = document.getElementById('password');
+        var emailHint = document.getElementById('email-hint');
+        var jsError = document.getElementById('signup-js-error');
+        var ruleItems = document.querySelectorAll('#password-rules li');
+
+        var checks = {
+            length: function (v) { return v.length >= 8; },
+            upper: function (v) { return /[A-Z]/.test(v); },
+            lower: function (v) { return /[a-z]/.test(v); },
+            number: function (v) { return /[0-9]/.test(v); },
+            special: function (v) { return /[\W_]/.test(v); }
+        };
+        var labels = {
+            length: 'At least 8 characters',
+            upper: 'One uppercase letter (A-Z)',
+            lower: 'One lowercase letter (a-z)',
+            number: 'One number (0-9)',
+            special: 'One special character (!@#$ etc.)'
+        };
+
+        function passwordValid() {
+            var v = passwordInput.value;
+            var ok = true;
+            ruleItems.forEach(function (li) {
+                var rule = li.getAttribute('data-rule');
+                var passed = checks[rule](v);
+                li.textContent = (passed ? '✓ ' : '○ ') + labels[rule];
+                li.style.color = passed ? '#059669' : '#64748b';
+                li.style.fontWeight = passed ? '600' : '400';
+                if (!passed) { ok = false; }
+            });
+            return ok;
+        }
+
+        function emailValid() {
+            var v = emailInput.value.trim();
+            var ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+            if (v === '') {
+                emailHint.textContent = '';
+            } else if (ok) {
+                emailHint.textContent = '✓ Looks like a valid email';
+                emailHint.style.color = '#059669';
+            } else {
+                emailHint.textContent = 'Please enter a valid email address (e.g. student@nu.edu.pk)';
+                emailHint.style.color = '#dc2626';
+            }
+            return ok;
+        }
+
+        passwordInput.addEventListener('input', passwordValid);
+        emailInput.addEventListener('input', emailValid);
+        passwordValid();
+        emailValid();
+
+        form.addEventListener('submit', function (e) {
+            var problems = [];
+            if (nameInput.value.trim() === '') { problems.push('Please enter your full name.'); }
+            if (!emailValid()) { problems.push('Please enter a valid email address.'); }
+            if (!passwordValid()) { problems.push('Your password does not meet all the rules yet.'); }
+            if (problems.length > 0) {
+                e.preventDefault();
+                jsError.textContent = problems.join(' ');
+                jsError.style.display = 'block';
+            } else {
+                jsError.style.display = 'none';
+            }
+        });
+    })();
+</script>
 
 <?php require_once 'includes/footer.php'; ?>

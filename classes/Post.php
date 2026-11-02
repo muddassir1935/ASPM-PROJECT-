@@ -101,7 +101,7 @@ class Post {
                        u.name AS author_name, u.email AS author_email, u.role AS author_role
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
-                WHERE p.id = :id
+                WHERE p.id = :id AND p.deleted_at IS NULL
                 LIMIT 1";
         
         $stmt = $this->db->prepare($sql);
@@ -127,9 +127,10 @@ class Post {
                        u.name AS author_name, u.email AS author_email, u.role AS author_role
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
+                WHERE p.deleted_at IS NULL
                 ORDER BY p.created_at DESC, p.id DESC
                 LIMIT :limit OFFSET :offset";
-        
+
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
@@ -155,7 +156,7 @@ class Post {
                        u.name AS author_name, u.email AS author_email, u.role AS author_role
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
-                WHERE p.user_id = :user_id
+                WHERE p.user_id = :user_id AND p.deleted_at IS NULL
                 ORDER BY p.created_at DESC, p.id DESC
                 LIMIT :limit OFFSET :offset";
         
@@ -187,20 +188,20 @@ class Post {
             return false;
         }
 
-        // Authorization check: Verify post belongs to the user
-        $checkSql = "SELECT user_id FROM posts WHERE id = :id LIMIT 1";
+        // Authorization check: Verify post belongs to the user and is not soft-deleted
+        $checkSql = "SELECT user_id FROM posts WHERE id = :id AND deleted_at IS NULL LIMIT 1";
         $checkStmt = $this->db->prepare($checkSql);
         $checkStmt->bindParam(':id', $postId, PDO::PARAM_INT);
         $checkStmt->execute();
         $owner = $checkStmt->fetch(PDO::FETCH_ASSOC);
 
         if (!$owner || (int)$owner['user_id'] !== $userId) {
-            return false; // Forbidden / Not found
+            return false; // Forbidden / Not found / Soft-deleted
         }
 
-        $sql = "UPDATE posts 
-                SET content = :content, updated_at = CURRENT_TIMESTAMP 
-                WHERE id = :id AND user_id = :user_id";
+        $sql = "UPDATE posts
+                SET content = :content, updated_at = CURRENT_TIMESTAMP
+                WHERE id = :id AND user_id = :user_id AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':content', $validation['clean'], PDO::PARAM_STR);
         $stmt->bindParam(':id', $postId, PDO::PARAM_INT);
@@ -210,15 +211,17 @@ class Post {
     }
 
     /**
-     * Delete a post. Only the author or an admin can delete it.
-     * 
+     * Soft-delete a post (WBS 2.3.6). The row stays in the database with
+     * deleted_at set, but it is hidden from getById, feeds and counts.
+     * Only the author or an admin can delete a post.
+     *
      * @param int $postId
      * @param int $userId Current logged-in user ID
      * @param string $userRole Role of the current user ('admin', 'student', etc.)
      * @return bool
      */
     public function delete(int $postId, int $userId, string $userRole = 'student'): bool {
-        $checkSql = "SELECT user_id FROM posts WHERE id = :id LIMIT 1";
+        $checkSql = "SELECT user_id FROM posts WHERE id = :id AND deleted_at IS NULL LIMIT 1";
         $checkStmt = $this->db->prepare($checkSql);
         $checkStmt->bindParam(':id', $postId, PDO::PARAM_INT);
         $checkStmt->execute();
@@ -236,7 +239,7 @@ class Post {
             return false; // Unauthorized
         }
 
-        $sql = "DELETE FROM posts WHERE id = :id";
+        $sql = "UPDATE posts SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $postId, PDO::PARAM_INT);
 
@@ -250,7 +253,7 @@ class Post {
      * @return int
      */
     public function countByUser(int $userId): int {
-        $sql = "SELECT COUNT(*) FROM posts WHERE user_id = :user_id";
+        $sql = "SELECT COUNT(*) FROM posts WHERE user_id = :user_id AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
@@ -263,7 +266,7 @@ class Post {
      * @return int
      */
     public function countAll(): int {
-        $sql = "SELECT COUNT(*) FROM posts";
+        $sql = "SELECT COUNT(*) FROM posts WHERE deleted_at IS NULL";
         $stmt = $this->db->query($sql);
         return (int)$stmt->fetchColumn();
     }
