@@ -167,6 +167,28 @@ runTest("Test 12: Cryptographic Password Hash Verification",
 );
 
 // ---------------------------------------------------------
+// SECTION 3: PROFILE COVER STYLE TESTS
+// ---------------------------------------------------------
+echo "\n--- PROFILE COVER STYLE TESTS ---\n";
+
+// Test 18: Cover style defaults to 'signature' on a new account and a
+// whitelisted style chosen in Edit Profile persists via updateProfile.
+$stmt = $db->prepare("SELECT id FROM users WHERE email = :email");
+$stmt->execute([':email' => $validEmail]);
+$coverUserId = (int)$stmt->fetchColumn();
+$profileBefore = $coverUserId > 0 ? $user->getById($coverUserId) : false;
+$coverUpdateOk = $profileBefore
+    ? $user->updateProfile($coverUserId, "Ali Khan", $profileBefore['bio'] ?? '', 'teal')
+    : false;
+$profileAfter = $coverUserId > 0 ? $user->getById($coverUserId) : false;
+runTest("Test 18: Cover style defaults to 'signature' and persists via updateProfile",
+    ($profileBefore['cover_style'] ?? null) === 'signature'
+        && $coverUpdateOk === true
+        && ($profileAfter['cover_style'] ?? null) === 'teal',
+    true
+);
+
+// ---------------------------------------------------------
 echo "\n=================================================\n";
 echo "TEST SUMMARY: $passedTests / $totalTests Passed\n";
 echo "=================================================\n";

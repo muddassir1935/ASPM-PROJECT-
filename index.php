@@ -26,42 +26,29 @@ if ($currentUser) {
 
 <?php if($currentUser): ?>
     <!-- Logged In Dashboard View -->
-    <div style="max-width: 1100px; margin: 1rem auto;">
-        <!-- Welcome Banner Card -->
-        <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; border-radius: 16px; padding: 2.2rem; box-shadow: 0 10px 25px rgba(5, 150, 105, 0.2); margin-bottom: 2rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                <div>
-                    <span style="background: rgba(255,255,255,0.2); font-size: 0.78rem; font-weight: 700; padding: 4px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em;">
-                        Student Portal
-                    </span>
-                    <h1 style="font-size: 1.85rem; font-weight: 800; margin-top: 8px;">
-                        Welcome back, <?= htmlspecialchars($currentUser['name']) ?>! 👋
-                    </h1>
-                    <p style="color: #d1fae5; font-size: 0.95rem; margin-top: 4px;">
-                        <?= htmlspecialchars($currentUser['email']) ?>
-                    </p>
-                </div>
-            </div>
-        </div>
-
+    <div>
         <div class="layout-3col">
             <?php renderLeftNav('home'); ?>
-            <div>
+            <div class="col-main">
+                <h2 class="col-head">Home</h2>
 
         <?php if ($flashMessage): ?>
-            <div style="padding: 12px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; margin-bottom: 1rem; <?= $flashType === 'success' ? 'background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;' : 'background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;' ?>">
-                <?= htmlspecialchars($flashMessage) ?>
+            <div class="alert <?= $flashType === 'success' ? 'alert-success' : 'alert-error' ?>">
+                <div><?= htmlspecialchars($flashMessage) ?></div>
             </div>
         <?php endif; ?>
 
         <!-- Compose Box (WBS 2.3.1) -->
-        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: var(--shadow-sm); margin-bottom: 1.5rem;">
+        <div class="compose-card">
             <form method="POST" action="post_action.php" id="compose-form">
                 <input type="hidden" name="action" value="create">
-                <textarea id="compose-content" name="content" rows="3" maxlength="280" placeholder="Share an update or announcement with the campus..." style="width: 100%; padding: 11px 14px; font-size: 0.95rem; border: 1.5px solid #e2e8f0; border-radius: 10px; resize: vertical; outline: none;"></textarea>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                    <span id="compose-counter" style="font-size: 0.82rem; color: #64748b; font-weight: 600;">0 / 280</span>
-                    <button type="submit" id="compose-submit" disabled style="background: var(--primary); color: white; border: none; padding: 9px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; opacity: 0.5;">
+                <div class="compose-flex">
+                    <span class="avatar-md<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
+                    <textarea id="compose-content" class="form-control" name="content" rows="3" maxlength="280" placeholder="Share an update or announcement with the campus..."></textarea>
+                </div>
+                <div class="compose-row">
+                    <span id="compose-counter" class="char-counter">0 / 280</span>
+                    <button type="submit" id="compose-submit" class="btn-primary" disabled>
                         Post
                     </button>
                 </div>
@@ -77,29 +64,21 @@ if ($currentUser) {
                     var len = textarea.value.trim().length;
                     counter.textContent = len + ' / ' + MAX;
                     var invalid = len === 0 || len > MAX;
-                    counter.style.color = len > MAX ? '#dc2626' : '#64748b';
+                    counter.style.color = len > MAX ? '#D92D20' : '#536471';
                     submit.disabled = invalid;
-                    submit.style.opacity = invalid ? '0.5' : '1';
                 }
                 textarea.addEventListener('input', refreshCounter);
                 refreshCounter();
             })();
         </script>
 
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b;">
-                Your Feed
-            </h3>
-            <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;"><?= (int)$feed['total'] ?> post<?= $feed['total'] === 1 ? '' : 's' ?></span>
-        </div>
-
         <?php if (empty($feed['posts'])): ?>
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 3rem; text-align: center; box-shadow: var(--shadow-sm);">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
-                <h4 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No updates yet</h4>
-                <p style="font-size: 0.9rem; color: #64748b; max-width: 300px; margin: 0 auto;">
+            <div class="empty-state">
+                <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 13h4.5l1.5 2h4l1.5-2H20"/></svg></span>
+                <h4 class="empty-title">No updates yet</h4>
+                <p class="empty-text">
                     Your feed shows your posts and posts from people you follow.
-                    Find people to follow from the Explore page.
+                    Find people to follow on the <a href="explore.php">Explore page</a>.
                 </p>
             </div>
         <?php else: ?>
@@ -108,62 +87,59 @@ if ($currentUser) {
                     $isOwnPost = (int)$feedPost['user_id'] === (int)$currentUser['id'];
                     $authorInitial = strtoupper(mb_substr(trim($feedPost['author_name']), 0, 1, 'UTF-8'));
                 ?>
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: var(--shadow-sm); margin-bottom: 1rem;">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-                        <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; flex-shrink: 0;">
-                            <?= htmlspecialchars($authorInitial) ?>
+                <?php $feedIsAdmin = ($feedPost['author_role'] ?? '') === 'admin'; ?>
+                <div class="post-card">
+                    <span class="avatar-md<?= avatarToneClass((int)$feedPost['user_id'], (string)($feedPost['author_role'] ?? '')) ?>"><?= htmlspecialchars($authorInitial) ?></span>
+                    <div class="post-body">
+                        <?php if ($feedIsAdmin): ?>
+                            <div class="announce-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg>Announcement</div>
+                        <?php endif; ?>
+                        <div class="post-card-head">
+                            <a class="post-card-author" href="profile.php?id=<?= (int)$feedPost['user_id'] ?>"><?= htmlspecialchars($feedPost['author_name']) ?></a>
+                            <span class="post-card-time">&middot; <?= htmlspecialchars($feedPost['time_ago']) ?></span>
                         </div>
-                        <div>
-                            <div style="font-weight: 700; color: #0f172a; font-size: 0.95rem;">
-                                <?= htmlspecialchars($feedPost['author_name']) ?>
-                                <span style="background: var(--primary-light, #ecfdf5); color: var(--primary); font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: middle;">
-                                    <?= htmlspecialchars($feedPost['author_role']) ?>
-                                </span>
-                            </div>
-                            <div style="font-size: 0.8rem; color: #64748b;"><?= htmlspecialchars($feedPost['time_ago']) ?></div>
+
+                        <p class="post-card-content"><?= htmlspecialchars($feedPost['content']) ?></p>
+
+                        <div class="post-card-actions">
+                            <a class="action-reply" href="post.php?id=<?= (int)$feedPost['id'] ?>" aria-label="View post and replies"><span class="action-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg></span><?= (int)($feedPost['reply_count'] ?? 0) ?></a>
+                            <span class="spacer"></span>
+                            <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$feedPost['id'] ?>"><?= in_array((int)$feedPost['id'], $bookmarkedIds, true) ? 'Saved' : 'Save' ?></button>
+                            <?php if ($isOwnPost): ?>
+                                <button type="button" class="btn-text" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)">Edit</button>
+                                <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" class="inline-form">
+                                    <input type="hidden" name="action" value="delete">
+                                    <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
+                                    <button type="submit" class="btn-text btn-text-danger">Delete</button>
+                                </form>
+                            <?php endif; ?>
                         </div>
-                    </div>
 
-                    <p style="font-size: 0.97rem; color: #1e293b; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;"><?= htmlspecialchars($feedPost['content']) ?></p>
-
-                    <div style="display: flex; gap: 14px; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
-                        <a href="post.php?id=<?= (int)$feedPost['id'] ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.85rem;">View Post</a>
-                        <a href="post.php?id=<?= (int)$feedPost['id'] ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.85rem;"><?= (int)($feedPost['reply_count'] ?? 0) ?> repl<?= ((int)($feedPost['reply_count'] ?? 0) === 1) ? 'y' : 'ies' ?></a>
-                        <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$feedPost['id'] ?>"><?= in_array((int)$feedPost['id'], $bookmarkedIds, true) ? 'Saved' : 'Save' ?></button>
                         <?php if ($isOwnPost): ?>
-                            <button type="button" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)" style="background: none; border: none; color: #475569; font-weight: 600; font-size: 0.85rem; cursor: pointer; padding: 0;">Edit</button>
-                            <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="display: inline; margin: 0;">
-                                <input type="hidden" name="action" value="delete">
+                            <form id="feed-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" class="edit-form" style="display: none;">
+                                <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
-                                <button type="submit" style="background: none; border: none; color: #dc2626; font-weight: 600; font-size: 0.85rem; cursor: pointer; padding: 0;">Delete</button>
+                                <textarea name="content" class="form-control" rows="3" maxlength="280" required><?= htmlspecialchars($feedPost['content']) ?></textarea>
+                                <div class="edit-form-actions">
+                                    <button type="submit" class="btn-primary">Save Changes</button>
+                                    <button type="button" class="btn-cancel" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)">Cancel</button>
+                                </div>
                             </form>
                         <?php endif; ?>
                     </div>
-
-                    <?php if ($isOwnPost): ?>
-                        <form id="feed-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" style="display: none; margin-top: 12px;">
-                            <input type="hidden" name="action" value="update">
-                            <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
-                            <textarea name="content" rows="3" maxlength="280" required style="width: 100%; padding: 11px 14px; font-size: 0.95rem; border: 1.5px solid #e2e8f0; border-radius: 10px; resize: vertical; outline: none;"><?= htmlspecialchars($feedPost['content']) ?></textarea>
-                            <div style="display: flex; gap: 8px; margin-top: 8px;">
-                                <button type="submit" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Changes</button>
-                                <button type="button" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)" style="background: white; color: #64748b; border: 1.5px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancel</button>
-                            </div>
-                        </form>
-                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
 
             <?php if ($feed['page'] > 1 || $feed['has_more']): ?>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0;">
+                <div class="pager">
                     <?php if ($feed['page'] > 1): ?>
-                        <a href="index.php?page=<?= (int)$feed['page'] - 1 ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem;">&larr; Previous</a>
+                        <a href="index.php?page=<?= (int)$feed['page'] - 1 ?>">&larr; Previous</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
-                    <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Page <?= (int)$feed['page'] ?></span>
+                    <span class="pager-info">Page <?= (int)$feed['page'] ?></span>
                     <?php if ($feed['has_more']): ?>
-                        <a href="index.php?page=<?= (int)$feed['page'] + 1 ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem;">Next &rarr;</a>
+                        <a href="index.php?page=<?= (int)$feed['page'] + 1 ?>">Next &rarr;</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
@@ -184,9 +160,9 @@ if ($currentUser) {
             <div class="col-side">
                 <div class="widget">
                     <h4 class="widget-title">Search CampusConnect</h4>
-                    <form method="GET" action="explore.php" style="display: flex; gap: 8px;">
-                        <input class="form-control" type="text" name="q" placeholder="Search people or posts..." style="margin: 0;">
-                        <button type="submit" style="background: var(--primary); color: white; border: none; padding: 11px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; flex-shrink: 0;">Go</button>
+                    <form method="GET" action="explore.php" class="search-row">
+                        <input class="form-control" type="text" name="q" placeholder="Search people or posts..." aria-label="Search people or posts">
+                        <button type="submit" class="btn-primary">Go</button>
                     </form>
                 </div>
                 <?php renderWhoToFollowWidget($db, (int)$currentUser['id']); ?>
@@ -196,50 +172,46 @@ if ($currentUser) {
 
 <?php else: ?>
     <!-- Public Hero View -->
-    <div style="max-width: 850px; margin: 4rem auto 2rem auto; text-align: center;">
-        <span style="background: #ecfdf5; color: #059669; font-size: 0.85rem; font-weight: 700; padding: 6px 14px; border-radius: 20px; display: inline-block; margin-bottom: 1.2rem; border: 1px solid #a7f3d0;">
-            🎓 The #1 Student Network
-        </span>
-
-        <h1 style="font-size: 3rem; font-weight: 800; color: #0f172a; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 1.2rem;">
+    <div class="hero">
+        <h1 class="hero-title">
             Campus Life,<br>Connected.
         </h1>
 
-        <p style="font-size: 1.1rem; color: #64748b; max-width: 600px; margin: 0 auto 2.5rem auto; line-height: 1.6;">
+        <p class="hero-sub">
             Join the ultimate student network. Share updates, discover university events, and stay connected with your campus community in real-time.
         </p>
 
-        <div style="display: flex; justify-content: center; gap: 1rem; flex-wrap: wrap;">
-            <a href="signup.php" class="btn-nav-primary" style="padding: 14px 32px; font-size: 1.05rem;">
+        <div class="hero-actions">
+            <a href="signup.php" class="btn-hero-primary">
                 Create Your Account
             </a>
-            <a href="login.php" class="nav-link" style="padding: 14px 32px; font-size: 1.05rem; border: 1.5px solid #cbd5e1; background: white; border-radius: 10px; color: #1e293b;">
+            <a href="login.php" class="btn-hero-ghost">
                 Log In
             </a>
         </div>
 
         <!-- Features Overview Grid -->
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-top: 5rem; text-align: left;">
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm);">
-                <div style="font-size: 1.8rem; margin-bottom: 8px;">📢</div>
-                <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">Real-time Announcements</h4>
-                <p style="font-size: 0.85rem; color: #64748b; line-height: 1.5;">
+        <div class="features-grid">
+            <div class="feature-card">
+                <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg></span>
+                <h4>Real-time Announcements</h4>
+                <p>
                     Never miss an important update. Get instant announcements from faculty, societies, and administration.
                 </p>
             </div>
 
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm);">
-                <div style="font-size: 1.8rem; margin-bottom: 8px;">🤝</div>
-                <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">Connect with Peers</h4>
-                <p style="font-size: 0.85rem; color: #64748b; line-height: 1.5;">
+            <div class="feature-card">
+                <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M16 5.6a3.2 3.2 0 0 1 0 5.8"/><path d="M17.5 15.3c1.7.6 2.7 1.9 3 4.2"/></svg></span>
+                <h4>Connect with Peers</h4>
+                <p>
                     Find and follow students from your department. Share notes, discuss projects, and build your network.
                 </p>
             </div>
 
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm);">
-                <div style="font-size: 1.8rem; margin-bottom: 8px;">📱</div>
-                <h4 style="font-weight: 700; color: #0f172a; margin-bottom: 6px;">Always Accessible</h4>
-                <p style="font-size: 0.85rem; color: #64748b; line-height: 1.5;">
+            <div class="feature-card">
+                <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10.5 18.5h3"/></svg></span>
+                <h4>Always Accessible</h4>
+                <p>
                     Experience a fast, responsive design that works perfectly on your laptop, tablet, or smartphone.
                 </p>
             </div>
