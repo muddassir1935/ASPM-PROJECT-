@@ -34,6 +34,7 @@ class Database {
                     password_hash TEXT NOT NULL,
                     role TEXT DEFAULT 'student',
                     bio TEXT DEFAULT NULL,
+                    cover_style TEXT NOT NULL DEFAULT 'signature',
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -102,6 +103,12 @@ class Database {
             $userColumnNames = array_column($userColumns, 'name');
             if (!in_array('bio', $userColumnNames, true)) {
                 $this->connection->exec("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT NULL");
+            }
+
+            // Migration for SQLite files created before the cover-style
+            // picker: add the users.cover_style column when missing.
+            if (!in_array('cover_style', $userColumnNames, true)) {
+                $this->connection->exec("ALTER TABLE users ADD COLUMN cover_style TEXT NOT NULL DEFAULT 'signature'");
             }
 
             // Migration for SQLite files created before soft-delete (WBS 2.3.6):

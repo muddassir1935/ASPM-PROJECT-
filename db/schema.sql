@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS users (
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('student', 'admin', 'society') DEFAULT 'student',
     bio TEXT DEFAULT NULL,
+    cover_style VARCHAR(20) NOT NULL DEFAULT 'signature',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

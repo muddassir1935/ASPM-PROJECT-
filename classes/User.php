@@ -2,8 +2,26 @@
 class User {
     private $db;
 
+    /**
+     * Designed profile cover styles (Sprint 3 cover picker).
+     * 'signature' is the default brand duotone; the rest are CSS
+     * variants rendered by the .profile-cover.cover-<style> classes.
+     */
+    public const COVER_STYLES = ['signature', 'cobalt', 'teal', 'sunset', 'violet', 'graphite'];
+    public const DEFAULT_COVER_STYLE = 'signature';
+
     public function __construct($dbConnection) {
         $this->db = $dbConnection;
+    }
+
+    /**
+     * Whitelist a cover style value; anything unknown falls back
+     * to the default so a bad stored/posted value can never break
+     * the profile cover markup.
+     */
+    public static function normalizeCoverStyle($style): string {
+        $clean = is_string($style) ? strtolower(trim($style)) : '';
+        return in_array($clean, self::COVER_STYLES, true) ? $clean : self::DEFAULT_COVER_STYLE;
     }
 
     /**
@@ -63,7 +81,7 @@ class User {
             return false;
         }
         $stmt = $this->db->prepare(
-            "SELECT u.id, u.name, u.email, u.role, u.bio, u.created_at,
+            "SELECT u.id, u.name, u.email, u.role, u.bio, u.cover_style, u.created_at,
                     (SELECT COUNT(*) FROM follows f WHERE f.followed_id = u.id) AS follower_count,
                     (SELECT COUNT(*) FROM follows f WHERE f.follower_id = u.id) AS following_count
              FROM users u WHERE u.id = :id LIMIT 1"
@@ -77,8 +95,11 @@ class User {
     /**
      * Update a user's display name and bio (Sprint 3 profile edit).
      * Name must be non-empty (max 255 chars); bio is optional, max 500 chars.
+     * $coverStyle is optional: null leaves the stored style untouched,
+     * any other value is whitelisted (unknown values fall back to the
+     * default 'signature' style).
      */
-    public function updateProfile($userId, $name, $bio): bool {
+    public function updateProfile($userId, $name, $bio, $coverStyle = null): bool {
         if ((int)$userId <= 0) {
             return false;
         }
@@ -91,9 +112,20 @@ class User {
             return false;
         }
 
-        $stmt = $this->db->prepare("UPDATE users SET name = :name, bio = :bio WHERE id = :id");
+        $sql = "UPDATE users SET name = :name, bio = :bio";
+        $cleanCover = null;
+        if ($coverStyle !== null) {
+            $cleanCover = self::normalizeCoverStyle((string)$coverStyle);
+            $sql .= ", cover_style = :cover_style";
+        }
+        $sql .= " WHERE id = :id";
+
+        $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':name', $cleanName, PDO::PARAM_STR);
         $stmt->bindParam(':bio', $cleanBio, PDO::PARAM_STR);
+        if ($cleanCover !== null) {
+            $stmt->bindParam(':cover_style', $cleanCover, PDO::PARAM_STR);
+        }
         $stmt->bindParam(':id', $userId, PDO::PARAM_INT);
         try {
             return $stmt->execute();
