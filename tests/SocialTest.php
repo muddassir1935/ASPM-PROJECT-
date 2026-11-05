@@ -38,10 +38,10 @@ function assertTest(string $testName, bool $condition, ?string $detail = null) {
 $uniq = time() . '_' . rand(1000, 9999);
 $password = "StrongPass123!";
 
-$userModel->register("Follower Fran", "follower_{$uniq}@nu.edu.pk", $password);
-$userModel->register("Followed Fred", "followed_{$uniq}@nu.edu.pk", $password);
-$userModel->register("Stranger Sam", "stranger_{$uniq}@nu.edu.pk", $password);
-$userModel->register("Admin Amy", "admin3_{$uniq}@nu.edu.pk", $password);
+$userModel->register("Follower Fran {$uniq}", "follower_{$uniq}@nu.edu.pk", $password);
+$userModel->register("Followed Fred {$uniq}", "followed_{$uniq}@nu.edu.pk", $password);
+$userModel->register("Stranger Sam {$uniq}", "stranger_{$uniq}@nu.edu.pk", $password);
+$userModel->register("Admin Amy {$uniq}", "admin3_{$uniq}@nu.edu.pk", $password);
 
 $userA = $userModel->verifyPassword("follower_{$uniq}@nu.edu.pk", $password);
 $userB = $userModel->verifyPassword("followed_{$uniq}@nu.edu.pk", $password);
@@ -141,20 +141,20 @@ assertTest("Reply to soft-deleted post fails",
 echo "--- PROFILE EDIT & SEARCH TESTS ---" . PHP_EOL;
 
 assertTest("Profile edit succeeds",
-    $userModel->updateProfile($aliceId, "Follower Fran Updated", "CS junior, loves OpenMP.") === true);
+    $userModel->updateProfile($aliceId, "Follower Fran Updated {$uniq}", "CS junior, loves OpenMP.") === true);
 $profile = $userModel->getById($aliceId);
 assertTest("Profile edit persists name and bio",
-    $profile && $profile['name'] === "Follower Fran Updated" && $profile['bio'] === "CS junior, loves OpenMP.");
+    $profile && $profile['name'] === "Follower Fran Updated {$uniq}" && $profile['bio'] === "CS junior, loves OpenMP.");
 assertTest("Profile edit rejects empty name",
     $userModel->updateProfile($aliceId, "   ", "bio") === false);
 assertTest("Profile edit rejects over-long bio",
     $userModel->updateProfile($aliceId, "Fran", str_repeat("b", 501)) === false);
 assertTest("getById returns false for unknown user", $userModel->getById(999999999) === false);
-$found = $userModel->searchUsers("Followed Fred", $aliceId);
+$found = $userModel->searchUsers("Followed Fred {$uniq}", $aliceId);
 assertTest("User search finds by name",
     count($found) === 1 && (int)$found[0]['id'] === $bobId);
 assertTest("User search excludes the searcher",
-    $userModel->searchUsers("Follower Fran Updated", $aliceId) === []);
+    $userModel->searchUsers("Follower Fran Updated {$uniq}", $aliceId) === []);
 assertTest("Empty user search returns nothing", $userModel->searchUsers("   ", $aliceId) === []);
 
 $foundPosts = $postModel->searchPosts("stranger post {$uniq}");

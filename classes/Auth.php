@@ -69,6 +69,11 @@ class Auth {
 
     public static function logout() {
         self::startSession();
+        // If no session could be started (e.g. headers already sent),
+        // there is nothing to destroy.
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return;
+        }
         $_SESSION = [];
         if (ini_get("session.use_cookies")) {
             $params = session_get_cookie_params();

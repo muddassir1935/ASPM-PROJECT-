@@ -342,6 +342,303 @@ $currentUser = class_exists('Auth') ? Auth::user() : null;
             color: var(--slate-500);
             margin-top: auto;
         }
+
+        /* Sprint 3: 3-column layout (left nav, center feed, right sidebar) */
+        .layout-3col {
+            display: grid;
+            grid-template-columns: 200px minmax(0, 1fr) 300px;
+            gap: 1.5rem;
+            align-items: start;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .col-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            position: sticky;
+            top: 90px;
+        }
+
+        .nav-col-link {
+            text-decoration: none;
+            color: var(--slate-600);
+            font-weight: 600;
+            font-size: 0.92rem;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+        }
+
+        .nav-col-link:hover {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .nav-col-active {
+            color: var(--primary);
+            background-color: var(--primary-light);
+        }
+
+        .col-side {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: sticky;
+            top: 90px;
+        }
+
+        /* Sidebar widget card */
+        .widget {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1rem 1.1rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .widget-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: var(--dark);
+            margin-bottom: 0.75rem;
+        }
+
+        .widget-empty {
+            font-size: 0.85rem;
+            color: var(--slate-500);
+        }
+
+        .widget-more {
+            display: block;
+            margin-top: 0.75rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        /* User row (who-to-follow, follower modals) */
+        .user-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 8px 0;
+            border-top: 1px solid var(--slate-100);
+        }
+
+        .user-row:first-of-type {
+            border-top: none;
+            padding-top: 0;
+        }
+
+        .user-row-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--dark);
+            min-width: 0;
+        }
+
+        .user-row-text {
+            display: flex;
+            flex-direction: column;
+            font-size: 0.88rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .user-row-text span {
+            font-size: 0.78rem;
+            color: var(--slate-500);
+            font-weight: 500;
+        }
+
+        .avatar-sm {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 0.85rem;
+            flex-shrink: 0;
+        }
+
+        .avatar-md {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            flex-shrink: 0;
+        }
+
+        .btn-follow {
+            background: var(--dark);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .btn-follow.following {
+            background: white;
+            color: var(--slate-700);
+            border: 1.5px solid var(--border);
+        }
+
+        .btn-bookmark {
+            background: none;
+            border: none;
+            color: var(--slate-600);
+            font-weight: 600;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 0;
+        }
+
+        /* Shared post card (profile / explore / bookmarks pages) */
+        .post-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 1rem;
+        }
+
+        .post-card-head {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .post-card-author a {
+            font-weight: 700;
+            color: var(--dark);
+            font-size: 0.95rem;
+            text-decoration: none;
+        }
+
+        .role-badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 2px 8px;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+            vertical-align: middle;
+            margin-left: 6px;
+        }
+
+        .post-card-time {
+            font-size: 0.8rem;
+            color: var(--slate-500);
+        }
+
+        .post-card-content {
+            font-size: 0.97rem;
+            color: var(--slate-800);
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .post-card-actions {
+            display: flex;
+            gap: 14px;
+            align-items: center;
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+
+        .post-card-actions a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        /* Follower / following modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.5);
+            z-index: 100;
+            align-items: flex-start;
+            justify-content: center;
+            padding-top: 10vh;
+        }
+
+        .modal-overlay.open {
+            display: flex;
+        }
+
+        .modal-box {
+            background: white;
+            border-radius: 16px;
+            width: 100%;
+            max-width: 440px;
+            max-height: 70vh;
+            overflow-y: auto;
+            padding: 1.25rem 1.5rem;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .modal-head h3 {
+            font-size: 1.05rem;
+            font-weight: 800;
+            color: var(--dark);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.25rem;
+            cursor: pointer;
+            color: var(--slate-500);
+        }
+
+        @media (max-width: 900px) {
+            .layout-3col {
+                grid-template-columns: 1fr;
+            }
+            .col-nav {
+                flex-direction: row;
+                flex-wrap: wrap;
+                position: static;
+            }
+            .col-side {
+                position: static;
+            }
+        }
     </style>
 </head>
 <body>
@@ -358,6 +655,9 @@ $currentUser = class_exists('Auth') ? Auth::user() : null;
         <ul class="nav-menu">
             <li><a href="index.php" class="nav-link">Home</a></li>
             <?php if($currentUser): ?>
+                <li><a href="explore.php" class="nav-link">Explore</a></li>
+                <li><a href="bookmarks.php" class="nav-link">Bookmarks</a></li>
+                <li><a href="profile.php?id=<?= (int)$currentUser['id'] ?>" class="nav-link">Profile</a></li>
                 <li>
                     <span class="user-tag">
                         <span class="user-dot"></span>
