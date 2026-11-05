@@ -33,6 +33,7 @@ class Database {
                     email TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
                     role TEXT DEFAULT 'student',
+                    bio TEXT DEFAULT NULL,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
                 );
 
@@ -46,9 +47,62 @@ class Database {
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 );
 
+                CREATE TABLE IF NOT EXISTS follows (
+                    follower_id INTEGER NOT NULL,
+                    followed_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (follower_id, followed_id),
+                    FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (followed_id) REFERENCES users(id) ON DELETE CASCADE,
+                    CHECK (follower_id <> followed_id)
+                );
+
+                CREATE TABLE IF NOT EXISTS replies (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    post_id INTEGER NOT NULL,
+                    user_id INTEGER NOT NULL,
+                    content TEXT NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    deleted_at DATETIME DEFAULT NULL,
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS bookmarks (
+                    user_id INTEGER NOT NULL,
+                    post_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, post_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS sessions (
+                    id TEXT NOT NULL PRIMARY KEY,
+                    user_id INTEGER DEFAULT NULL,
+                    data TEXT NOT NULL,
+                    last_activity INTEGER NOT NULL,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
                 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_follows_followed_id ON follows(followed_id);
+                CREATE INDEX IF NOT EXISTS idx_replies_post_id ON replies(post_id);
+                CREATE INDEX IF NOT EXISTS idx_replies_created_at ON replies(created_at);
+                CREATE INDEX IF NOT EXISTS idx_bookmarks_post_id ON bookmarks(post_id);
+                CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
+                CREATE INDEX IF NOT EXISTS idx_sessions_last_activity ON sessions(last_activity);
             ");
+
+            // Migrations for SQLite files created before Sprint 3:
+            // add the users.bio column when an older users table lacks it.
+            $userColumns = $this->connection->query("PRAGMA table_info(users)")->fetchAll(PDO::FETCH_ASSOC);
+            $userColumnNames = array_column($userColumns, 'name');
+            if (!in_array('bio', $userColumnNames, true)) {
+                $this->connection->exec("ALTER TABLE users ADD COLUMN bio TEXT DEFAULT NULL");
+            }
 
             // Migration for SQLite files created before soft-delete (WBS 2.3.6):
             // add the deleted_at column when an older posts table does not have it yet.
