@@ -167,7 +167,7 @@ class PostController {
 
     /**
      * Retrieve a specific user's posts.
-     * 
+     *
      * @param int $userId
      * @param int $page
      * @param int $limit
@@ -178,6 +178,24 @@ class PostController {
         $offset = ($page - 1) * $limit;
         $posts = $this->postModel->getByUserId($userId, $limit, $offset);
         $total = $this->postModel->countByUser($userId);
+
+        return [
+            'posts' => $posts,
+            'total' => $total,
+            'page' => $page,
+            'has_more' => ($offset + count($posts)) < $total
+        ];
+    }
+
+    /**
+     * Personalized timeline feed (Sprint 3, WBS 3.2): the viewer's own
+     * posts plus posts from users they follow.
+     */
+    public function getPersonalizedTimelineFeed(int $userId, int $page = 1, int $limit = 20): array {
+        $page = max(1, $page);
+        $offset = ($page - 1) * $limit;
+        $posts = $this->postModel->getPersonalizedFeed($userId, $limit, $offset);
+        $total = $this->postModel->countPersonalized($userId);
 
         return [
             'posts' => $posts,

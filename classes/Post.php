@@ -98,7 +98,8 @@ class Post {
      */
     public function getById(int $postId) {
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role
+                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.id = :id AND p.deleted_at IS NULL
@@ -124,7 +125,8 @@ class Post {
      */
     public function getFeed(int $limit = 50, int $offset = 0): array {
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role
+                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.deleted_at IS NULL
@@ -153,7 +155,8 @@ class Post {
      */
     public function getByUserId(int $userId, int $limit = 50, int $offset = 0): array {
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role
+                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.user_id = :user_id AND p.deleted_at IS NULL
@@ -244,6 +247,92 @@ class Post {
         $stmt->bindParam(':id', $postId, PDO::PARAM_INT);
 
         return $stmt->execute();
+    }
+
+    /**
+     * Personalized home feed (Sprint 3, WBS 3.2): the viewer's own posts
+     * plus posts from users they follow, newest first.
+     */
+    public function getPersonalizedFeed(int $userId, int $limit = 50, int $offset = 0): array {
+        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
+                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
+                FROM posts p
+                JOIN users u ON p.user_id = u.id
+                WHERE p.deleted_at IS NULL
+                  AND (p.user_id = :user_id
+                       OR p.user_id IN (SELECT followed_id FROM follows WHERE follower_id = :user_id))
+                ORDER BY p.created_at DESC, p.id DESC
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($posts as &$post) {
+            $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
+        }
+        return $posts;
+    }
+
+    public function countPersonalized(int $userId): int {
+        $sql = "SELECT COUNT(*) FROM posts p
+                WHERE p.deleted_at IS NULL
+                  AND (p.user_id = :user_id
+                       OR p.user_id IN (SELECT followed_id FROM follows WHERE follower_id = :user_id))";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Search post content (Sprint 3 explore page, WBS 3.3.4).
+     * LIKE wildcards in the query are escaped so they match literally.
+     */
+    public function searchPosts(string $query, int $limit = 50, int $offset = 0): array {
+        $clean = trim($query);
+        if ($clean === '') {
+            return [];
+        }
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+
+        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
+                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
+                FROM posts p
+                JOIN users u ON p.user_id = u.id
+                WHERE p.deleted_at IS NULL AND p.content LIKE :q ESCAPE '\\'
+                ORDER BY p.created_at DESC, p.id DESC
+                LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':q', $like, PDO::PARAM_STR);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($posts as &$post) {
+            $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
+        }
+        return $posts;
+    }
+
+    public function countSearch(string $query): int {
+        $clean = trim($query);
+        if ($clean === '') {
+            return 0;
+        }
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+        $sql = "SELECT COUNT(*) FROM posts p
+                WHERE p.deleted_at IS NULL AND p.content LIKE :q ESCAPE '\\'";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':q', $like, PDO::PARAM_STR);
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
     }
 
     /**
