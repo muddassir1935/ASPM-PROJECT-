@@ -11,16 +11,22 @@ if ($currentUser) {
     require_once 'config/Database.php';
     require_once 'classes/Post.php';
     require_once 'classes/PostController.php';
+    require_once 'classes/Bookmark.php';
+    require_once 'includes/social_widgets.php';
 
+    $db = Database::getInstance()->getConnection();
     $feedPage = max(1, (int)($_GET['page'] ?? 1));
-    $feedController = new PostController(new Post(Database::getInstance()->getConnection()));
-    $feed = $feedController->getTimelineFeed($feedPage, 10);
+    $feedController = new PostController(new Post($db));
+    // Sprint 3: personalized feed — own posts + posts from followed users.
+    $feed = $feedController->getPersonalizedTimelineFeed((int)$currentUser['id'], $feedPage, 10);
+    $bookmarkModel = new Bookmark($db);
+    $bookmarkedIds = array_map('intval', array_column($bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], 500), 'id'));
 }
 ?>
 
 <?php if($currentUser): ?>
     <!-- Logged In Dashboard View -->
-    <div style="max-width: 850px; margin: 1rem auto;">
+    <div style="max-width: 1100px; margin: 1rem auto;">
         <!-- Welcome Banner Card -->
         <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; border-radius: 16px; padding: 2.2rem; box-shadow: 0 10px 25px rgba(5, 150, 105, 0.2); margin-bottom: 2rem;">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
@@ -37,6 +43,10 @@ if ($currentUser) {
                 </div>
             </div>
         </div>
+
+        <div class="layout-3col">
+            <?php renderLeftNav('home'); ?>
+            <div>
 
         <?php if ($flashMessage): ?>
             <div style="padding: 12px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; margin-bottom: 1rem; <?= $flashType === 'success' ? 'background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;' : 'background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;' ?>">
@@ -88,7 +98,8 @@ if ($currentUser) {
                 <div style="font-size: 3rem; margin-bottom: 1rem;">📭</div>
                 <h4 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No updates yet</h4>
                 <p style="font-size: 0.9rem; color: #64748b; max-width: 300px; margin: 0 auto;">
-                    When you follow other students or societies, their announcements and posts will appear here.
+                    Your feed shows your posts and posts from people you follow.
+                    Find people to follow from the Explore page.
                 </p>
             </div>
         <?php else: ?>
@@ -117,6 +128,8 @@ if ($currentUser) {
 
                     <div style="display: flex; gap: 14px; align-items: center; margin-top: 12px; padding-top: 10px; border-top: 1px solid #e2e8f0;">
                         <a href="post.php?id=<?= (int)$feedPost['id'] ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.85rem;">View Post</a>
+                        <a href="post.php?id=<?= (int)$feedPost['id'] ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.85rem;"><?= (int)($feedPost['reply_count'] ?? 0) ?> repl<?= ((int)($feedPost['reply_count'] ?? 0) === 1) ? 'y' : 'ies' ?></a>
+                        <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$feedPost['id'] ?>"><?= in_array((int)$feedPost['id'], $bookmarkedIds, true) ? 'Saved' : 'Save' ?></button>
                         <?php if ($isOwnPost): ?>
                             <button type="button" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)" style="background: none; border: none; color: #475569; font-weight: 600; font-size: 0.85rem; cursor: pointer; padding: 0;">Edit</button>
                             <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="display: inline; margin: 0;">
@@ -166,6 +179,19 @@ if ($currentUser) {
                 }
             </script>
         <?php endif; ?>
+            </div>
+
+            <div class="col-side">
+                <div class="widget">
+                    <h4 class="widget-title">Search CampusConnect</h4>
+                    <form method="GET" action="explore.php" style="display: flex; gap: 8px;">
+                        <input class="form-control" type="text" name="q" placeholder="Search people or posts..." style="margin: 0;">
+                        <button type="submit" style="background: var(--primary); color: white; border: none; padding: 11px 16px; border-radius: 10px; font-weight: 700; cursor: pointer; flex-shrink: 0;">Go</button>
+                    </form>
+                </div>
+                <?php renderWhoToFollowWidget($db, (int)$currentUser['id']); ?>
+            </div>
+        </div>
     </div>
 
 <?php else: ?>
