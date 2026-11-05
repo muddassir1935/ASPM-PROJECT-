@@ -41,22 +41,22 @@ if ($currentUser) {
 <div class="layout-3col">
     <?php renderLeftNav('explore'); ?>
 
-    <div>
-        <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Explore</h3>
+    <div class="col-main">
+        <h3 class="page-title">Explore</h3>
 
-        <form method="GET" action="explore.php" style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1rem; box-shadow: var(--shadow-sm); margin-bottom: 1.5rem; display: flex; gap: 8px;">
-            <input class="form-control" type="text" name="q" placeholder="Search people or posts..." value="<?= htmlspecialchars($query) ?>" style="margin: 0;">
-            <button type="submit" style="background: var(--primary); color: white; border: none; padding: 11px 20px; border-radius: 10px; font-weight: 700; cursor: pointer; flex-shrink: 0;">Search</button>
+        <form method="GET" action="explore.php" class="search-card search-row">
+            <input class="form-control" type="text" name="q" placeholder="Search people or posts..." value="<?= htmlspecialchars($query) ?>" aria-label="Search people or posts">
+            <button type="submit" class="btn-primary">Search</button>
         </form>
 
         <?php if ($query !== ''): ?>
-            <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.75rem;">
+            <h4 class="section-title">
                 People matching "<?= htmlspecialchars($query) ?>"
             </h4>
             <?php if (empty($foundUsers)): ?>
-                <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1.5rem;">No people found.</p>
+                <p class="result-note">No people found.</p>
             <?php else: ?>
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 0.5rem 1.1rem; box-shadow: var(--shadow-sm); margin-bottom: 1.5rem;">
+                <div class="list-card">
                     <?php foreach ($foundUsers as $foundUser): ?>
                         <?php
                             $uInitial = strtoupper(mb_substr(trim($foundUser['name']), 0, 1, 'UTF-8'));
@@ -64,7 +64,7 @@ if ($currentUser) {
                         ?>
                         <div class="user-row">
                             <a href="profile.php?id=<?= (int)$foundUser['id'] ?>" class="user-row-link">
-                                <span class="avatar-sm"><?= htmlspecialchars($uInitial) ?></span>
+                                <span class="avatar-sm<?= avatarToneClass((int)$foundUser['id'], (string)($foundUser['role'] ?? '')) ?>"><?= htmlspecialchars($uInitial) ?></span>
                                 <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars($foundUser['email']) ?> &bull; <?= (int)$foundUser['follower_count'] ?> followers</span></span>
                             </a>
                             <?php if ($currentUser): ?>
@@ -75,16 +75,16 @@ if ($currentUser) {
                 </div>
             <?php endif; ?>
 
-            <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.75rem;">
+            <h4 class="section-title">
                 Posts matching "<?= htmlspecialchars($query) ?>"
             </h4>
         <?php else: ?>
-            <h4 style="font-size: 1rem; font-weight: 700; color: #1e293b; margin-bottom: 0.75rem;">Latest posts</h4>
+            <h4 class="section-title">Latest posts</h4>
         <?php endif; ?>
 
         <?php if (empty($foundPosts)): ?>
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2.5rem; text-align: center; box-shadow: var(--shadow-sm);">
-                <p style="font-size: 0.9rem; color: #64748b;">No posts found.</p>
+            <div class="empty-state">
+                <p class="empty-text">No posts found.</p>
             </div>
         <?php else: ?>
             <?php foreach ($foundPosts as $foundPost): ?>

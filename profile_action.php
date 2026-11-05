@@ -30,7 +30,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $updated = $userModel->updateProfile(
         (int)$currentUser['id'],
         (string)($_POST['name'] ?? ''),
-        (string)($_POST['bio'] ?? '')
+        (string)($_POST['bio'] ?? ''),
+        isset($_POST['cover_style']) ? (string)$_POST['cover_style'] : null
     );
     $result = $updated
         ? ['success' => true, 'message' => 'Profile updated!']

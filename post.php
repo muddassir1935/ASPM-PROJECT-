@@ -40,20 +40,20 @@ $isOwner = $post && $currentUser && (int)$post['user_id'] === (int)$currentUser[
 $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admin');
 ?>
 
-<div style="max-width: 850px; margin: 1rem auto;">
-    <a href="index.php" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem;">&larr; Back to Feed</a>
+<div class="narrow-wrap">
+    <a href="index.php" class="back-link">&larr; Back to Feed</a>
 
     <?php if ($flashMessage): ?>
-        <div style="margin-top: 1rem; padding: 12px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; <?= $flashType === 'success' ? 'background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;' : 'background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;' ?>">
-            <?= htmlspecialchars($flashMessage) ?>
+        <div class="alert <?= $flashType === 'success' ? 'alert-success' : 'alert-error' ?>" style="margin-top: 1rem;">
+            <div><?= htmlspecialchars($flashMessage) ?></div>
         </div>
     <?php endif; ?>
 
     <?php if (!$post): ?>
-        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 3rem; text-align: center; box-shadow: var(--shadow-sm); margin-top: 1rem;">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-            <h4 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">Post not found</h4>
-            <p style="font-size: 0.9rem; color: #64748b; max-width: 320px; margin: 0 auto;">
+        <div class="empty-state" style="margin-top: 1rem;">
+            <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></span>
+            <h4 class="empty-title">Post not found</h4>
+            <p class="empty-text">
                 This post may have been deleted, or the link is incorrect.
             </p>
         </div>
@@ -64,52 +64,52 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
             $isEdited = !empty($post['updated_at']) && $post['updated_at'] !== $post['created_at'];
             $updatedFormatted = $isEdited ? date('M j, Y \a\t g:i A', strtotime($post['updated_at'])) : null;
         ?>
-        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.75rem; box-shadow: var(--shadow-sm); margin-top: 1rem;">
-            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1rem;">
-                <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.15rem; flex-shrink: 0;">
-                    <?= htmlspecialchars($authorInitial) ?>
-                </div>
+        <?php $detailIsAdmin = ($post['author_role'] ?? '') === 'admin'; ?>
+        <div class="detail-card">
+            <?php if ($detailIsAdmin): ?>
+                <div class="announce-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg>Announcement</div>
+            <?php endif; ?>
+            <div class="detail-head">
+                <span class="avatar-md<?= avatarToneClass((int)$post['user_id'], (string)($post['author_role'] ?? '')) ?>"><?= htmlspecialchars($authorInitial) ?></span>
                 <div>
-                    <div style="font-weight: 700; color: #0f172a; font-size: 1.05rem;">
+                    <div class="detail-author">
                         <?= htmlspecialchars($post['author_name']) ?>
-                        <span style="background: var(--primary-light, #ecfdf5); color: var(--primary); font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; vertical-align: middle;">
-                            <?= htmlspecialchars($post['author_role']) ?>
-                        </span>
                     </div>
-                    <div style="font-size: 0.83rem; color: #64748b;">
-                        <?= htmlspecialchars($post['author_email']) ?> &bull; <?= htmlspecialchars($createdFormatted) ?> (<?= htmlspecialchars($post['time_ago']) ?>)
+                    <div class="detail-meta">
+                        <?= htmlspecialchars($post['author_email']) ?> &middot; <?= htmlspecialchars($post['time_ago']) ?>
                     </div>
                 </div>
             </div>
 
-            <p style="font-size: 1.05rem; color: #1e293b; line-height: 1.65; white-space: pre-wrap; word-wrap: break-word;"><?= htmlspecialchars($post['content']) ?></p>
+            <p class="detail-content"><?= htmlspecialchars($post['content']) ?></p>
 
-            <div style="margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #e2e8f0; font-size: 0.82rem; color: #64748b;">
+            <div class="detail-foot">
                 Posted on <?= htmlspecialchars($createdFormatted) ?>
                 <?php if ($isEdited): ?>
-                    &bull; <span title="Last edited <?= htmlspecialchars($updatedFormatted) ?>">edited</span>
+                    &middot; <span title="Last edited <?= htmlspecialchars($updatedFormatted) ?>">edited</span>
                 <?php endif; ?>
             </div>
 
             <?php if ($currentUser): ?>
-                <div style="margin-top: 1rem; display: flex; gap: 14px; align-items: center;">
-                    <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$post['id'] ?>" style="font-size: 0.9rem;"><?= $isBookmarked ? 'Saved' : 'Save' ?></button>
-                    <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;"><?= (int)($post['reply_count'] ?? 0) ?> repl<?= ((int)($post['reply_count'] ?? 0) === 1) ? 'y' : 'ies' ?></span>
+                <div class="detail-actions">
+                    <span class="action-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg><?= (int)($post['reply_count'] ?? 0) ?> repl<?= ((int)($post['reply_count'] ?? 0) === 1) ? 'y' : 'ies' ?></span>
+                    <span class="spacer" style="flex: 1;"></span>
+                    <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$post['id'] ?>"><?= $isBookmarked ? 'Saved' : 'Save' ?></button>
                 </div>
             <?php endif; ?>
 
             <?php if ($isOwner): ?>
                 <div style="margin-top: 1rem;">
-                    <button type="button" onclick="toggleDetailEdit()" style="background: white; color: var(--primary); border: 1.5px solid var(--primary); padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">Edit Post</button>
+                    <button type="button" class="btn-outline" onclick="toggleDetailEdit()">Edit Post</button>
                 </div>
-                <form id="detail-edit-form" method="POST" action="post_action.php" style="display: none; margin-top: 1rem;">
+                <form id="detail-edit-form" method="POST" action="post_action.php" class="edit-form" style="display: none;">
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <input type="hidden" name="return" value="<?= (int)$post['id'] ?>">
-                    <textarea name="content" rows="4" maxlength="280" required style="width: 100%; padding: 11px 14px; font-size: 0.95rem; border: 1.5px solid #e2e8f0; border-radius: 10px; resize: vertical; outline: none;"><?= htmlspecialchars($post['content']) ?></textarea>
-                    <div style="display: flex; gap: 8px; margin-top: 8px;">
-                        <button type="submit" style="background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Changes</button>
-                        <button type="button" onclick="toggleDetailEdit()" style="background: white; color: #64748b; border: 1.5px solid #e2e8f0; padding: 8px 16px; border-radius: 8px; font-weight: 600; cursor: pointer;">Cancel</button>
+                    <textarea name="content" class="form-control" rows="4" maxlength="280" required><?= htmlspecialchars($post['content']) ?></textarea>
+                    <div class="edit-form-actions">
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                        <button type="button" class="btn-cancel" onclick="toggleDetailEdit()">Cancel</button>
                     </div>
                 </form>
                 <script>
@@ -124,25 +124,28 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                 <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="margin-top: 1rem;">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
-                    <button type="submit" style="background: white; color: #dc2626; border: 1.5px solid #fecaca; padding: 7px 14px; border-radius: 8px; font-weight: 600; font-size: 0.85rem; cursor: pointer;">Delete Post</button>
+                    <button type="submit" class="btn-danger-outline">Delete Post</button>
                 </form>
             <?php endif; ?>
         </div>
 
         <!-- Replies (Sprint 3, WBS 3.4.2): threaded under the post, oldest first -->
-        <h3 style="font-size: 1.1rem; font-weight: 700; color: #1e293b; margin: 1.5rem 0 1rem 0;">
+        <h3 class="section-title">
             Replies (<?= count($replies) ?>)
         </h3>
 
         <?php if ($currentUser): ?>
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.25rem; box-shadow: var(--shadow-sm); margin-bottom: 1rem;">
+            <div class="compose-card">
                 <form method="POST" action="reply_action.php" id="reply-form">
                     <input type="hidden" name="action" value="create">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
-                    <textarea id="reply-content" name="content" rows="3" maxlength="280" placeholder="Write a reply..." style="width: 100%; padding: 11px 14px; font-size: 0.95rem; border: 1.5px solid #e2e8f0; border-radius: 10px; resize: vertical; outline: none;"></textarea>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-                        <span id="reply-counter" style="font-size: 0.82rem; color: #64748b; font-weight: 600;">0 / 280</span>
-                        <button type="submit" id="reply-submit" disabled style="background: var(--primary); color: white; border: none; padding: 9px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; opacity: 0.5;">Reply</button>
+                    <div class="compose-flex">
+                        <span class="avatar-md<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
+                        <textarea id="reply-content" class="form-control" name="content" rows="3" maxlength="280" placeholder="Write a reply..."></textarea>
+                    </div>
+                    <div class="compose-row">
+                        <span id="reply-counter" class="char-counter">0 / 280</span>
+                        <button type="submit" id="reply-submit" class="btn-primary" disabled>Reply</button>
                     </div>
                 </form>
             </div>
@@ -156,22 +159,21 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                         var len = textarea.value.trim().length;
                         counter.textContent = len + ' / ' + MAX;
                         var invalid = len === 0 || len > MAX;
-                        counter.style.color = len > MAX ? '#dc2626' : '#64748b';
+                        counter.style.color = len > MAX ? '#D92D20' : '#536471';
                         submit.disabled = invalid;
-                        submit.style.opacity = invalid ? '0.5' : '1';
                     }
                     textarea.addEventListener('input', refreshCounter);
                     refreshCounter();
                 })();
             </script>
         <?php else: ?>
-            <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 1rem;">
-                <a href="login.php" style="color: var(--primary); font-weight: 600; text-decoration: none;">Log in</a> to reply.
+            <p class="login-to-reply">
+                <a href="login.php">Log in</a> to reply.
             </p>
         <?php endif; ?>
 
         <?php if (empty($replies)): ?>
-            <p style="font-size: 0.9rem; color: #64748b;">No replies yet. Be the first to reply.</p>
+            <p class="login-to-reply">No replies yet. Be the first to reply.</p>
         <?php else: ?>
             <?php foreach ($replies as $reply): ?>
                 <?php
@@ -179,25 +181,23 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                     $replyIsOwner = $currentUser && (int)$reply['user_id'] === (int)$currentUser['id'];
                     $replyCanDelete = $replyIsOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admin');
                 ?>
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.1rem 1.25rem; box-shadow: var(--shadow-sm); margin-bottom: 0.75rem; margin-left: 1.5rem; border-left: 3px solid var(--primary);">
-                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; flex-shrink: 0;">
-                            <?= htmlspecialchars($replyInitial) ?>
+                <div class="reply-card">
+                    <span class="avatar-sm<?= avatarToneClass((int)$reply['user_id']) ?>"><?= htmlspecialchars($replyInitial) ?></span>
+                    <div class="reply-body">
+                        <div class="reply-head">
+                            <a class="reply-author" href="profile.php?id=<?= (int)$reply['user_id'] ?>"><?= htmlspecialchars($reply['author_name']) ?></a>
+                            <span class="reply-time">&middot; <?= htmlspecialchars(date('M j, g:i A', strtotime($reply['created_at']))) ?></span>
                         </div>
-                        <div>
-                            <a href="profile.php?id=<?= (int)$reply['user_id'] ?>" style="font-weight: 700; color: #0f172a; font-size: 0.9rem; text-decoration: none;"><?= htmlspecialchars($reply['author_name']) ?></a>
-                            <span style="font-size: 0.78rem; color: #64748b; margin-left: 6px;"><?= htmlspecialchars(date('M j, Y \a\t g:i A', strtotime($reply['created_at']))) ?></span>
-                        </div>
+                        <p class="reply-content"><?= htmlspecialchars($reply['content']) ?></p>
+                        <?php if ($replyCanDelete): ?>
+                            <form method="POST" action="reply_action.php" onsubmit="return confirm('Delete this reply?');" style="margin-top: 4px;">
+                                <input type="hidden" name="action" value="delete">
+                                <input type="hidden" name="reply_id" value="<?= (int)$reply['id'] ?>">
+                                <input type="hidden" name="return_post_id" value="<?= (int)$post['id'] ?>">
+                                <button type="submit" class="btn-text btn-text-danger">Delete</button>
+                            </form>
+                        <?php endif; ?>
                     </div>
-                    <p style="font-size: 0.93rem; color: #1e293b; line-height: 1.6; white-space: pre-wrap; word-wrap: break-word;"><?= htmlspecialchars($reply['content']) ?></p>
-                    <?php if ($replyCanDelete): ?>
-                        <form method="POST" action="reply_action.php" onsubmit="return confirm('Delete this reply?');" style="margin-top: 8px;">
-                            <input type="hidden" name="action" value="delete">
-                            <input type="hidden" name="reply_id" value="<?= (int)$reply['id'] ?>">
-                            <input type="hidden" name="return_post_id" value="<?= (int)$post['id'] ?>">
-                            <button type="submit" style="background: none; border: none; color: #dc2626; font-weight: 600; font-size: 0.82rem; cursor: pointer; padding: 0;">Delete</button>
-                        </form>
-                    <?php endif; ?>
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>

@@ -51,11 +51,11 @@ if ($profile) {
 ?>
 
 <?php if (!$profile): ?>
-    <div style="max-width: 850px; margin: 1rem auto;">
-        <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 3rem; text-align: center; box-shadow: var(--shadow-sm);">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-            <h4 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">User not found</h4>
-            <p style="font-size: 0.9rem; color: #64748b;">This profile may not exist, or the link is incorrect.</p>
+    <div class="narrow-wrap">
+        <div class="empty-state">
+            <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/></svg></span>
+            <h4 class="empty-title">User not found</h4>
+            <p class="empty-text">This profile may not exist, or the link is incorrect.</p>
         </div>
     </div>
 <?php else: ?>
@@ -63,59 +63,59 @@ if ($profile) {
         $profileInitial = strtoupper(mb_substr(trim($profile['name']), 0, 1, 'UTF-8'));
         $followerCount = (int)$profile['follower_count'];
         $followingCount = (int)$profile['following_count'];
+        $coverStyle = User::normalizeCoverStyle($profile['cover_style'] ?? 'signature');
     ?>
     <div class="layout-3col">
         <?php renderLeftNav('profile'); ?>
 
-        <div>
+        <div class="col-main">
             <?php if ($flashMessage): ?>
-                <div style="padding: 12px 14px; border-radius: 10px; font-size: 0.9rem; font-weight: 500; margin-bottom: 1rem; <?= $flashType === 'success' ? 'background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0;' : 'background: #fef2f2; color: #991b1b; border: 1px solid #fecaca;' ?>">
-                    <?= htmlspecialchars($flashMessage) ?>
+                <div class="alert <?= $flashType === 'success' ? 'alert-success' : 'alert-error' ?>">
+                    <div><?= htmlspecialchars($flashMessage) ?></div>
                 </div>
             <?php endif; ?>
 
             <!-- Profile header card -->
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; box-shadow: var(--shadow-sm); margin-bottom: 1.5rem;">
-                <div style="display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;">
-                    <div style="width: 64px; height: 64px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 1.5rem; flex-shrink: 0;">
-                        <?= htmlspecialchars($profileInitial) ?>
-                    </div>
-                    <div style="flex: 1; min-width: 220px;">
-                        <div style="font-weight: 800; color: #0f172a; font-size: 1.3rem;">
+            <?php $profileIsAdmin = ($profile['role'] ?? '') === 'admin'; ?>
+            <div class="profile-card">
+                <div class="profile-cover cover-<?= htmlspecialchars($coverStyle) ?>" aria-hidden="true"></div>
+                <div class="profile-head">
+                    <span class="avatar-lg<?= avatarToneClass((int)$profile['id'], (string)($profile['role'] ?? '')) ?>"><?= htmlspecialchars($profileInitial) ?></span>
+                    <div class="profile-main">
+                        <div class="profile-name">
                             <?= htmlspecialchars($profile['name']) ?>
-                            <span class="role-badge"><?= htmlspecialchars($profile['role']) ?></span>
                         </div>
-                        <div style="font-size: 0.85rem; color: #64748b;"><?= htmlspecialchars($profile['email']) ?></div>
+                        <div class="profile-email"><?= htmlspecialchars($profile['email']) ?> &middot; <?= htmlspecialchars(ucfirst((string)$profile['role'])) ?></div>
                         <?php if (!empty($profile['bio'])): ?>
-                            <p style="font-size: 0.95rem; color: #1e293b; line-height: 1.6; margin-top: 8px; white-space: pre-wrap; word-wrap: break-word;"><?= htmlspecialchars($profile['bio']) ?></p>
+                            <p class="profile-bio"><?= htmlspecialchars($profile['bio']) ?></p>
                         <?php endif; ?>
-                        <div style="display: flex; gap: 16px; margin-top: 12px; font-size: 0.88rem;">
-                            <button type="button" onclick="toggleModal('followers-modal')" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 0.88rem;">
+                        <div class="profile-stats">
+                            <button type="button" class="stat-btn" onclick="toggleModal('followers-modal')">
                                 <strong data-followers-count-for="<?= (int)$profile['id'] ?>"><?= $followerCount ?></strong>
-                                <span style="color: #64748b;"> follower<?= $followerCount === 1 ? '' : 's' ?></span>
+                                <span> follower<?= $followerCount === 1 ? '' : 's' ?></span>
                             </button>
-                            <button type="button" onclick="toggleModal('following-modal')" style="background: none; border: none; cursor: pointer; padding: 0; font-size: 0.88rem;">
+                            <button type="button" class="stat-btn" onclick="toggleModal('following-modal')">
                                 <strong><?= $followingCount ?></strong>
-                                <span style="color: #64748b;"> following</span>
+                                <span> following</span>
                             </button>
-                            <span style="color: #64748b;"><strong style="color: #0f172a;"><?= (int)$feed['total'] ?></strong> posts</span>
+                            <span><strong><?= (int)$feed['total'] ?></strong> posts</span>
                         </div>
                     </div>
-                    <div>
+                    <div class="profile-action">
                         <?php if ($isOwnProfile): ?>
-                            <button type="button" onclick="toggleModal('edit-profile-modal')" style="background: white; color: var(--primary); border: 1.5px solid var(--primary); padding: 7px 16px; border-radius: 20px; font-weight: 700; font-size: 0.85rem; cursor: pointer;">Edit Profile</button>
+                            <button type="button" class="btn-outline" onclick="toggleModal('edit-profile-modal')">Edit Profile</button>
                         <?php elseif ($currentUser): ?>
-                            <button type="button" class="btn-follow<?= $isFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$profile['id'] ?>" style="padding: 8px 18px; font-size: 0.88rem;"><?= $isFollowing ? 'Following' : 'Follow' ?></button>
+                            <button type="button" class="btn-follow<?= $isFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$profile['id'] ?>"><?= $isFollowing ? 'Following' : 'Follow' ?></button>
                         <?php endif; ?>
                     </div>
                 </div>
             </div>
 
             <!-- User's posts -->
-            <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">Posts</h3>
+            <h3 class="section-title" style="margin-top: 0;">Posts</h3>
             <?php if (empty($feed['posts'])): ?>
-                <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 2.5rem; text-align: center; box-shadow: var(--shadow-sm);">
-                    <p style="font-size: 0.9rem; color: #64748b;"><?= $isOwnProfile ? 'You have not posted anything yet.' : 'This user has not posted anything yet.' ?></p>
+                <div class="empty-state">
+                    <p class="empty-text"><?= $isOwnProfile ? 'You have not posted anything yet.' : 'This user has not posted anything yet.' ?></p>
                 </div>
             <?php else: ?>
                 <?php foreach ($feed['posts'] as $feedPost): ?>
@@ -123,15 +123,15 @@ if ($profile) {
                 <?php endforeach; ?>
 
                 <?php if ($feed['page'] > 1 || $feed['has_more']): ?>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin: 1rem 0;">
+                    <div class="pager">
                         <?php if ($feed['page'] > 1): ?>
-                            <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] - 1 ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem;">&larr; Previous</a>
+                            <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] - 1 ?>">&larr; Previous</a>
                         <?php else: ?>
                             <span></span>
                         <?php endif; ?>
-                        <span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Page <?= (int)$feed['page'] ?></span>
+                        <span class="pager-info">Page <?= (int)$feed['page'] ?></span>
                         <?php if ($feed['has_more']): ?>
-                            <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] + 1 ?>" style="color: var(--primary); text-decoration: none; font-weight: 600; font-size: 0.9rem;">Next &rarr;</a>
+                            <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] + 1 ?>">Next &rarr;</a>
                         <?php else: ?>
                             <span></span>
                         <?php endif; ?>
@@ -165,7 +165,7 @@ if ($profile) {
                     ?>
                     <div class="user-row">
                         <a href="profile.php?id=<?= (int)$follower['id'] ?>" class="user-row-link">
-                            <span class="avatar-sm"><?= htmlspecialchars($fInitial) ?></span>
+                            <span class="avatar-sm<?= avatarToneClass((int)$follower['id'], (string)($follower['role'] ?? '')) ?>"><?= htmlspecialchars($fInitial) ?></span>
                             <span class="user-row-text"><strong><?= htmlspecialchars($follower['name']) ?></strong><span><?= htmlspecialchars($follower['role']) ?></span></span>
                         </a>
                         <?php if ($currentUser && !$fIsSelf): ?>
@@ -195,7 +195,7 @@ if ($profile) {
                     ?>
                     <div class="user-row">
                         <a href="profile.php?id=<?= (int)$followed['id'] ?>" class="user-row-link">
-                            <span class="avatar-sm"><?= htmlspecialchars($fInitial) ?></span>
+                            <span class="avatar-sm<?= avatarToneClass((int)$followed['id'], (string)($followed['role'] ?? '')) ?>"><?= htmlspecialchars($fInitial) ?></span>
                             <span class="user-row-text"><strong><?= htmlspecialchars($followed['name']) ?></strong><span><?= htmlspecialchars($followed['role']) ?></span></span>
                         </a>
                         <?php if ($currentUser && !$fIsSelf): ?>
@@ -223,6 +223,17 @@ if ($profile) {
                     <div class="form-group">
                         <label class="form-label" for="edit-bio">Bio (max 500 characters)</label>
                         <textarea class="form-control" id="edit-bio" name="bio" rows="3" maxlength="500"><?= htmlspecialchars($profile['bio'] ?? '') ?></textarea>
+                    </div>
+                    <div class="form-group">
+                        <span class="form-label" id="cover-style-label">Cover style</span>
+                        <div class="cover-picker" role="radiogroup" aria-labelledby="cover-style-label">
+                            <?php foreach (User::COVER_STYLES as $styleOption): ?>
+                                <label class="cover-swatch cover-<?= htmlspecialchars($styleOption) ?>">
+                                    <input type="radio" name="cover_style" value="<?= htmlspecialchars($styleOption) ?>"<?= $coverStyle === $styleOption ? ' checked' : '' ?>>
+                                    <span class="cover-swatch-name"><?= htmlspecialchars(ucfirst($styleOption)) ?></span>
+                                </label>
+                            <?php endforeach; ?>
+                        </div>
                     </div>
                     <button type="submit" class="btn-submit">Save Changes</button>
                 </form>

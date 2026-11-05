@@ -34,16 +34,16 @@ $bookmarkedIds = array_map('intval', array_column($saved, 'id'));
 <div class="layout-3col">
     <?php renderLeftNav('bookmarks'); ?>
 
-    <div>
-        <h3 style="font-size: 1.15rem; font-weight: 700; color: #1e293b; margin-bottom: 1rem;">
+    <div class="col-main">
+        <h3 class="page-title">
             Your Bookmarks (<?= count($saved) ?>)
         </h3>
 
         <?php if (empty($saved)): ?>
-            <div style="background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 3rem; text-align: center; box-shadow: var(--shadow-sm);">
-                <div style="font-size: 3rem; margin-bottom: 1rem;">🔖</div>
-                <h4 style="font-size: 1.1rem; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No saved posts yet</h4>
-                <p style="font-size: 0.9rem; color: #64748b; max-width: 320px; margin: 0 auto;">
+            <div class="empty-state">
+                <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 3.5h10V20l-5-3.8L7 20Z"/></svg></span>
+                <h4 class="empty-title">No saved posts yet</h4>
+                <p class="empty-text">
                     Tap Save on any post to keep it here for later.
                 </p>
             </div>

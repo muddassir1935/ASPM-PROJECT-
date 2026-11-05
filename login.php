@@ -37,24 +37,35 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
 require_once 'includes/header.php'; 
 ?>
 
-<div class="auth-container">
+<div class="auth-shell">
+    <aside class="auth-brand">
+        <div class="auth-brand-top">
+            <?= brandMarkSvg('on-dark') ?>
+            <span class="auth-brand-name">CampusConnect</span>
+        </div>
+        <div class="auth-brand-bottom">
+            <p class="auth-tagline">Your campus, in one feed.</p>
+            <ul class="auth-points">
+                <li>Announcements from your departments and societies</li>
+                <li>Follow the classmates and teachers you know</li>
+                <li>Save posts and pick them up later</li>
+            </ul>
+        </div>
+    </aside>
     <div class="auth-card">
         <div class="auth-header">
-            <div class="auth-icon-circle">🔐</div>
             <h2 class="auth-title">Welcome Back</h2>
             <p class="auth-subtitle">Sign in to access your campus announcements</p>
         </div>
 
         <?php if(!empty($error)): ?>
             <div class="alert alert-error">
-                <span>⚠️</span>
                 <div><?= htmlspecialchars($error) ?></div>
             </div>
         <?php endif; ?>
 
         <?php if(!empty($success)): ?>
             <div class="alert alert-success">
-                <span>✅</span>
                 <div><?= htmlspecialchars($success) ?></div>
             </div>
         <?php endif; ?>
@@ -74,9 +85,7 @@ require_once 'includes/header.php';
             </div>
 
             <div class="form-group">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                    <label class="form-label" for="password" style="margin-bottom: 0;">Password</label>
-                </div>
+                <label class="form-label" for="password">Password</label>
                 <input 
                     type="password" 
                     id="password" 
@@ -88,8 +97,7 @@ require_once 'includes/header.php';
             </div>
 
             <button type="submit" class="btn-submit">
-                <span>Sign In</span>
-                <span>&rarr;</span>
+                Sign In
             </button>
         </form>
 
