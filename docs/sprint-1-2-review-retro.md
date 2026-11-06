@@ -93,3 +93,106 @@
 - [x] Browser flow + XSS check passed 2 Nov
 - [ ] This docs increment reviewed and approved by the user (pending — the
       branch is **not** pushed or merged until approval)
+
+---
+
+## Sprint 3 review — Social, Profiles, Discovery, Sessions, Design (WBS 3.0)
+
+- **Delivered in three PRs, all merged 5 Nov 2026** (squash commits in
+  `main`; `main` now `7fe4dda`):
+  - PR #4 (merge `36315f9`): core backend — `Follow`, `Reply`, `Bookmark`
+    models, personalized feed, search, DB-backed sessions
+    (commit `6cbe7d4`, 13 files, +1,221).
+  - PR #5 (merge `46b679c`): UI — profile page + edit, follower modals,
+    explore + who-to-follow widget, threaded replies, bookmarks UI,
+    3-column layout shell (commit `0c09dab`, 14 files, +1,222).
+  - PR #6 (merge `7fe4dda`): design — product-grade redesign, character
+    pass, per-user cover styles, Interlocked CC logo (commits `5572167` +
+    `9bbf23e`).
+- **Verified 5 Nov 2026:** tests **105/105** on a fresh database
+  (UserTest 18/18, PostTest 29/29, SocialTest 49/49, SessionTest 9/9);
+  a full live preview (login → feed → profile → explore → bookmarks →
+  post detail, plus mobile) with demo data, and the cover-style flow
+  end-to-end (select → save → reload persists). The personalized feed was
+  shown working: only the viewer's + followed users' posts in the feed,
+  an unfollowed user's post visible on explore only.
+- **Scope note:** the design work took three iterations in one day, all on
+  the same branch by the end (see "What went badly" below). The shipped
+  Sprint 3 is the v2 restraint direction + character pass + cover styles +
+  user-chosen logo — not the first "Campus masthead" draft, which the user
+  rejected as still generic-AI. The Sprint 3 window runs to 8 Nov; only
+  this documentation increment remained at merge time, which is what the
+  `feature/sprint-3-docs` branch closes.
+
+## What went well (Sprint 3)
+
+- Small, reviewable PRs again: core first, UI second, design third — each
+  verified before the next started, and nothing pushed until the user
+  approved the whole stack together (his call on 5 Nov: "sab kuch
+  redesign ke baad ek saath push karna").
+- Verification caught a real bug the unit tests could not: the wrong
+  `Follow.php` path in `social_widgets.php` truncated four pages at the
+  sidebar. It was fixed, live-render verified, and the fix is in `main`.
+- The user's design feedback loop worked: each rejection named the real
+  problem ("AI feel", "pheeka pheeka", "logo too simple"), and each pass
+  answered it with a specific change rather than a re-skin — restraint
+  first, then character, then a logo choice presented as three testable
+  concepts at 72/28/16px.
+
+## What went badly / what to change (Sprint 3)
+
+- **The Sprint 3 job's own instruction contradicted the approved plan.**
+  Problem 7 approved a full design system in Sprint 3, but the job told
+  the worker "functionality first, visuals per zyada invest na karna", so
+  the first UI shipped with the old generic style. The user had to catch
+  it in preview. Fix: sprint-start jobs must quote the approved plan's
+  scope instead of paraphrasing it; any "don't invest in X" line needs the
+  plan reference it is overriding.
+- **A new branch per UI iteration.** The redesign was started on
+  `feature/sprint-3-design`, then a `feature/sprint-3-design-v2` was
+  created for the second pass. The user corrected this on 5 Nov: one
+  feature, one branch, iterations in place. The v2 work was fast-forwarded
+  into the design branch and the v2 branch deleted; this is now a standing
+  branch-discipline rule for both projects.
+- **Docs lagged code again** — the Sprint 2 retro's fix ("each feature
+  branch carries its docs increment in the same PR") did not happen for
+  Sprint 3; the docs are a separate branch after the merge, as in Sprint 2.
+  Fix: Sprint 4 and 5 branches must include their SRS section + mapping
+  row before the PR is opened, not after it merges.
+- **PHP availability is still fragile.** PHP had to be reinstalled in the
+  workspace twice on 5 Nov (apt locks, then a VM change wiping the
+  install), which delayed the live preview. The suites still run on plain
+  `php tests/*.php` with the SQLite fallback; XAMPP remains the fallback.
+  This docs run could not re-run the suites at all (no PHP in the
+  workspace) — see the Sprint 3 SRS increment §6.
+
+## Decisions carried forward (approved 5 Nov 2026)
+
+1. Cover styles, not photo upload, for profile covers (6 whitelisted
+   styles; server-side validation; no new upload surface). Photo upload is
+   a later-sprint option only if the user asks.
+2. Logo is Interlocked CC (user's Concept 1 choice, over the assistant's
+   Nodes C recommendation). Brand character stays spent in only two
+   places: the auth brand panel and the profile cover band.
+3. Known minor gaps accepted for Sprint 3: compose box fixed 58px (no
+   auto-grow) and bookmark saved-state shown by word only. Small JS
+   follow-ups, not Sprint 4 scope unless the user asks.
+4. `SocialTest` flakiness on a crowded test database (48/49) goes on the
+   Sprint 5 test-database cleanup list.
+5. Compressed schedule holds: Sprint 4 on 9–12 Nov (likes, hashtags,
+   Redis caching), Sprint 5 on 13–15 Nov (notifications, hardening, final
+   delivery). Sprint 4 still needs a real Redis server on the demo machine
+   for the MySQL-vs-Redis benchmark; the app keeps its graceful MySQL
+   fallback.
+
+## Sprint 3 close checklist
+
+- [x] Core merged (PR #4, `36315f9`)
+- [x] UI merged (PR #5, `46b679c`)
+- [x] Design merged (PR #6, `7fe4dda`)
+- [x] Tests green on merge day (105/105 on a fresh database)
+- [x] Live preview + cover-style flow verified 5 Nov
+- [ ] User runs `db/migrate_sprint3_mysql.sql` then
+      `db/migrate_cover_style_mysql.sql` on XAMPP MySQL before demoing
+- [ ] This docs increment reviewed and approved by the user (pending — the
+      branch is **not** pushed or merged until approval)
