@@ -93,8 +93,12 @@ Read "Tweet" in the WBS as "Post" in the code everywhere below.
 | 4.2 Hashtag class | `Hashtag::extractTags/syncPostTags/renderHashtagLinks/getTrending/getPostsByTag` | Done (`classes/Hashtag.php`) |
 | 4.2 hashtag UI & explore | Hashtag links in posts, `explore.php?tag=...` filtering, Trending Topics widget | Done (`includes/social_widgets.php`, `explore.php`, `index.php`) |
 | 4.3 Redis & memory caching | `Cache` Singleton, Redis support with graceful zero-downtime memory fallback | Done (`classes/Cache.php`) |
-| 4.3 cache invalidation | Automatic `feed_` prefix invalidation on post create/update/delete and like toggle | Done (`classes/Post.php`, `like_action.php`) |
-| 4.4 sprint 4 tests | `tests/Sprint4Test.php` (comprehensive unit tests for Likes, Hashtags, and Cache) | Done |
+| 4.3.1 TinyRedisClient | Pure-PHP RESP socket client (PING/GET/SET/SETEX/DEL/INCR/SCAN/KEYS), used when the phpredis extension is absent | Done — added in the 9 Nov verification pass (`classes/TinyRedisClient.php`); verified against a real Redis 7.0.15 server |
+| 4.3 timeline caching | Personalized + global feeds cached, 300s TTL; like counters cached (cache-aside, INCR on like, invalidate on unlike) | Done — TTL corrected 60s → 300s and global feed + counters added in the verification pass |
+| 4.3 cache invalidation | Automatic `feed_` prefix invalidation on post create/update/delete, like toggle, follow/unfollow, reply create/delete, bookmark add/remove | Done (`classes/Post.php`, `like_action.php`, `classes/Follow.php`, `classes/Reply.php`, `classes/Bookmark.php`) |
+| 4.4 benchmark + dashboard | `benchmark.php` CLI report; web view renders an SVG bar-chart dashboard | Done (basic single-chart dashboard, verification pass) |
+| 4.4.4 N+1 audit | Measured statement counts per endpoint | Done — `docs/n-plus-1-audit-sprint4.md` (no PHP-level N+1 found) |
+| 4.4 sprint 4 tests | `tests/Sprint4Test.php` (comprehensive unit tests for Likes, Hashtags, and Cache) | Done (48 tests after the verification pass) |
 | 4.5 docs increment | `docs/sprint-4-srs-increment.md` | Done |
 
 ## Carried forward to Sprint 5 (13–15 Nov)

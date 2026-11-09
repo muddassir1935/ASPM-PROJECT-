@@ -8,6 +8,8 @@
  * Threading is one level deep: replies render chronologically under
  * their parent post on the post detail page.
  */
+require_once __DIR__ . '/Cache.php';
+
 class Reply {
     private PDO $db;
 
@@ -73,6 +75,9 @@ class Reply {
 
         try {
             if ($stmt->execute()) {
+                // Reply counts are rendered inside cached feed rows:
+                // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
+                Cache::getInstance()->deleteByPrefix('feed_');
                 return (int)$this->db->lastInsertId();
             }
             return false;
@@ -125,7 +130,11 @@ class Reply {
         $sql = "UPDATE replies SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $replyId, PDO::PARAM_INT);
-        return $stmt->execute();
+        $ok = $stmt->execute();
+        if ($ok) {
+            Cache::getInstance()->deleteByPrefix('feed_');
+        }
+        return $ok;
     }
 
     public function countByPost(int $postId): int {

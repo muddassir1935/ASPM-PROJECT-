@@ -51,7 +51,7 @@ if ($profile) {
     $feed = $feedController->getUserFeed((int)$profile['id'], $feedPage, 10);
 
     if ($activeTab === 'likes') {
-        $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], 50, 0);
+        $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], 50, 0, $currentUser ? (int)$currentUser['id'] : 0);
     }
 
     if ($currentUser) {

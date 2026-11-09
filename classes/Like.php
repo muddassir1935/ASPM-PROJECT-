@@ -6,6 +6,8 @@
  * Supports idempotent add/remove, toggle, counts, and fetching liked posts.
  * Soft-deleted posts are never returned in like feeds.
  */
+require_once __DIR__ . '/Cache.php';
+
 class Like {
     private PDO $db;
 
@@ -40,7 +42,12 @@ class Like {
         $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
 
         try {
-            return $stmt->execute();
+            $ok = $stmt->execute();
+            if ($ok) {
+                // Keep a cached like counter (if one exists) in step.
+                Cache::getInstance()->incrementCounter("like_count_{$postId}");
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log("Like add error: " . $e->getMessage());
             return false;
@@ -61,7 +68,13 @@ class Like {
         $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
 
         try {
-            return $stmt->execute();
+            $ok = $stmt->execute();
+            if ($ok && $stmt->rowCount() > 0) {
+                // Counter changed: drop the cached value so the next read
+                // recomputes from the database (safer than a cached DECR).
+                Cache::getInstance()->delete("like_count_{$postId}");
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log("Like remove error: " . $e->getMessage());
             return false;
@@ -116,10 +129,18 @@ class Like {
 
     /**
      * Total likes on a post.
+     * Sprint 4 (WBS 4.3): cache-aside counter with a 5-minute TTL;
+     * add() increments a warm counter, remove() invalidates it.
      */
     public function countByPost(int $postId): int {
         if ($postId <= 0) {
             return 0;
+        }
+
+        $cache = Cache::getInstance();
+        $cached = $cache->getCounter("like_count_{$postId}");
+        if ($cached !== null) {
+            return $cached;
         }
 
         $sql = "SELECT COUNT(*) FROM likes WHERE post_id = :post_id";
@@ -127,7 +148,9 @@ class Like {
         $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
         $stmt->execute();
 
-        return (int)$stmt->fetchColumn();
+        $count = (int)$stmt->fetchColumn();
+        $cache->setCounter("like_count_{$postId}", $count, 300);
+        return $count;
     }
 
     /**
@@ -150,17 +173,22 @@ class Like {
 
     /**
      * Get posts liked by a user (for the Profile Likes tab).
+     * $viewerId is whose like state is_liked describes — it defaults to the
+     * list owner, but a different signed-in viewer must see THEIR OWN state,
+     * not the owner's (is_liked was previously hardcoded to 1, which showed
+     * every visitor a filled heart on the owner's liked posts).
      */
-    public function getLikedPosts(int $userId, int $limit = 50, int $offset = 0): array {
+    public function getLikedPosts(int $userId, int $limit = 50, int $offset = 0, int $viewerId = 0): array {
         if ($userId <= 0) {
             return [];
         }
+        $effectiveViewer = $viewerId > 0 ? $viewerId : $userId;
 
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
                        u.name AS author_name, u.email AS author_email, u.role AS author_role,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
-                       1 AS is_liked
+                       (SELECT COUNT(*) FROM likes lv WHERE lv.post_id = p.id AND lv.user_id = :viewer_id) AS is_liked
                 FROM likes l
                 JOIN posts p ON l.post_id = p.id
                 JOIN users u ON p.user_id = u.id
@@ -170,6 +198,7 @@ class Like {
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':viewer_id', $effectiveViewer, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();

@@ -6,6 +6,8 @@
  * A bookmark is one row per (user, post) pair; saving twice still
  * counts once. Soft-deleted posts never appear in a bookmark list.
  */
+require_once __DIR__ . '/Cache.php';
+
 class Bookmark {
     private PDO $db;
 
@@ -40,7 +42,13 @@ class Bookmark {
         $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
 
         try {
-            return $stmt->execute();
+            $ok = $stmt->execute();
+            if ($ok) {
+                // is_bookmarked is rendered inside cached feed rows:
+                // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
+                Cache::getInstance()->deleteByPrefix('feed_');
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log("Bookmark error: " . $e->getMessage());
             return false;
@@ -62,7 +70,11 @@ class Bookmark {
         $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
 
         try {
-            return $stmt->execute();
+            $ok = $stmt->execute();
+            if ($ok) {
+                Cache::getInstance()->deleteByPrefix('feed_');
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log("Bookmark remove error: " . $e->getMessage());
             return false;
@@ -104,7 +116,9 @@ class Bookmark {
     public function getBookmarkedPosts(int $userId, int $limit = 50, int $offset = 0): array {
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
                        u.name AS author_name, u.email AS author_email, u.role AS author_role,
-                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                       (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
+                       (SELECT COUNT(*) FROM likes lv WHERE lv.post_id = p.id AND lv.user_id = :viewer_id) AS is_liked
                 FROM bookmarks b
                 JOIN posts p ON p.id = b.post_id
                 JOIN users u ON p.user_id = u.id
@@ -113,6 +127,7 @@ class Bookmark {
                 LIMIT :limit OFFSET :offset";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':viewer_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
