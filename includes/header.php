@@ -500,6 +500,17 @@ if (!function_exists('brandMarkSvg')) {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B3FE0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.5h10V20l-5-3.8L7 20Z'/%3E%3C/svg%3E");
         }
 
+        /* Sprint 4 polish: filled bookmark icon when saved */
+        .btn-bookmark.is-bookmarked,
+        .btn-bookmark[data-bookmarked="1"] {
+            color: var(--accent);
+        }
+
+        .btn-bookmark.is-bookmarked::before,
+        .btn-bookmark[data-bookmarked="1"]::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232B3FE0' stroke='%232B3FE0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.5h10V20l-5-3.8L7 20Z'/%3E%3C/svg%3E");
+        }
+
         .btn-bookmark:disabled {
             opacity: 0.6;
             cursor: wait;
@@ -1096,6 +1107,98 @@ if (!function_exists('brandMarkSvg')) {
 
         .action-reply:hover .action-ic {
             background: var(--accent-tint);
+        }
+
+        /* Sprint 4: Like Action (WBS 4.1) */
+        .action-like {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            color: var(--muted);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 0.83rem;
+            padding: 4px 10px 4px 4px;
+            border-radius: 999px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-family: inherit;
+            transition: color var(--ease);
+        }
+
+        .action-like .action-ic {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            transition: background-color var(--ease), transform 0.15s ease;
+        }
+
+        .action-like svg {
+            width: 19px;
+            height: 19px;
+            stroke-width: 2.05;
+            transition: fill 0.2s ease, stroke 0.2s ease;
+        }
+
+        .action-like:hover {
+            color: #e0245e;
+        }
+
+        .action-like:hover .action-ic {
+            background: rgba(224, 36, 94, 0.1);
+            transform: scale(1.08);
+        }
+
+        .action-like.is-liked {
+            color: #e0245e;
+        }
+
+        .action-like.is-liked svg {
+            fill: #e0245e;
+            stroke: #e0245e;
+        }
+
+        /* Sprint 4: Hashtag Links & Trending (WBS 4.2) */
+        .hashtag-link {
+            color: var(--accent);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .hashtag-link:hover {
+            text-decoration: underline;
+        }
+
+        .trending-row {
+            margin-bottom: 8px;
+        }
+
+        .trending-link {
+            display: flex;
+            flex-direction: column;
+            text-decoration: none;
+            padding: 6px 8px;
+            border-radius: var(--radius-sm);
+            transition: background var(--ease);
+        }
+
+        .trending-link:hover {
+            background: var(--surface-hover);
+        }
+
+        .trending-tag {
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .trending-count {
+            font-size: 0.78rem;
+            color: var(--muted);
         }
 
         .action-stat {

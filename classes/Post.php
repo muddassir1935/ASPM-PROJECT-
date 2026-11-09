@@ -2,19 +2,22 @@
 /**
  * Class Post
  * 
- * Domain Model for Microblogging Posts (Chirps/Announcements)
- * Adheres to OOP principles (Encapsulation, Single Responsibility, Dependency Injection)
- * Supports PDO with Prepared Statements for SQL injection immunity.
+ * Domain model responsible for managing post data, CRUD operations,
+ * data validation, soft deletes, and feed generation.
+ * Follows OOP design principles and uses PDO prepared statements for security.
  */
+require_once __DIR__ . '/Hashtag.php';
+require_once __DIR__ . '/Cache.php';
+
 class Post {
     private PDO $db;
 
-    // Constraints
-    public const MAX_LENGTH = 280;
-    public const MIN_LENGTH = 1;
+    const MAX_LENGTH = 280;
+    const MIN_LENGTH = 1;
 
     /**
      * Post constructor.
+     * 
      * @param PDO $dbConnection Injected PDO database connection
      */
     public function __construct(PDO $dbConnection) {
@@ -22,10 +25,10 @@ class Post {
     }
 
     /**
-     * Validate post text content.
+     * Validate post content against character bounds and clean whitespace.
      * 
      * @param string $content
-     * @return array ['valid' => bool, 'error' => string|null, 'clean' => string]
+     * @return array ['valid' => bool, 'error' => ?string, 'clean' => string]
      */
     public function validateContent(string $content): array {
         $clean = trim($content);
@@ -34,15 +37,15 @@ class Post {
         if ($length < self::MIN_LENGTH) {
             return [
                 'valid' => false,
-                'error' => 'Post content cannot be empty or contain only whitespace.',
-                'clean' => ''
+                'error' => 'Post content cannot be empty.',
+                'clean' => $clean
             ];
         }
 
         if ($length > self::MAX_LENGTH) {
             return [
                 'valid' => false,
-                'error' => 'Post cannot exceed ' . self::MAX_LENGTH . ' characters (currently ' . $length . ').',
+                'error' => "Post exceeds the maximum character limit of " . self::MAX_LENGTH . " characters.",
                 'clean' => $clean
             ];
         }
@@ -81,7 +84,17 @@ class Post {
 
         try {
             if ($stmt->execute()) {
-                return (int)$this->db->lastInsertId();
+                $newPostId = (int)$this->db->lastInsertId();
+
+                // Sprint 4: Extract and link hashtags
+                $tags = Hashtag::extractTags($cleanContent);
+                $hashtagModel = new Hashtag($this->db);
+                $hashtagModel->syncPostTags($newPostId, $tags);
+
+                // Sprint 4: Invalidate feed cache
+                Cache::getInstance()->deleteByPrefix('feed_');
+
+                return $newPostId;
             }
             return false;
         } catch (PDOException $e) {
@@ -94,12 +107,20 @@ class Post {
      * Retrieve a single post by ID along with author information.
      * 
      * @param int $postId
+     * @param int $viewerId Optional viewer user ID to check like/bookmark status
      * @return array|false
      */
-    public function getById(int $postId) {
+    public function getById(int $postId, int $viewerId = 0) {
+        $viewerSubquery = $viewerId > 0
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
+            : ", 0 AS is_liked, 0 AS is_bookmarked";
+
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
                        u.name AS author_name, u.email AS author_email, u.role AS author_role,
-                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                       (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
+                       {$viewerSubquery}
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.id = :id AND p.deleted_at IS NULL
@@ -121,12 +142,20 @@ class Post {
      * 
      * @param int $limit Max posts to return
      * @param int $offset Offset for pagination
+     * @param int $viewerId Optional viewer user ID
      * @return array List of posts with author details
      */
-    public function getFeed(int $limit = 50, int $offset = 0): array {
+    public function getFeed(int $limit = 50, int $offset = 0, int $viewerId = 0): array {
+        $viewerSubquery = $viewerId > 0
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
+            : ", 0 AS is_liked, 0 AS is_bookmarked";
+
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
                        u.name AS author_name, u.email AS author_email, u.role AS author_role,
-                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                       (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
+                       {$viewerSubquery}
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.deleted_at IS NULL
@@ -151,12 +180,20 @@ class Post {
      * @param int $userId
      * @param int $limit
      * @param int $offset
+     * @param int $viewerId
      * @return array
      */
-    public function getByUserId(int $userId, int $limit = 50, int $offset = 0): array {
+    public function getByUserId(int $userId, int $limit = 50, int $offset = 0, int $viewerId = 0): array {
+        $viewerSubquery = $viewerId > 0
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
+            : ", 0 AS is_liked, 0 AS is_bookmarked";
+
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
                        u.name AS author_name, u.email AS author_email, u.role AS author_role,
-                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                       (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
+                       {$viewerSubquery}
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.user_id = :user_id AND p.deleted_at IS NULL
@@ -177,68 +214,82 @@ class Post {
     }
 
     /**
-     * Update an existing post. Only the original author can update their post.
+     * Update an existing post. Must verify ownership or authorization first.
      * 
      * @param int $postId
-     * @param int $userId Current logged-in user ID
+     * @param int $userId Requesting user ID
      * @param string $newContent
      * @return bool
      */
     public function update(int $postId, int $userId, string $newContent): bool {
-        // Validation check
+        if ($postId <= 0 || $userId <= 0) {
+            return false;
+        }
+
+        $existing = $this->getById($postId);
+        if (!$existing) {
+            return false;
+        }
+
+        if ((int)$existing['user_id'] !== $userId) {
+            return false; // Unauthorized
+        }
+
         $validation = $this->validateContent($newContent);
         if (!$validation['valid']) {
             return false;
         }
 
-        // Authorization check: Verify post belongs to the user and is not soft-deleted
-        $checkSql = "SELECT user_id FROM posts WHERE id = :id AND deleted_at IS NULL LIMIT 1";
-        $checkStmt = $this->db->prepare($checkSql);
-        $checkStmt->bindParam(':id', $postId, PDO::PARAM_INT);
-        $checkStmt->execute();
-        $owner = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        $cleanContent = $validation['clean'];
 
-        if (!$owner || (int)$owner['user_id'] !== $userId) {
-            return false; // Forbidden / Not found / Soft-deleted
-        }
-
-        $sql = "UPDATE posts
-                SET content = :content, updated_at = CURRENT_TIMESTAMP
+        $sql = "UPDATE posts 
+                SET content = :content, updated_at = CURRENT_TIMESTAMP 
                 WHERE id = :id AND user_id = :user_id AND deleted_at IS NULL";
+        
         $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':content', $validation['clean'], PDO::PARAM_STR);
+        $stmt->bindParam(':content', $cleanContent, PDO::PARAM_STR);
         $stmt->bindParam(':id', $postId, PDO::PARAM_INT);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
 
-        return $stmt->execute();
+        try {
+            $res = $stmt->execute();
+            if ($res) {
+                // Sprint 4: Re-extract and sync hashtags
+                $tags = Hashtag::extractTags($cleanContent);
+                $hashtagModel = new Hashtag($this->db);
+                $hashtagModel->syncPostTags($postId, $tags);
+
+                Cache::getInstance()->deleteByPrefix('feed_');
+            }
+            return $res;
+        } catch (PDOException $e) {
+            error_log("Post update error: " . $e->getMessage());
+            return false;
+        }
     }
 
     /**
-     * Soft-delete a post (WBS 2.3.6). The row stays in the database with
-     * deleted_at set, but it is hidden from getById, feeds and counts.
-     * Only the author or an admin can delete a post.
-     *
+     * Soft delete a post by setting deleted_at to CURRENT_TIMESTAMP.
+     * 
      * @param int $postId
-     * @param int $userId Current logged-in user ID
-     * @param string $userRole Role of the current user ('admin', 'student', etc.)
+     * @param int $userId Requesting user
+     * @param bool|string $isAdmin Whether the user has admin privileges (bool or role string)
      * @return bool
      */
-    public function delete(int $postId, int $userId, string $userRole = 'student'): bool {
-        $checkSql = "SELECT user_id FROM posts WHERE id = :id AND deleted_at IS NULL LIMIT 1";
-        $checkStmt = $this->db->prepare($checkSql);
-        $checkStmt->bindParam(':id', $postId, PDO::PARAM_INT);
-        $checkStmt->execute();
-        $owner = $checkStmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$owner) {
+    public function delete(int $postId, int $userId, $isAdmin = false): bool {
+        if ($postId <= 0 || $userId <= 0) {
             return false;
         }
 
-        // Allow deletion if user is author OR user is admin
-        $isAuthor = ((int)$owner['user_id'] === $userId);
-        $isAdmin = ($userRole === 'admin');
+        $existing = $this->getById($postId);
+        if (!$existing) {
+            return false;
+        }
 
-        if (!$isAuthor && !$isAdmin) {
+        $isAuthor = ((int)$existing['user_id'] === $userId);
+        $hasAdminPrivilege = is_bool($isAdmin) ? $isAdmin : ($isAdmin === 'admin');
+
+        if (!$isAuthor && !$hasAdminPrivilege) {
             return false; // Unauthorized
         }
 
@@ -246,36 +297,52 @@ class Post {
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $postId, PDO::PARAM_INT);
 
-        return $stmt->execute();
+        $res = $stmt->execute();
+        if ($res) {
+            Cache::getInstance()->deleteByPrefix('feed_');
+        }
+        return $res;
     }
 
     /**
      * Personalized home feed (Sprint 3, WBS 3.2): the viewer's own posts
      * plus posts from users they follow, newest first.
+     * Sprint 4: Joined with like counts and viewer like/bookmark status.
      */
     public function getPersonalizedFeed(int $userId, int $limit = 50, int $offset = 0): array {
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
-                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
-                FROM posts p
-                JOIN users u ON p.user_id = u.id
-                WHERE p.deleted_at IS NULL
-                  AND (p.user_id = :user_id
-                       OR p.user_id IN (SELECT followed_id FROM follows WHERE follower_id = :user_id))
-                ORDER BY p.created_at DESC, p.id DESC
-                LIMIT :limit OFFSET :offset";
+        $cacheKey = "feed_personalized_{$userId}_{$limit}_{$offset}";
+        $cache = Cache::getInstance();
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
+        return $cache->remember($cacheKey, 60, function() use ($userId, $limit, $offset) {
+            $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
+                           u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                           (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                           (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
+                           (SELECT COUNT(*) FROM likes l3 WHERE l3.post_id = p.id AND l3.user_id = :viewer_id) AS is_liked,
+                           (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked
+                    FROM posts p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.deleted_at IS NULL
+                      AND (p.user_id = :user_id
+                           OR p.user_id IN (SELECT followed_id FROM follows WHERE follower_id = :user_id2))
+                    ORDER BY p.created_at DESC, p.id DESC
+                    LIMIT :limit OFFSET :offset";
 
-        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($posts as &$post) {
-            $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
-        }
-        return $posts;
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':viewer_id', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':viewer_id2', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindParam(':user_id2', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
+
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($posts as &$post) {
+                $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
+            }
+            return $posts;
+        });
     }
 
     public function countPersonalized(int $userId): int {
@@ -293,16 +360,23 @@ class Post {
      * Search post content (Sprint 3 explore page, WBS 3.3.4).
      * LIKE wildcards in the query are escaped so they match literally.
      */
-    public function searchPosts(string $query, int $limit = 50, int $offset = 0): array {
+    public function searchPosts(string $query, int $limit = 50, int $offset = 0, int $viewerId = 0): array {
         $clean = trim($query);
         if ($clean === '') {
             return [];
         }
         $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
 
+        $viewerSubquery = $viewerId > 0
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
+            : ", 0 AS is_liked, 0 AS is_bookmarked";
+
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
                        u.name AS author_name, u.email AS author_email, u.role AS author_role,
-                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                       (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
+                       {$viewerSubquery}
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
                 WHERE p.deleted_at IS NULL AND p.content LIKE :q ESCAPE '\\'

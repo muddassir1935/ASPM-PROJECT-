@@ -67,7 +67,14 @@ if ($currentUser) {
                     counter.style.color = len > MAX ? '#D92D20' : '#536471';
                     submit.disabled = invalid;
                 }
-                textarea.addEventListener('input', refreshCounter);
+                function autoGrow() {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = Math.max(58, textarea.scrollHeight) + 'px';
+                }
+                textarea.addEventListener('input', function () {
+                    refreshCounter();
+                    autoGrow();
+                });
                 refreshCounter();
             })();
         </script>
@@ -99,10 +106,11 @@ if ($currentUser) {
                             <span class="post-card-time">&middot; <?= htmlspecialchars($feedPost['time_ago']) ?></span>
                         </div>
 
-                        <p class="post-card-content"><?= htmlspecialchars($feedPost['content']) ?></p>
+                        <p class="post-card-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($feedPost['content'])) ?></p>
 
                         <div class="post-card-actions">
                             <a class="action-reply" href="post.php?id=<?= (int)$feedPost['id'] ?>" aria-label="View post and replies"><span class="action-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg></span><?= (int)($feedPost['reply_count'] ?? 0) ?></a>
+                            <button type="button" class="action-like <?= !empty($feedPost['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$feedPost['id'] ?>" aria-label="Like post"><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($feedPost['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($feedPost['like_count'] ?? 0) ?></span></button>
                             <span class="spacer"></span>
                             <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$feedPost['id'] ?>"><?= in_array((int)$feedPost['id'], $bookmarkedIds, true) ? 'Saved' : 'Save' ?></button>
                             <?php if ($isOwnPost): ?>
@@ -165,6 +173,7 @@ if ($currentUser) {
                         <button type="submit" class="btn-primary">Go</button>
                     </form>
                 </div>
+                <?php renderTrendingHashtagsWidget($db); ?>
                 <?php renderWhoToFollowWidget($db, (int)$currentUser['id']); ?>
             </div>
         </div>

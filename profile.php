@@ -12,6 +12,7 @@ require_once 'classes/Post.php';
 require_once 'classes/PostController.php';
 require_once 'classes/Follow.php';
 require_once 'classes/Bookmark.php';
+require_once 'classes/Like.php';
 require_once 'includes/social_widgets.php';
 
 require_once 'includes/header.php';
@@ -31,17 +32,28 @@ $followers = [];
 $following = [];
 $feed = ['posts' => [], 'total' => 0, 'page' => 1, 'has_more' => false];
 $bookmarkedIds = [];
+$activeTab = ($_GET['tab'] ?? 'posts') === 'likes' ? 'likes' : 'posts';
+$likesTotal = 0;
+$likedPosts = [];
 
 if ($profile) {
     $followModel = new Follow($db);
+    $likeModel = new Like($db);
     $followers = $followModel->getFollowers((int)$profile['id'], 100);
     $following = $followModel->getFollowing((int)$profile['id'], 100);
+    $likesTotal = $likeModel->countByUser((int)$profile['id']);
+
     if ($currentUser && !$isOwnProfile) {
         $isFollowing = $followModel->isFollowing((int)$currentUser['id'], (int)$profile['id']);
     }
     $feedPage = max(1, (int)($_GET['page'] ?? 1));
     $feedController = new PostController(new Post($db), $currentUser);
     $feed = $feedController->getUserFeed((int)$profile['id'], $feedPage, 10);
+
+    if ($activeTab === 'likes') {
+        $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], 50, 0);
+    }
+
     if ($currentUser) {
         $bookmarkModel = new Bookmark($db);
         $bookmarkedIds = array_column($bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], 500), 'id');
@@ -111,36 +123,53 @@ if ($profile) {
                 </div>
             </div>
 
-            <!-- User's posts -->
-            <h3 class="section-title" style="margin-top: 0;">Posts</h3>
-            <?php if (empty($feed['posts'])): ?>
-                <div class="empty-state">
-                    <p class="empty-text"><?= $isOwnProfile ? 'You have not posted anything yet.' : 'This user has not posted anything yet.' ?></p>
-                </div>
-            <?php else: ?>
-                <?php foreach ($feed['posts'] as $feedPost): ?>
-                    <?php renderPostCard($feedPost, $currentUser, $bookmarkedIds); ?>
-                <?php endforeach; ?>
+            <!-- Profile Tabs (Posts / Likes) -->
+            <div class="profile-tabs" style="display: flex; gap: 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem;">
+                <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=posts" style="padding: 10px 4px; font-weight: 600; font-size: 0.95rem; text-decoration: none; color: <?= $activeTab === 'posts' ? 'var(--accent)' : 'var(--muted)' ?>; border-bottom: 2px solid <?= $activeTab === 'posts' ? 'var(--accent)' : 'transparent' ?>;">Posts (<?= (int)$feed['total'] ?>)</a>
+                <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=likes" style="padding: 10px 4px; font-weight: 600; font-size: 0.95rem; text-decoration: none; color: <?= $activeTab === 'likes' ? 'var(--accent)' : 'var(--muted)' ?>; border-bottom: 2px solid <?= $activeTab === 'likes' ? 'var(--accent)' : 'transparent' ?>;">Likes (<?= (int)$likesTotal ?>)</a>
+            </div>
 
-                <?php if ($feed['page'] > 1 || $feed['has_more']): ?>
-                    <div class="pager">
-                        <?php if ($feed['page'] > 1): ?>
-                            <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] - 1 ?>">&larr; Previous</a>
-                        <?php else: ?>
-                            <span></span>
-                        <?php endif; ?>
-                        <span class="pager-info">Page <?= (int)$feed['page'] ?></span>
-                        <?php if ($feed['has_more']): ?>
-                            <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] + 1 ?>">Next &rarr;</a>
-                        <?php else: ?>
-                            <span></span>
-                        <?php endif; ?>
+            <?php if ($activeTab === 'likes'): ?>
+                <?php if (empty($likedPosts)): ?>
+                    <div class="empty-state">
+                        <p class="empty-text"><?= $isOwnProfile ? 'You have not liked any posts yet.' : 'This user has not liked any posts yet.' ?></p>
                     </div>
+                <?php else: ?>
+                    <?php foreach ($likedPosts as $likedPost): ?>
+                        <?php renderPostCard($likedPost, $currentUser, $bookmarkedIds); ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            <?php else: ?>
+                <?php if (empty($feed['posts'])): ?>
+                    <div class="empty-state">
+                        <p class="empty-text"><?= $isOwnProfile ? 'You have not posted anything yet.' : 'This user has not posted anything yet.' ?></p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($feed['posts'] as $feedPost): ?>
+                        <?php renderPostCard($feedPost, $currentUser, $bookmarkedIds); ?>
+                    <?php endforeach; ?>
+
+                    <?php if ($feed['page'] > 1 || $feed['has_more']): ?>
+                        <div class="pager">
+                            <?php if ($feed['page'] > 1): ?>
+                                <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] - 1 ?>">&larr; Previous</a>
+                            <?php else: ?>
+                                <span></span>
+                            <?php endif; ?>
+                            <span class="pager-info">Page <?= (int)$feed['page'] ?></span>
+                            <?php if ($feed['has_more']): ?>
+                                <a href="profile.php?id=<?= (int)$profile['id'] ?>&page=<?= (int)$feed['page'] + 1 ?>">Next &rarr;</a>
+                            <?php else: ?>
+                                <span></span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
                 <?php endif; ?>
             <?php endif; ?>
         </div>
 
         <div class="col-side">
+            <?php renderTrendingHashtagsWidget($db); ?>
             <?php if ($currentUser): ?>
                 <?php renderWhoToFollowWidget($db, (int)$currentUser['id']); ?>
             <?php endif; ?>

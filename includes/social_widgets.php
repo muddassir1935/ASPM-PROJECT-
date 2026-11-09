@@ -1,12 +1,12 @@
 <?php
 /**
- * Shared Sprint 3 UI partials (WBS 3.3).
+ * Shared Sprint 3 & Sprint 4 UI partials (WBS 3.3, 4.1, 4.2).
  *
- * These helpers render the 3-column layout pieces and post cards used by
- * the logged-in pages (index, profile, explore, bookmarks). They echo
- * HTML directly, matching the template style of the existing pages.
+ * These helpers render the 3-column layout pieces, post cards, who-to-follow,
+ * and trending hashtags used by the logged-in pages (index, profile, explore, bookmarks).
  * All user-controlled output is escaped with htmlspecialchars here.
  */
+require_once __DIR__ . '/../classes/Hashtag.php';
 
 /**
  * Left navigation column. $active is one of: home, explore, bookmarks, profile.
@@ -61,8 +61,34 @@ function renderWhoToFollowWidget(PDO $db, int $userId): void {
 }
 
 /**
+ * Trending Hashtags widget (Sprint 4, WBS 4.2) for the right sidebar.
+ * Shows top trending tags by post count.
+ */
+function renderTrendingHashtagsWidget(PDO $db, int $limit = 5): void {
+    require_once __DIR__ . '/../classes/Hashtag.php';
+    $hashtagModel = new Hashtag($db);
+    $trending = $hashtagModel->getTrending($limit);
+
+    echo '<div class="widget">';
+    echo '<h4 class="widget-title">Trending Topics</h4>';
+    if (empty($trending)) {
+        echo '<p class="widget-empty">No trending topics yet.</p>';
+    } else {
+        foreach ($trending as $item) {
+            echo '<div class="trending-row">';
+            echo '<a href="explore.php?tag=' . urlencode($item['tag']) . '" class="trending-link">';
+            echo '<span class="trending-tag">#' . htmlspecialchars($item['tag']) . '</span>';
+            echo '<span class="trending-count">' . (int)$item['post_count'] . ' post' . ((int)$item['post_count'] === 1 ? '' : 's') . '</span>';
+            echo '</a>';
+            echo '</div>';
+        }
+    }
+    echo '</div>';
+}
+
+/**
  * One post card, shared by profile, explore and bookmarks pages.
- * $post is a row from Post/Bookmark selects (author_*, time_ago, reply_count).
+ * $post is a row from Post/Bookmark selects (author_*, time_ago, reply_count, like_count, is_liked).
  * $bookmarkedIds lists post ids the viewer has saved. When
  * $removeCardOnUnsave is true (bookmarks page), unsaving removes the card.
  */
@@ -71,11 +97,17 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     $authorInitial = strtoupper(mb_substr(trim($post['author_name']), 0, 1, 'UTF-8'));
     $timeAgo = $post['time_ago'] ?? $post['created_at'];
     $replyCount = (int)($post['reply_count'] ?? 0);
-    $isBookmarked = in_array($postId, $bookmarkedIds, true);
+    $likeCount = (int)($post['like_count'] ?? 0);
+    $isLiked = !empty($post['is_liked']);
+    $isBookmarked = in_array($postId, $bookmarkedIds, true) || !empty($post['is_bookmarked']);
 
     $isAdmin = ($post['author_role'] ?? '') === 'admin';
     $replySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>';
+    $likeSvg = '<svg viewBox="0 0 24 24" fill="' . ($isLiked ? '#e0245e' : 'none') . '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
     $megaSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg>';
+
+    $renderedBody = Hashtag::renderHashtagLinks(htmlspecialchars($post['content']));
+
     echo '<div class="post-card" data-post-card>';
     echo '<span class="avatar-md' . avatarToneClass((int)$post['user_id'], (string)($post['author_role'] ?? '')) . '">' . htmlspecialchars($authorInitial) . '</span>';
     echo '<div class="post-body">';
@@ -87,10 +119,16 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
         . htmlspecialchars($post['author_name']) . '</a>';
     echo '<span class="post-card-time">&middot; ' . htmlspecialchars($timeAgo) . '</span>';
     echo '</div>';
-    echo '<p class="post-card-content">' . htmlspecialchars($post['content']) . '</p>';
+    echo '<p class="post-card-content">' . $renderedBody . '</p>';
     echo '<div class="post-card-actions">';
     echo '<a class="action-reply" href="post.php?id=' . $postId . '" aria-label="View post and replies"><span class="action-ic">'
         . $replySvg . '</span>' . $replyCount . '</a>';
+
+    if ($currentUser) {
+        echo '<button type="button" class="action-like' . ($isLiked ? ' is-liked' : '') . '" data-like-toggle data-post-id="'
+            . $postId . '" aria-label="Like post"><span class="action-ic">' . $likeSvg . '</span><span class="like-count">' . $likeCount . '</span></button>';
+    }
+
     echo '<span class="spacer"></span>';
     if ($currentUser) {
         echo '<button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="'
