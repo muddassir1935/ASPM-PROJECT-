@@ -28,3 +28,4 @@ CREATE TABLE IF NOT EXISTS post_hashtags (
     CONSTRAINT fk_post_hashtags_tag FOREIGN KEY (hashtag_id) REFERENCES hashtags(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_post_hashtags_tag ON post_hashtags(hashtag_id);
+

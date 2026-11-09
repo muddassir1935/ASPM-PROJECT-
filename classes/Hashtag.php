@@ -100,9 +100,13 @@ class Hashtag {
      * Expects input that has already been sanitized with htmlspecialchars.
      */
     public static function renderHashtagLinks(string $escapedHtml): string {
-        return preg_replace(
+        return preg_replace_callback(
             '/#([a-zA-Z0-9_]{1,50})\b/u',
-            '<a href="explore.php?tag=$1" class="hashtag-link">#$1</a>',
+            function ($matches) {
+                $rawTag = $matches[1];
+                $lowerTag = mb_strtolower($rawTag, 'UTF-8');
+                return '<a href="explore.php?tag=' . urlencode($lowerTag) . '" class="hashtag-link">#' . $rawTag . '</a>';
+            },
             $escapedHtml
         );
     }
@@ -163,3 +167,4 @@ class Hashtag {
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
+

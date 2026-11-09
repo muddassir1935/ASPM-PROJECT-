@@ -52,10 +52,14 @@ $liamId = (int)$userA['id'];
 $pennyId = (int)$userB['id'];
 $farhanId = (int)$userC['id'];
 
-// 2. Setup Test Posts
-$postId1 = $postModel->create($pennyId, "Excited for #CampusConnect launch! #Tech #agile");
-$postId2 = $postModel->create($pennyId, "Studying in library. #Tech #Finals");
-$postId3 = $postModel->create($pennyId, "This post will be deleted later. #Tech");
+// 2. Setup Test Posts with run-isolated tags
+$tagA = "tech_" . $uniq;
+$tagB = "agile_" . $uniq;
+$tagC = "finals_" . $uniq;
+
+$postId1 = $postModel->create($pennyId, "Excited for #CampusConnect launch! #{$tagA} #{$tagB}");
+$postId2 = $postModel->create($pennyId, "Studying in library. #{$tagA} #{$tagC}");
+$postId3 = $postModel->create($pennyId, "This post will be deleted later. #{$tagA}");
 
 assertTest("Posts created with IDs", $postId1 > 0 && $postId2 > 0 && $postId3 > 0);
 
@@ -111,20 +115,21 @@ assertTest("extractTags deduplicates identical tags", count(array_keys($tags, 'c
 assertTest("extractTags handles empty text", Hashtag::extractTags("") === []);
 
 // Automatic indexing on create
-$trending = $hashtagModel->getTrending(10);
+$trending = $hashtagModel->getTrending(50);
 $trendingTags = array_column($trending, 'tag');
-assertTest("Post creation indexed #tech tag", in_array('tech', $trendingTags, true));
+assertTest("Post creation indexed #{$tagA} tag", in_array($tagA, $trendingTags, true));
 assertTest("Post creation indexed #campusconnect tag", in_array('campusconnect', $trendingTags, true));
 
 // Tag query
-$techPosts = $hashtagModel->getPostsByTag('tech');
+$techPosts = $hashtagModel->getPostsByTag($tagA);
 assertTest("getPostsByTag returns tagged posts (excluding deleted)", count($techPosts) === 2);
 
 // Update post re-syncs tags
-$postModel->update($postId1, $pennyId, "Updated text now with #DesignSystem and #Frontend");
-$updatedTechPosts = $hashtagModel->getPostsByTag('tech');
+$newTag = "design_" . $uniq;
+$postModel->update($postId1, $pennyId, "Updated text now with #{$newTag} and #Frontend");
+$updatedTechPosts = $hashtagModel->getPostsByTag($tagA);
 assertTest("Updating post removes unreferenced tags", count($updatedTechPosts) === 1);
-$designPosts = $hashtagModel->getPostsByTag('designsystem');
+$designPosts = $hashtagModel->getPostsByTag($newTag);
 assertTest("Updating post indexes new tags", count($designPosts) === 1);
 
 // HTML rendering
@@ -164,3 +169,4 @@ echo PHP_EOL . "=== SPRINT 4 TEST RESULTS: {$passed} / {$total} PASSED ===" . PH
 if ($passed === $total) {
     echo ">>> ALL TESTS PASSED SUCCESSFULLY! <<<" . PHP_EOL;
 }
+

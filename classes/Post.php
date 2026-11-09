@@ -273,10 +273,10 @@ class Post {
      * 
      * @param int $postId
      * @param int $userId Requesting user
-     * @param bool $isAdmin Whether the user has admin privileges
+     * @param bool|string $isAdmin Whether the user has admin privileges (bool or role string)
      * @return bool
      */
-    public function delete(int $postId, int $userId, bool $isAdmin = false): bool {
+    public function delete(int $postId, int $userId, $isAdmin = false): bool {
         if ($postId <= 0 || $userId <= 0) {
             return false;
         }
@@ -287,8 +287,9 @@ class Post {
         }
 
         $isAuthor = ((int)$existing['user_id'] === $userId);
+        $hasAdminPrivilege = is_bool($isAdmin) ? $isAdmin : ($isAdmin === 'admin');
 
-        if (!$isAuthor && !$isAdmin) {
+        if (!$isAuthor && !$hasAdminPrivilege) {
             return false; // Unauthorized
         }
 

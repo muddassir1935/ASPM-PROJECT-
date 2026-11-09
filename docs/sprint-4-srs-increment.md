@@ -53,3 +53,4 @@ Out of scope for Sprint 4 (carried forward to Sprint 5): notifications, full CSR
   - `likes` (`user_id`, `post_id`, `created_at`, PK `(user_id, post_id)`).
   - `hashtags` (`id`, `tag` UNIQUE, `created_at`).
   - `post_hashtags` (`post_id`, `hashtag_id`, `created_at`, PK `(post_id, hashtag_id)`).
+

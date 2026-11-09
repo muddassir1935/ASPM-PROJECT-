@@ -50,3 +50,4 @@ echo json_encode([
     'like_count' => $result['count'],
     'message' => $result['liked'] ? 'Post liked.' : 'Like removed.'
 ]);
+
