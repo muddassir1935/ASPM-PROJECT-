@@ -67,7 +67,14 @@ if ($currentUser) {
                     counter.style.color = len > MAX ? '#D92D20' : '#536471';
                     submit.disabled = invalid;
                 }
-                textarea.addEventListener('input', refreshCounter);
+                function autoGrow() {
+                    textarea.style.height = 'auto';
+                    textarea.style.height = Math.max(58, textarea.scrollHeight) + 'px';
+                }
+                textarea.addEventListener('input', function () {
+                    refreshCounter();
+                    autoGrow();
+                });
                 refreshCounter();
             })();
         </script>

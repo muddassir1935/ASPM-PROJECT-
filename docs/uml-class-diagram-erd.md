@@ -1,9 +1,8 @@
-# UML Class Diagram and ERD (Sprints 1–3, as built)
+# UML Class Diagram and ERD (Sprints 1–4, as built)
 
-Diagrams are drawn from the code in `main` at Sprint 3 completion
-(merge `7fe4dda`, 5 Nov 2026). Class names, methods and columns below match
-the files; nothing here is aspirational. Sprint 1–2 content is unchanged
-except where Sprint 3 extended a class (noted).
+Diagrams are drawn from the code in `main` and `feature/sprint-4-core`
+(Sprint 4 completion, 9 Nov 2026). Class names, methods and columns below match
+the files; nothing here is aspirational.
 
 ## Class diagram
 
@@ -48,39 +47,41 @@ classDiagram
         +gc(maxLifetime) int|false
         +setUserId(sessionId, userId) bool
     }
-    class Follow {
-        -db PDO
-        +__construct(PDO)
-        +follow(followerId, followedId) bool
-        +unfollow(followerId, followedId) bool
-        +toggle(followerId, followedId) bool|null
-        +isFollowing(followerId, followedId) bool
-        +countFollowers(userId) int
-        +countFollowing(userId) int
-        +getFollowers(userId, limit) array
-        +getFollowing(userId, limit) array
-        +getSuggestions(userId, limit) array
-    }
-    class Reply {
-        -db PDO
-        +MAX_LENGTH = 280
-        +MIN_LENGTH = 1
-        +__construct(PDO)
-        +validateContent(content) array
-        +create(userId, postId, content) int|false
-        +getByPostId(postId, limit, offset) array
-        +delete(replyId, userId, userRole) bool
-        +countByPost(postId) int
-    }
-    class Bookmark {
+    class Like {
         -db PDO
         +__construct(PDO)
         +add(userId, postId) bool
         +remove(userId, postId) bool
-        +toggle(userId, postId) bool|null
-        +isBookmarked(userId, postId) bool
-        +getBookmarkedPosts(userId, limit, offset) array
+        +toggle(userId, postId) array|null
+        +isLiked(userId, postId) bool
+        +countByPost(postId) int
         +countByUser(userId) int
+        +getLikedPosts(userId, limit, offset) array
+        +getUsersWhoLiked(postId, limit) array
+    }
+    class Hashtag {
+        -db PDO
+        +__construct(PDO)
+        +static extractTags(content) array
+        +syncPostTags(postId, tags) void
+        +static renderHashtagLinks(escapedHtml) string
+        +getTrending(limit) array
+        +getPostsByTag(tag, viewerId, limit, offset) array
+    }
+    class Cache {
+        -static instance
+        -redis
+        -isRedisAvailable bool
+        -memoryCache array
+        +static getInstance() Cache
+        +isAvailable() bool
+        +getDriverName() string
+        +get(key) mixed
+        +set(key, value, ttl) bool
+        +delete(key) bool
+        +deleteByPrefix(prefix) void
+        +remember(key, ttl, callback) mixed
+        +flush() bool
     }
     class Post {
         -db PDO
@@ -89,14 +90,14 @@ classDiagram
         +__construct(PDO)
         +validateContent(content) array
         +create(userId, content) int|false
-        +getById(postId) array|false
-        +getFeed(limit, offset) array
+        +getById(postId, viewerId) array|false
+        +getFeed(limit, offset, viewerId) array
         +getPersonalizedFeed(userId, limit, offset) array
         +countPersonalized(userId) int
-        +searchPosts(query, limit, offset) array
-        +getByUserId(userId, limit, offset) array
+        +searchPosts(query, limit, offset, viewerId) array
+        +getByUserId(userId, limit, offset, viewerId) array
         +update(postId, userId, newContent) bool
-        +delete(postId, userId, userRole) bool
+        +delete(postId, userId, isAdmin) bool
         +countByUser(userId) int
         +countAll() int
         +formatTimeAgo(datetime) string
@@ -117,36 +118,30 @@ classDiagram
     Database --> Follow : provides PDO
     Database --> Reply : provides PDO
     Database --> Bookmark : provides PDO
+    Database --> Like : provides PDO
+    Database --> Hashtag : provides PDO
     Database --> DbSessionHandler : provides PDO
     Auth --> DbSessionHandler : registers as save handler
     PostController --> Post : uses
     PostController --> Auth : defaults current user
     Post --> User : author via user_id
+    Post --> Hashtag : syncs tags
+    Post --> Cache : invalidates & caches
     Follow --> User : follower / followed via user_id
     Reply --> Post : reply to post_id
     Reply --> User : author via user_id
     Bookmark --> Post : saved post_id
     Bookmark --> User : owner via user_id
+    Like --> Post : liked post_id
+    Like --> User : liker user_id
 ```
 
 Notes:
 
 - `Database` is a Singleton: one PDO connection per request, MySQL first with
   a zero-config SQLite fallback when MySQL is unreachable.
-- `PostController` never builds SQL; `Post` never reads `$_SESSION` or
-  `$_POST`. The HTTP layer is `index.php`, `post.php` and `post_action.php`,
-  which delegate to the controller and redirect (Post/Redirect/Get).
-- Authorization lives in the model: `Post::update()` checks ownership,
-  `Post::delete()` allows author or admin. The UI only decides which buttons
-  to show.
-- Sprint 3 additions: `Follow`, `Reply` and `Bookmark` follow the same
-  pattern (PDO injected, no `$_SESSION`/`$_POST` inside the model).
-  `Reply::delete()` mirrors `Post::delete()` — author or admin, soft-delete.
-  `Auth` registers `DbSessionHandler` as the session save handler when PDO
-  is available and falls back to native PHP sessions otherwise, so login
-  never breaks on a machine without a database connection.
-- `User::normalizeCoverStyle()` is the whitelist gate for `cover_style`:
-  any value outside `COVER_STYLES` falls back to `'signature'`.
+- `Cache` is a Singleton: provides Redis caching with automatic memory fallback.
+- `Like` and `Hashtag` follow standard domain model OOP patterns with PDO injection.
 
 ## Entity-relationship diagram
 
@@ -156,23 +151,27 @@ erDiagram
     users ||--o{ follows : "follows / is followed by"
     users ||--o{ replies : "authors"
     users ||--o{ bookmarks : "saves"
+    users ||--o{ likes : "gives"
     users ||--o{ sessions : "has"
     posts ||--o{ replies : "has"
     posts ||--o{ bookmarks : "is saved in"
+    posts ||--o{ likes : "receives"
+    posts ||--o{ post_hashtags : "tagged with"
+    hashtags ||--o{ post_hashtags : "categorizes"
     users {
         int id PK
         string name
         string email UK
         string password_hash
         string role "student | admin | society"
-        string bio "TEXT NULL (Sprint 3)"
-        string cover_style "signature|cobalt|teal|sunset|violet|graphite (Sprint 3)"
+        string bio "TEXT NULL"
+        string cover_style "signature|cobalt|teal|sunset|violet|graphite"
         timestamp created_at
     }
     posts {
         int id PK
         int user_id FK
-        string content "TEXT, 1-280 chars (app rule)"
+        string content "TEXT, 1-280 chars"
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at "NULL = visible"
@@ -186,7 +185,7 @@ erDiagram
         int id PK
         int post_id FK
         int user_id FK
-        string content "TEXT, 1-280 chars (app rule)"
+        string content "TEXT, 1-280 chars"
         timestamp created_at
         timestamp updated_at
         timestamp deleted_at "NULL = visible"
@@ -196,6 +195,21 @@ erDiagram
         int post_id PK,FK
         timestamp created_at
     }
+    likes {
+        int user_id PK,FK
+        int post_id PK,FK
+        timestamp created_at
+    }
+    hashtags {
+        int id PK
+        string tag UK
+        timestamp created_at
+    }
+    post_hashtags {
+        int post_id PK,FK
+        int hashtag_id PK,FK
+        timestamp created_at
+    }
     sessions {
         string id PK "VARCHAR(128)"
         int user_id FK "NULL until login"
@@ -203,20 +217,3 @@ erDiagram
         int last_activity "unix time, gc sweep"
     }
 ```
-
-Rules the diagram implies and the code enforces:
-
-- `posts.user_id` → `users.id` ON DELETE CASCADE (MySQL schema; SQLite
-  fallback declares the same FK with `PRAGMA foreign_keys = ON`).
-- `users.email` is UNIQUE (registration rejects duplicates).
-- Soft-delete is a state, not a removal: a row with `deleted_at` set stays in
-  the table but is filtered out of every read query.
-- Indexes: `idx_posts_user_id (user_id)`, `idx_posts_created_at
-  (created_at DESC)` — matching the feed (`ORDER BY created_at DESC, id
-  DESC`) and per-user queries.
-- Sprint 3 rules: `follows` forbids self-follow (`CHECK (follower_id <>
-  followed_id)`); `follows` and `bookmarks` use composite primary keys, so
-  a duplicate follow/bookmark is impossible at the database level;
-  `replies.post_id` and `replies.user_id` cascade on delete, so removing a
-  post or a user removes their replies; `sessions.user_id` is NULL until
-  login attaches it, and `gc()` sweeps rows by `last_activity`.

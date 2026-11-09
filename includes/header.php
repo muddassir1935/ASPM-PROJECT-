@@ -500,6 +500,17 @@ if (!function_exists('brandMarkSvg')) {
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232B3FE0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.5h10V20l-5-3.8L7 20Z'/%3E%3C/svg%3E");
         }
 
+        /* Sprint 4 polish: filled bookmark icon when saved */
+        .btn-bookmark.is-bookmarked,
+        .btn-bookmark[data-bookmarked="1"] {
+            color: var(--accent);
+        }
+
+        .btn-bookmark.is-bookmarked::before,
+        .btn-bookmark[data-bookmarked="1"]::before {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232B3FE0' stroke='%232B3FE0' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 3.5h10V20l-5-3.8L7 20Z'/%3E%3C/svg%3E");
+        }
+
         .btn-bookmark:disabled {
             opacity: 0.6;
             cursor: wait;

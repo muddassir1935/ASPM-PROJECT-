@@ -56,6 +56,8 @@
                     return;
                 }
                 bookmarkBtn.textContent = data.bookmarked ? 'Saved' : 'Save';
+                bookmarkBtn.classList.toggle('is-bookmarked', data.bookmarked);
+                bookmarkBtn.setAttribute('data-bookmarked', data.bookmarked ? '1' : '0');
             })
             .finally(function () { bookmarkBtn.disabled = false; });
             return;

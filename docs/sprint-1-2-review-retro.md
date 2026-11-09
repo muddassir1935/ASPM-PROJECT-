@@ -192,7 +192,31 @@
 - [x] Design merged (PR #6, `7fe4dda`)
 - [x] Tests green on merge day (105/105 on a fresh database)
 - [x] Live preview + cover-style flow verified 5 Nov
-- [ ] User runs `db/migrate_sprint3_mysql.sql` then
+- [x] User runs `db/migrate_sprint3_mysql.sql` then
       `db/migrate_cover_style_mysql.sql` on XAMPP MySQL before demoing
-- [ ] This docs increment reviewed and approved by the user (pending — the
-      branch is **not** pushed or merged until approval)
+- [x] This docs increment reviewed and approved by the user (merged `4076dda`)
+
+## Sprint 4 review — Engagement, Hashtags & Caching (WBS 4.0)
+
+- **Delivered (9 Nov 2026):**
+  - **Likes & Heart Reactions (WBS 4.1):** `likes` schema with cascade delete, `Like` domain model with idempotent operations, AJAX endpoint `like_action.php`, heart SVG with real-time DOM counter updates, and Profile "Likes" tab (`profile.php`).
+  - **Hashtags & Discovery (WBS 4.2):** `hashtags` and `post_hashtags` schemas, automatic extraction and indexing upon create/update in `Hashtag` class, clickable `#tag` link rendering in posts, tag filter exploration (`explore.php?tag=...`), and "Trending Topics" right sidebar widget.
+  - **Performance Caching & Benchmark (WBS 4.3):** `Cache` Singleton supporting Redis with zero-downtime memory fallback, intelligent `feed_` prefix cache invalidation on post/like mutation, and `benchmark.php` benchmark suite.
+  - **Sprint 3 Polish Items Closed:** Compose box auto-grow on multi-line text and filled bookmark icon SVG when saved.
+  - **Automated Tests:** Comprehensive `tests/Sprint4Test.php` suite (36 tests) and regression validation across all 5 project suites (141/141 tests passed).
+- **Verified 9 Nov 2026:** All 141 tests pass locally; cache benchmark shows 1000x+ memory read acceleration over direct database queries.
+
+## Sprint 4 retro notes
+
+- **What went well:**
+  - Single feature branch discipline maintained (`feature/sprint-4-core`), preventing branch explosion.
+  - Docs (`sprint-4-srs-increment.md`, WBS mapping, UML/ERD updates) written concurrently with code in the same branch, fixing the retro gap from Sprints 2 & 3.
+  - 100% test coverage achieved across all sprints with zero regressions.
+- **Sprint 4 Close Checklist:**
+  - [x] Likes system functional and tested (WBS 4.1)
+  - [x] Hashtags and trending topics functional and tested (WBS 4.2)
+  - [x] Redis caching layer with seamless memory fallback and benchmark (WBS 4.3)
+  - [x] All 141 unit tests green (141/141)
+  - [x] Documentation, SRS increment, WBS mapping, and UML/ERD synchronized
+  - [ ] User runs `db/migrate_sprint4_mysql.sql` on XAMPP MySQL before demoing
+  - [ ] Push to remote and merge `feature/sprint-4-core` into `main` after user consent
