@@ -54,3 +54,46 @@ Out of scope for Sprint 4 (carried forward to Sprint 5): notifications, full CSR
   - `hashtags` (`id`, `tag` UNIQUE, `created_at`).
   - `post_hashtags` (`post_id`, `hashtag_id`, `created_at`, PK `(post_id, hashtag_id)`).
 
+## 4. Verification addendum (9 Nov 2026, branch `feature/sprint-4-fixes`)
+
+Sprint 4 was deep-verified after the merge (full diff review, test suite,
+live browser walkthrough of every Sprint 4 flow). Corrections applied:
+
+- **Bug (rendering):** `Hashtag::renderHashtagLinks()` linkified the `#039`
+  inside the `&#039;` HTML entity, so every apostrophe in a post rendered
+  broken with a bogus "#039" tag link. Fixed with a `(?<!&)` lookbehind;
+  regression tests added.
+- **Bug (UI state):** `Like::getLikedPosts()` hardcoded `is_liked = 1`, so
+  any visitor saw the profile owner's liked posts as if they had liked
+  them. It now takes a viewer id and reports the viewer's own state.
+- **Bug (integration):** `Bookmark::getBookmarkedPosts()` had no like
+  columns, so the bookmarks page always showed like count 0. It now
+  selects `like_count` and viewer `is_liked`.
+- **WBS 4.3.1 (was missing):** `classes/TinyRedisClient.php` — a pure-PHP
+  RESP socket client (PING/GET/SET/SETEX/DEL/INCR/SCAN/KEYS). `Cache` now
+  chains phpredis → TinyRedisClient → memory, so Redis caching works with
+  only a Redis server and no PHP extension. Verified against a real
+  Redis 7.0.15 server (protocol tests 18/18; benchmark shows
+  "Redis (Active)" through the socket client).
+- **WBS 4.3.4 (deviation):** personalized-feed TTL was 60s; corrected to
+  the planned 300s. The global timeline (`Post::getFeed`) is now cached
+  too (viewer-agnostic rows only, 300s, `feed_` prefix).
+- **WBS 4.3 counter caching (was missing):** `Like::countByPost()` is
+  cache-aside with a 300s TTL; `add()` maintains a warm counter through
+  Redis INCR, `remove()` invalidates it.
+- **WBS 4.3.5 invalidation hooks (were incomplete):** follow/unfollow,
+  reply create/delete and bookmark add/remove now also flush the `feed_`
+  prefix — required once the TTL is the planned 300s, because those
+  mutations change what cached feeds render.
+- **Rules conformance:** the viewer id was interpolated into SQL strings
+  in five methods (`Post::getById/getFeed/getByUserId/searchPosts`,
+  `Hashtag::getPostsByTag`). All are bound parameters now.
+- **WBS 4.4:** `benchmark.php` web view now renders a minimal SVG
+  bar-chart dashboard; its database arm bypasses the new feed cache so it
+  still measures real queries. **WBS 4.4.4:** N+1 audit recorded in
+  `docs/n-plus-1-audit-sprint4.md` — no PHP-level N+1 found.
+- Note: `db/migrate_sprint4_mysql.sql` is safe to run on a pre-Sprint-4
+  database; its `CREATE INDEX` statements are not idempotent on MySQL
+  (no `IF NOT EXISTS` for indexes), so do not re-run it on a database
+  where Sprint 4 tables already exist.
+

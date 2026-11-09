@@ -7,6 +7,8 @@
  * Uses PDO prepared statements throughout; the (follower_id, followed_id)
  * pair is unique so a follow is idempotent.
  */
+require_once __DIR__ . '/Cache.php';
+
 class Follow {
     private PDO $db;
 
@@ -34,7 +36,13 @@ class Follow {
         $stmt->bindParam(':followed_id', $followedId, PDO::PARAM_INT);
 
         try {
-            return $stmt->execute();
+            $ok = $stmt->execute();
+            if ($ok) {
+                // The follower's personalized feed membership changes:
+                // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
+                Cache::getInstance()->deleteByPrefix('feed_');
+            }
+            return $ok;
         } catch (PDOException $e) {
             // Duplicate pair raced in, or a foreign key failed (unknown user).
             error_log("Follow error: " . $e->getMessage());
@@ -57,7 +65,11 @@ class Follow {
         $stmt->bindParam(':followed_id', $followedId, PDO::PARAM_INT);
 
         try {
-            return $stmt->execute();
+            $ok = $stmt->execute();
+            if ($ok) {
+                Cache::getInstance()->deleteByPrefix('feed_');
+            }
+            return $ok;
         } catch (PDOException $e) {
             error_log("Unfollow error: " . $e->getMessage());
             return false;

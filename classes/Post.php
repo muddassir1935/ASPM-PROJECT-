@@ -112,8 +112,8 @@ class Post {
      */
     public function getById(int $postId, int $viewerId = 0) {
         $viewerSubquery = $viewerId > 0
-            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
-               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
             : ", 0 AS is_liked, 0 AS is_bookmarked";
 
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
@@ -128,8 +128,12 @@ class Post {
         
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $postId, PDO::PARAM_INT);
+        if ($viewerId > 0) {
+            $stmt->bindValue(':viewer_id', $viewerId, PDO::PARAM_INT);
+            $stmt->bindValue(':viewer_id2', $viewerId, PDO::PARAM_INT);
+        }
         $stmt->execute();
-        
+
         $post = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($post) {
             $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
@@ -145,33 +149,48 @@ class Post {
      * @param int $viewerId Optional viewer user ID
      * @return array List of posts with author details
      */
-    public function getFeed(int $limit = 50, int $offset = 0, int $viewerId = 0): array {
-        $viewerSubquery = $viewerId > 0
-            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
-               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
-            : ", 0 AS is_liked, 0 AS is_bookmarked";
+    public function getFeed(int $limit = 50, int $offset = 0, int $viewerId = 0, bool $bypassCache = false): array {
+        // Sprint 4 (WBS 4.3.4): the viewer-agnostic global timeline is cached
+        // for 5 minutes under the feed_ prefix; create/update/delete/like
+        // invalidate it. Viewer-specific rows (is_liked / is_bookmarked) are
+        // never shared across users, so calls with a viewer bypass the cache.
+        $runQuery = function() use ($limit, $offset, $viewerId) {
+            $viewerSubquery = $viewerId > 0
+                ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked,
+                   (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
+                : ", 0 AS is_liked, 0 AS is_bookmarked";
 
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
-                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
-                       (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
-                       {$viewerSubquery}
-                FROM posts p
-                JOIN users u ON p.user_id = u.id
-                WHERE p.deleted_at IS NULL
-                ORDER BY p.created_at DESC, p.id DESC
-                LIMIT :limit OFFSET :offset";
+            $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
+                           u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                           (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                           (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
+                           {$viewerSubquery}
+                    FROM posts p
+                    JOIN users u ON p.user_id = u.id
+                    WHERE p.deleted_at IS NULL
+                    ORDER BY p.created_at DESC, p.id DESC
+                    LIMIT :limit OFFSET :offset";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-        $stmt->execute();
+            $stmt = $this->db->prepare($sql);
+            if ($viewerId > 0) {
+                $stmt->bindValue(':viewer_id', $viewerId, PDO::PARAM_INT);
+                $stmt->bindValue(':viewer_id2', $viewerId, PDO::PARAM_INT);
+            }
+            $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+            $stmt->execute();
 
-        $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        foreach ($posts as &$post) {
-            $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
+            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($posts as &$post) {
+                $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
+            }
+            return $posts;
+        };
+
+        if ($viewerId === 0 && !$bypassCache) {
+            return Cache::getInstance()->remember("feed_global_{$limit}_{$offset}", 300, $runQuery);
         }
-        return $posts;
+        return $runQuery();
     }
 
     /**
@@ -185,8 +204,8 @@ class Post {
      */
     public function getByUserId(int $userId, int $limit = 50, int $offset = 0, int $viewerId = 0): array {
         $viewerSubquery = $viewerId > 0
-            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
-               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
             : ", 0 AS is_liked, 0 AS is_bookmarked";
 
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
@@ -202,6 +221,10 @@ class Post {
         
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        if ($viewerId > 0) {
+            $stmt->bindValue(':viewer_id', $viewerId, PDO::PARAM_INT);
+            $stmt->bindValue(':viewer_id2', $viewerId, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
@@ -313,7 +336,8 @@ class Post {
         $cacheKey = "feed_personalized_{$userId}_{$limit}_{$offset}";
         $cache = Cache::getInstance();
 
-        return $cache->remember($cacheKey, 60, function() use ($userId, $limit, $offset) {
+        // WBS 4.3.4: timeline cache TTL is 5 minutes (300s), not 60s.
+        return $cache->remember($cacheKey, 300, function() use ($userId, $limit, $offset) {
             $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
                            u.name AS author_name, u.email AS author_email, u.role AS author_role,
                            (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
@@ -368,8 +392,8 @@ class Post {
         $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
 
         $viewerSubquery = $viewerId > 0
-            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked,
-               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = {$viewerId}) AS is_bookmarked"
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
             : ", 0 AS is_liked, 0 AS is_bookmarked";
 
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
@@ -384,6 +408,10 @@ class Post {
                 LIMIT :limit OFFSET :offset";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':q', $like, PDO::PARAM_STR);
+        if ($viewerId > 0) {
+            $stmt->bindValue(':viewer_id', $viewerId, PDO::PARAM_INT);
+            $stmt->bindValue(':viewer_id2', $viewerId, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();

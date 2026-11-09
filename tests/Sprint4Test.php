@@ -12,6 +12,7 @@ require_once __DIR__ . '/../classes/Post.php';
 require_once __DIR__ . '/../classes/Like.php';
 require_once __DIR__ . '/../classes/Hashtag.php';
 require_once __DIR__ . '/../classes/Cache.php';
+require_once __DIR__ . '/../classes/Bookmark.php';
 
 $db = Database::getInstance()->getConnection();
 $userModel = new User($db);
@@ -164,6 +165,53 @@ $cache->set("feed_user_2", "feed2", 300);
 $cache->set("other_key", "keep", 300);
 $cache->deleteByPrefix("feed_");
 assertTest("deleteByPrefix() flushes prefixed keys", $cache->get("feed_user_1") === null && $cache->get("other_key") === "keep");
+
+echo PHP_EOL . "--- SPRINT 4 VERIFICATION FIXES (9 Nov 2026) ---" . PHP_EOL;
+
+// Apostrophes must survive hashtag rendering: htmlspecialchars turns ' into
+// the entity &#039; — the renderer must not linkify the "#039" inside it.
+$aposRendered = Hashtag::renderHashtagLinks(htmlspecialchars("It's #{$tagA} time, don't miss it"));
+assertTest("renderHashtagLinks keeps apostrophe entity intact", strpos($aposRendered, '&#039;') !== false && strpos($aposRendered, 'tag=039') === false);
+assertTest("renderHashtagLinks still linkifies real tags next to apostrophes", strpos($aposRendered, 'explore.php?tag=' . $tagA) !== false);
+
+// TinyRedisClient fails silently against an unreachable server (no phpredis
+// and no server must never break the app).
+$deadClient = new TinyRedisClient('127.0.0.1', 6398, 0.2);
+assertTest("TinyRedisClient dead server: ping false", $deadClient->ping() === false);
+assertTest("TinyRedisClient dead server: get null, set false", $deadClient->get('nope') === null && $deadClient->set('nope', 'x') === false);
+
+// Cached like counter (WBS 4.3): warms on read, increments on add,
+// invalidates on remove — and always agrees with the database.
+assertTest("Counter warms at 0 for unliked post", $likeModel->countByPost($postId2) === 0);
+$likeModel->add($liamId, $postId2);
+assertTest("Counter increments on like", $likeModel->countByPost($postId2) === 1);
+$likeModel->remove($liamId, $postId2);
+assertTest("Counter invalidates on unlike", $likeModel->countByPost($postId2) === 0);
+
+// Global feed is cached, and post creation invalidates it.
+$feedBefore = $postModel->getFeed(5, 0, 0);
+$freshPostId = $postModel->create($pennyId, "Fresh cache probe #{$tagA}");
+$feedAfter = $postModel->getFeed(5, 0, 0);
+assertTest("Global feed cache invalidated on create", (int)$feedAfter[0]['id'] === $freshPostId);
+
+// getLikedPosts: is_liked describes the VIEWER, not the list owner.
+$ownerView = $likeModel->getLikedPosts($liamId, 50, 0);
+$ownerRow = null;
+foreach ($ownerView as $row) { if ((int)$row['id'] === $postId1) { $ownerRow = $row; break; } }
+assertTest("Liked posts show is_liked=1 for the owner", $ownerRow !== null && (int)$ownerRow['is_liked'] === 1);
+$viewerView = $likeModel->getLikedPosts($liamId, 50, 0, $pennyId);
+$viewerRow = null;
+foreach ($viewerView as $row) { if ((int)$row['id'] === $postId1) { $viewerRow = $row; break; } }
+assertTest("Liked posts show is_liked=0 for a viewer who has not liked", $viewerRow !== null && (int)$viewerRow['is_liked'] === 0);
+
+// Bookmarked posts carry real like data for the bookmarks page.
+$bookmarkModel = new Bookmark($db);
+$bookmarkModel->add($liamId, $postId1);
+$bookmarked = $bookmarkModel->getBookmarkedPosts($liamId, 50, 0);
+$bmRow = null;
+foreach ($bookmarked as $row) { if ((int)$row['id'] === $postId1) { $bmRow = $row; break; } }
+assertTest("Bookmarked post shows real like_count", $bmRow !== null && (int)$bmRow['like_count'] === 2);
+assertTest("Bookmarked post shows viewer is_liked", $bmRow !== null && (int)$bmRow['is_liked'] === 1);
 
 echo PHP_EOL . "=== SPRINT 4 TEST RESULTS: {$passed} / {$total} PASSED ===" . PHP_EOL;
 if ($passed === $total) {

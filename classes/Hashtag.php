@@ -101,7 +101,10 @@ class Hashtag {
      */
     public static function renderHashtagLinks(string $escapedHtml): string {
         return preg_replace_callback(
-            '/#([a-zA-Z0-9_]{1,50})\b/u',
+            // (?<!&) is load-bearing: htmlspecialchars turns an apostrophe into
+            // the entity &#039; — without the lookbehind, "#039" would be
+            // linkified and every apostrophe in a post would render broken.
+            '/(?<!&)#([a-zA-Z0-9_]{1,50})\b/u',
             function ($matches) {
                 $rawTag = $matches[1];
                 $lowerTag = mb_strtolower($rawTag, 'UTF-8');
@@ -142,7 +145,7 @@ class Hashtag {
         }
 
         $viewerSubquery = $viewerId > 0
-            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = {$viewerId}) AS is_liked"
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked"
             : ", 0 AS is_liked";
 
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
@@ -160,6 +163,9 @@ class Hashtag {
 
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':tag', $cleanTag, PDO::PARAM_STR);
+        if ($viewerId > 0) {
+            $stmt->bindValue(':viewer_id', $viewerId, PDO::PARAM_INT);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
