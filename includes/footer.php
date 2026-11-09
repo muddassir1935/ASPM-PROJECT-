@@ -60,6 +60,36 @@
             .finally(function () { bookmarkBtn.disabled = false; });
             return;
         }
+
+        var likeBtn = event.target.closest('[data-like-toggle]');
+        if (likeBtn) {
+            event.preventDefault();
+            if (likeBtn.disabled) { return; }
+            likeBtn.disabled = true;
+            var postId = likeBtn.getAttribute('data-post-id');
+            fetch('like_action.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: 'post_id=' + encodeURIComponent(postId)
+            })
+            .then(function (r) { return r.json(); })
+            .then(function (data) {
+                if (!data.success) { return; }
+                document.querySelectorAll('[data-like-toggle][data-post-id="' + postId + '"]').forEach(function (btn) {
+                    btn.classList.toggle('is-liked', data.liked);
+                    var svg = btn.querySelector('svg');
+                    if (svg) {
+                        svg.setAttribute('fill', data.liked ? '#e0245e' : 'none');
+                    }
+                    var countSpan = btn.querySelector('.like-count');
+                    if (countSpan) {
+                        countSpan.textContent = data.like_count;
+                    }
+                });
+            })
+            .finally(function () { likeBtn.disabled = false; });
+            return;
+        }
     });
 
     // Sprint 3: follower / following modal toggle (profile page).

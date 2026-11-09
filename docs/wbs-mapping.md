@@ -82,16 +82,24 @@ Read "Tweet" in the WBS as "Post" in the code everywhere below.
 | 3.5 social tests | `tests/SocialTest.php` (49 tests) + `tests/SessionTest.php` (9 tests) | Done, `6cbe7d4` |
 | 3.6 docs increment | `docs/sprint-3-srs-increment.md`, retro + UML + mapping updates | Done, this docs increment |
 
-## Carried forward from Sprint 3 (approved, not Sprint 3 scope)
+## Sprint 4 coverage (WBS 4.0 → code)
 
-- Likes, hashtags, Redis caching — Sprint 4 (9–12 Nov). Sprint 4 needs a
-  real Redis server on the demo machine for the MySQL-vs-Redis benchmark;
-  the app keeps its graceful MySQL fallback.
-- Notifications, full security audit, seed data, deployment guide —
-  Sprint 5 (13–15 Nov).
-- Photo upload for covers/avatars — deferred by the user in favour of
-  cover styles; a later-sprint option only if asked.
-- Compose auto-grow + filled bookmark icon — small JS follow-ups accepted
-  as known minor gaps (see Sprint 3 SRS increment FR-3.4).
-- `SocialTest` 48/49 on a crowded test database — Sprint 5 test-database
-  cleanup list; fresh database gives 49/49.
+| WBS item | Implemented as | Status |
+|---|---|---|
+| 4.1 likes schema | `likes` table, composite PK `(user_id, post_id)`, indexes | Done (`db/schema.sql`, `db/migrate_sprint4_mysql.sql`) |
+| 4.1 Like class | `Like::add/remove/toggle/isLiked/countByPost/countByUser/getLikedPosts/getUsersWhoLiked` | Done (`classes/Like.php`) |
+| 4.1 like actions & UI | `like_action.php` AJAX handler, heart SVG, live counter, profile Likes tab | Done (`like_action.php`, `includes/social_widgets.php`, `profile.php`) |
+| 4.2 hashtags schema | `hashtags`, `post_hashtags` tables, unique tags | Done (`db/schema.sql`, `db/migrate_sprint4_mysql.sql`) |
+| 4.2 Hashtag class | `Hashtag::extractTags/syncPostTags/renderHashtagLinks/getTrending/getPostsByTag` | Done (`classes/Hashtag.php`) |
+| 4.2 hashtag UI & explore | Hashtag links in posts, `explore.php?tag=...` filtering, Trending Topics widget | Done (`includes/social_widgets.php`, `explore.php`, `index.php`) |
+| 4.3 Redis & memory caching | `Cache` Singleton, Redis support with graceful zero-downtime memory fallback | Done (`classes/Cache.php`) |
+| 4.3 cache invalidation | Automatic `feed_` prefix invalidation on post create/update/delete and like toggle | Done (`classes/Post.php`, `like_action.php`) |
+| 4.4 sprint 4 tests | `tests/Sprint4Test.php` (comprehensive unit tests for Likes, Hashtags, and Cache) | Done |
+| 4.5 docs increment | `docs/sprint-4-srs-increment.md` | Done |
+
+## Carried forward to Sprint 5 (13–15 Nov)
+
+- In-app Notifications (`notifications` table, header bell badge) — Sprint 5.
+- Full security audit & CSRF hardening — Sprint 5.
+- Realistic university seed data & demo fixtures — Sprint 5.
+- Final deployment guide & project retro — Sprint 5.

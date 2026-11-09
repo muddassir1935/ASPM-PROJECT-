@@ -21,7 +21,8 @@ $isBookmarked = false;
 if ($postId > 0) {
     $db = Database::getInstance()->getConnection();
     $postModel = new Post($db);
-    $post = $postModel->getById($postId);
+    $viewerId = $currentUser ? (int)$currentUser['id'] : 0;
+    $post = $postModel->getById($postId, $viewerId);
     if ($post) {
         $replyModel = new Reply($db);
         $replies = $replyModel->getByPostId($postId);
@@ -81,7 +82,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                 </div>
             </div>
 
-            <p class="detail-content"><?= htmlspecialchars($post['content']) ?></p>
+            <p class="detail-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($post['content'])) ?></p>
 
             <div class="detail-foot">
                 Posted on <?= htmlspecialchars($createdFormatted) ?>
@@ -93,6 +94,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
             <?php if ($currentUser): ?>
                 <div class="detail-actions">
                     <span class="action-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg><?= (int)($post['reply_count'] ?? 0) ?> repl<?= ((int)($post['reply_count'] ?? 0) === 1) ? 'y' : 'ies' ?></span>
+                    <button type="button" class="action-like <?= !empty($post['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$post['id'] ?>" aria-label="Like post"><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($post['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($post['like_count'] ?? 0) ?></span></button>
                     <span class="spacer" style="flex: 1;"></span>
                     <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$post['id'] ?>"><?= $isBookmarked ? 'Saved' : 'Save' ?></button>
                 </div>

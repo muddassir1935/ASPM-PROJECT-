@@ -87,6 +87,30 @@ class Database {
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
                 );
 
+                CREATE TABLE IF NOT EXISTS likes (
+                    user_id INTEGER NOT NULL,
+                    post_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (user_id, post_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
+                );
+
+                CREATE TABLE IF NOT EXISTS hashtags (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tag TEXT UNIQUE NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+                );
+
+                CREATE TABLE IF NOT EXISTS post_hashtags (
+                    post_id INTEGER NOT NULL,
+                    hashtag_id INTEGER NOT NULL,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    PRIMARY KEY (post_id, hashtag_id),
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+                    FOREIGN KEY (hashtag_id) REFERENCES hashtags(id) ON DELETE CASCADE
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
                 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_follows_followed_id ON follows(followed_id);
@@ -95,6 +119,9 @@ class Database {
                 CREATE INDEX IF NOT EXISTS idx_bookmarks_post_id ON bookmarks(post_id);
                 CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id);
                 CREATE INDEX IF NOT EXISTS idx_sessions_last_activity ON sessions(last_activity);
+                CREATE INDEX IF NOT EXISTS idx_likes_post_id ON likes(post_id);
+                CREATE INDEX IF NOT EXISTS idx_hashtags_tag ON hashtags(tag);
+                CREATE INDEX IF NOT EXISTS idx_post_hashtags_tag ON post_hashtags(hashtag_id);
             ");
 
             // Migrations for SQLite files created before Sprint 3:

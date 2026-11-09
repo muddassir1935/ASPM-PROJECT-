@@ -129,7 +129,8 @@ class PostController {
         }
 
         $role = $this->currentUser['role'] ?? 'student';
-        $deleted = $this->postModel->delete($postId, (int)$this->currentUser['id'], $role);
+        $isAdmin = ($role === 'admin');
+        $deleted = $this->postModel->delete($postId, (int)$this->currentUser['id'], $isAdmin);
 
         if ($deleted) {
             return [
