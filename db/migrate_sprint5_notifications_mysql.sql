@@ -1,5 +1,6 @@
 -- Sprint 5 Migration (WBS 5.x): Notifications System
 -- Run on an existing campusconnect MySQL database.
+-- Fresh installs do NOT need this: db/schema.sql already includes the table.
 
 CREATE TABLE IF NOT EXISTS notifications (
     id INT AUTO_INCREMENT PRIMARY KEY,

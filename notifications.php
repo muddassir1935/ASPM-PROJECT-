@@ -15,12 +15,13 @@ require_once 'classes/Auth.php';
 require_once 'classes/Notification.php';
 require_once 'includes/social_widgets.php';
 
-require_once 'includes/header.php';
-
-if (!$currentUser) {
+// Redirect before any output: header.php below starts sending HTML.
+if (!Auth::isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
+
+require_once 'includes/header.php';
 
 $db = Database::getInstance()->getConnection();
 $userId = (int)$currentUser['id'];

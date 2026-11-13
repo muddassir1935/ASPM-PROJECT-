@@ -45,22 +45,22 @@ class Notification {
         $sql = "INSERT INTO notifications (user_id, actor_id, type, reference_id, message, is_read, created_at)
                 VALUES (:user_id, :actor_id, :type, :reference_id, :message, 0, CURRENT_TIMESTAMP)";
 
-        $stmt = $this->db->prepare($sql);
-        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-        if ($actorId !== null && (int)$actorId > 0) {
-            $stmt->bindValue(':actor_id', (int)$actorId, PDO::PARAM_INT);
-        } else {
-            $stmt->bindValue(':actor_id', null, PDO::PARAM_NULL);
-        }
-        $stmt->bindParam(':type', $cleanType, PDO::PARAM_STR);
-        if ($referenceId !== null) {
-            $stmt->bindValue(':reference_id', (int)$referenceId, PDO::PARAM_INT);
-        } else {
-            $stmt->bindValue(':reference_id', null, PDO::PARAM_NULL);
-        }
-        $stmt->bindParam(':message', $cleanMessage, PDO::PARAM_STR);
-
         try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+            if ($actorId !== null && (int)$actorId > 0) {
+                $stmt->bindValue(':actor_id', (int)$actorId, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':actor_id', null, PDO::PARAM_NULL);
+            }
+            $stmt->bindParam(':type', $cleanType, PDO::PARAM_STR);
+            if ($referenceId !== null) {
+                $stmt->bindValue(':reference_id', (int)$referenceId, PDO::PARAM_INT);
+            } else {
+                $stmt->bindValue(':reference_id', null, PDO::PARAM_NULL);
+            }
+            $stmt->bindParam(':message', $cleanMessage, PDO::PARAM_STR);
+
             if ($stmt->execute()) {
                 return (int)$this->db->lastInsertId();
             }
@@ -157,7 +157,8 @@ class Notification {
         $stmt->bindParam(':id', $notificationId, PDO::PARAM_INT);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
 
-        return $stmt->execute();
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
     }
 
     /**
@@ -188,7 +189,8 @@ class Notification {
         $stmt->bindParam(':id', $notificationId, PDO::PARAM_INT);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
 
-        return $stmt->execute();
+        $stmt->execute();
+        return $stmt->rowCount() > 0;
     }
 
     /**

@@ -1,7 +1,8 @@
 -- =====================================================================
 -- CampusConnect Demo Seed Data (Sprint 5, Problem 12)
 -- Standard University Dataset for Evaluation, Demo, and Testing
--- Compatible with MySQL (XAMPP / MariaDB) and SQLite
+-- Compatible with MySQL only (XAMPP / MariaDB) — uses MySQL-only syntax
+-- (ON DUPLICATE KEY UPDATE, NOW() - INTERVAL), so it will NOT run on SQLite.
 -- =====================================================================
 
 -- Default password for all seed accounts: StrongPass123!

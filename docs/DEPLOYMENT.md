@@ -35,16 +35,15 @@ Open your browser and navigate to **phpMyAdmin** at [http://localhost/phpmyadmin
    ```
 2. Import the core schema:
    - Select `campusconnect` database &rarr; click **Import** tab.
-   - Choose file: `db/schema.sql` &rarr; click **Go**.
-3. Import the Sprint 5 Notifications migration:
-   - Choose file: `db/migrate_sprint5_notifications_mysql.sql` &rarr; click **Go**.
-4. Import the university seed data:
+   - Choose file: `db/schema.sql` &rarr; click **Go**. (This already includes the Sprint 5 `notifications` table — no separate migration needed on a fresh install.)
+3. Import the university seed data:
    - Choose file: `db/seed.sql` &rarr; click **Go**.
+
+> **Existing databases only:** if your `campusconnect` database was created before Sprint 5, run `db/migrate_sprint5_notifications_mysql.sql` once to add the `notifications` table. Do not run it on a fresh install — `schema.sql` already has the table.
 
 *(Or via command line in 5 seconds):*
 ```bash
 mysql -u root -p campusconnect < db/schema.sql
-mysql -u root -p campusconnect < db/migrate_sprint5_notifications_mysql.sql
 mysql -u root -p campusconnect < db/seed.sql
 ```
 
@@ -52,9 +51,9 @@ mysql -u root -p campusconnect < db/seed.sql
 Check [`config/Database.php`](file:///config/Database.php) to ensure credentials match your local MySQL server (default XAMPP credentials work out-of-the-box):
 ```php
 private $host = "localhost";
-private $db_name = "campusconnect";
-private $username = "root";
-private $password = "";
+private $db   = "campusconnect";
+private $user = "root";
+private $pass = "";
 ```
 
 ### Step 5: Open in Browser
@@ -101,15 +100,15 @@ The seed data (`db/seed.sql`) pre-configures realistic accounts representing all
 2. **Timeline Feed & Microblogging Engine**:
    - Compose a 280-character post with `#hashtags`.
    - Live character counter (`n / 280`) and auto-expanding textarea.
-   - Delete/edit controls available on your own posts; administrative moderation on admin login.
+   - Delete controls available on your own posts; administrative moderation on admin login.
 3. **Likes & Heart Reactions (WBS 4.1)**:
    - Click the heart icon on any post: instant AJAX reaction with live counter update.
    - Visit user profiles: check the dedicated **"Likes" tab** to see all liked posts.
 4. **Hashtags & Discovery (WBS 4.2)**:
    - Click any `#tag` link in post text (e.g., `#Hackathon2026`, `#FASTNUCES`) to filter posts.
    - Check the **Trending Topics** widget in the right rail.
-5. **Notifications Center & Live Bell Badge (WBS 5.x)**:
-   - Observe the bell icon in the top navbar displaying unread count badges.
+5. **Notifications Center & Bell Badge (WBS 5.x)**:
+   - Observe the bell icon in the top navbar displaying unread count badges (badge refreshes on page load).
    - Click bell to navigate to `notifications.php` (shows follower, like, and reply alerts).
    - Click "Mark all as read" or click individual notifications to clear unread badges.
 6. **Social Graph**:
@@ -134,9 +133,9 @@ php tests/PostTest.php          # 29 tests: Post CRUD, validation, soft-delete, 
 php tests/SocialTest.php        # 49 tests: Follows, personalized feed, replies, bookmarks
 php tests/SessionTest.php       #  9 tests: DB-backed session handler & GC
 php tests/Sprint4Test.php       # 48 tests: Likes, hashtags, cache invalidation, Redis fallback
-php tests/NotificationTest.php   # 25 tests: Notifications model, unread counts, social triggers
+php tests/NotificationTest.php   # 28 tests: Notifications model, unread counts, social triggers
 ```
-**Total: 178 / 178 Tests Passing (100% Green)**.
+**Total: 181 / 181 Tests Passing (100% Green)**.
 
 ---
 

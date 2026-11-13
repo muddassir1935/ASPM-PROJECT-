@@ -86,7 +86,8 @@ assertTest("listUnread includes actor details and relative time",
 
 // 5. Mark as Read & Single Mark
 echo PHP_EOL . "--- MARK READ & MARK ALL READ ---" . PHP_EOL;
-assertTest("Intruder cannot mark another user notification as read", $notifModel->markRead($notifId1, $ianId) === false || $notifModel->countUnread($taraId) === $initialCount + 3);
+assertTest("Intruder markRead returns false for another user's notification", $notifModel->markRead($notifId1, $ianId) === false);
+assertTest("Unread count unchanged after intruder markRead attempt", $notifModel->countUnread($taraId) === $initialCount + 3);
 
 $markedOne = $notifModel->markRead($notifId1, $taraId);
 assertTest("Recipient can mark single notification as read", $markedOne === true);
@@ -104,6 +105,10 @@ echo PHP_EOL . "--- DELETE NOTIFICATION ---" . PHP_EOL;
 $notifId4 = $notifModel->create($taraId, 'test', 99, 'Test to delete', $adamId);
 assertTest("Created test notification to delete", is_int($notifId4));
 assertTest("Recipient can delete notification", $notifModel->delete($notifId4, $taraId) === true);
+
+$notifId5 = $notifModel->create($taraId, 'test', 100, 'Test intruder delete', $adamId);
+assertTest("Intruder delete returns false for another user's notification", $notifModel->delete($notifId5, $ianId) === false);
+assertTest("Recipient can delete notification after intruder attempt", $notifModel->delete($notifId5, $taraId) === true);
 
 // 7. Live Social Trigger Integration Tests
 echo PHP_EOL . "--- SOCIAL TRIGGER INTEGRATION TESTS ---" . PHP_EOL;
