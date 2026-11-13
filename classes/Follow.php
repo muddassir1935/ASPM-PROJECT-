@@ -41,6 +41,20 @@ class Follow {
                 // The follower's personalized feed membership changes:
                 // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
                 Cache::getInstance()->deleteByPrefix('feed_');
+
+                // Sprint 5 (WBS 5.x): Notify followed user
+                try {
+                    require_once __DIR__ . '/Notification.php';
+                    $uStmt = $this->db->prepare("SELECT name FROM users WHERE id = :id LIMIT 1");
+                    $uStmt->bindParam(':id', $followerId, PDO::PARAM_INT);
+                    $uStmt->execute();
+                    $followerName = $uStmt->fetchColumn() ?: 'Someone';
+
+                    $notif = new Notification($this->db);
+                    $notif->create($followedId, Notification::TYPE_FOLLOW, $followerId, "{$followerName} started following you.", $followerId);
+                } catch (Throwable $t) {
+                    error_log("Follow notification error: " . $t->getMessage());
+                }
             }
             return $ok;
         } catch (PDOException $e) {

@@ -13,18 +13,32 @@ require_once __DIR__ . '/../classes/Hashtag.php';
  */
 function renderLeftNav(string $active): void {
     $viewerId = isset($GLOBALS['currentUser']['id']) ? (int)$GLOBALS['currentUser']['id'] : 0;
+    $unreadCount = 0;
+    if ($viewerId > 0) {
+        try {
+            require_once __DIR__ . '/../classes/Notification.php';
+            $navDb = isset($GLOBALS['db']) ? $GLOBALS['db'] : Database::getInstance()->getConnection();
+            $unreadCount = (new Notification($navDb))->countUnread($viewerId);
+        } catch (Throwable $e) {}
+    }
+
     $svgAttrs = 'viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"';
     $links = [
-        'home' => ['index.php', 'Home', '<svg ' . $svgAttrs . '><path d="M4 11.5 12 4l8 7.5"/><path d="M6.5 9.5V20h11V9.5"/><path d="M10 20v-5h4v5"/></svg>'],
-        'explore' => ['explore.php', 'Explore', '<svg ' . $svgAttrs . '><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5Z"/></svg>'],
-        'bookmarks' => ['bookmarks.php', 'Bookmarks', '<svg ' . $svgAttrs . '><path d="M7 3.5h10V20l-5-3.8L7 20Z"/></svg>'],
-        'profile' => [$viewerId ? 'profile.php?id=' . $viewerId : 'login.php', 'Profile', '<svg ' . $svgAttrs . '><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.4 3.6-5 7-5s6.2 1.6 7 5"/></svg>'],
+        'home' => ['index.php', 'Home', '<svg ' . $svgAttrs . '><path d="M4 11.5 12 4l8 7.5"/><path d="M6.5 9.5V20h11V9.5"/><path d="M10 20v-5h4v5"/></svg>', 0],
+        'explore' => ['explore.php', 'Explore', '<svg ' . $svgAttrs . '><circle cx="12" cy="12" r="8.5"/><path d="M15.5 8.5 13.5 13.5 8.5 15.5 10.5 10.5Z"/></svg>', 0],
+        'notifications' => ['notifications.php', 'Notifications', '<svg ' . $svgAttrs . '><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>', $unreadCount],
+        'bookmarks' => ['bookmarks.php', 'Bookmarks', '<svg ' . $svgAttrs . '><path d="M7 3.5h10V20l-5-3.8L7 20Z"/></svg>', 0],
+        'profile' => [$viewerId ? 'profile.php?id=' . $viewerId : 'login.php', 'Profile', '<svg ' . $svgAttrs . '><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.4 3.6-5 7-5s6.2 1.6 7 5"/></svg>', 0],
     ];
     echo '<nav class="col-nav" aria-label="Section">';
-    foreach ($links as $key => [$href, $label, $icon]) {
+    foreach ($links as $key => [$href, $label, $icon, $badge]) {
         $isActive = $key === $active ? ' nav-col-active' : '';
         echo '<a href="' . htmlspecialchars($href) . '" class="nav-col-link' . $isActive . '">'
-            . $icon . '<span>' . htmlspecialchars($label) . '</span></a>';
+            . $icon . '<span>' . htmlspecialchars($label) . '</span>';
+        if ($key === 'notifications') {
+            echo '<span class="nav-badge" data-notif-badge style="' . ($badge > 0 ? '' : 'display:none;') . '">' . ($badge > 99 ? '99+' : (int)$badge) . '</span>';
+        }
+        echo '</a>';
     }
     echo '</nav>';
 }
