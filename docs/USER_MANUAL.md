@@ -57,7 +57,7 @@ This user manual walks you through all features available to standard student us
 1. Go to `login.php` or click **Log In** from the top header.
 2. Provide your registered email address and password.
 3. Click **Sign In**.
-4. Sessions are securely tracked via database-backed sessions with anti-hijacking IP and user-agent binding.
+4. Sessions are stored server-side in the database (`DbSessionHandler`) and invalidated on logout. Session IDs are regenerated on login to prevent session fixation.
 
 ### 1.3 Logging Out
 To protect your account, especially when using shared campus lab computers or public Wi-Fi:

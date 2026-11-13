@@ -10,6 +10,10 @@ import matplotlib.patches as patches
 
 def generate_all_figures():
     # 1. Benchmark Chart
+    # NOTE: the latency values below are ILLUSTRATIVE (no MySQL benchmark run
+    # exists yet — the demo machine has no MySQL). The measured figure from the
+    # Sprint 4 verification is a 532x speedup; re-run benchmark.php on the demo
+    # machine and replace these numbers with measured values before final use.
     fig, ax = plt.subplots(figsize=(7, 3.2), dpi=200)
     categories = ['Direct MySQL DB', 'Redis Cache (Socket)', 'Memory Fallback']
     latencies = [2.450, 0.045, 0.012]
@@ -20,6 +24,8 @@ def generate_all_figures():
     for bar, val in zip(bars, latencies):
         ax.text(val + 0.08, bar.get_y() + bar.get_height()/2, f'{val:.3f} ms', va='center', fontweight='bold', fontsize=9.5, color='#0F1419')
     ax.set_xlim(0, 3.2)
+    ax.text(0.0, -0.22, 'Illustrative values — measured speedup 532x (Sprint 4 verification, benchmark.php).',
+            transform=ax.transAxes, fontsize=8, style='italic', color='#536471')
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['left'].set_color('#CFD9DE')
@@ -30,11 +36,15 @@ def generate_all_figures():
     plt.close()
 
     # 2. Sprint Velocity & Cumulative Tests
+    # NOTE: story points were never tracked during the sprints — the values
+    # below are RETROSPECTIVE ESTIMATES, labelled as such on the chart.
+    # Test counts are real totals; the 141 -> 153 step came from the Sprint 4
+    # verification pass (PR #8, 12 regression tests), not from Sprint 5 work.
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.8), dpi=140)
     sprints = ['Sprint 1\n(Auth)', 'Sprint 2\n(Posts)', 'Sprint 3\n(Social)', 'Sprint 4\n(Cache/Likes)', 'Sprint 5\n(Polish/Hardening)']
     story_points = [8, 13, 21, 21, 15]
     ax1.bar(sprints, story_points, color='#2B3FE0', width=0.48)
-    ax1.set_title('Sprint Story Points Delivered (Velocity)', fontsize=10, fontweight='bold', color='#0F1419')
+    ax1.set_title('Sprint Story Points (retrospective estimates)', fontsize=10, fontweight='bold', color='#0F1419')
     ax1.set_ylabel('Completed Story Points', fontsize=9, fontweight='bold')
     ax1.spines['top'].set_visible(False)
     ax1.spines['right'].set_visible(False)
@@ -53,6 +63,8 @@ def generate_all_figures():
         ax2.text(i, v + 4, str(v), ha='center', fontweight='bold', fontsize=9, color='#177245')
     ax2.set_ylim(0, 180)
     ax2.grid(axis='y', linestyle='--', alpha=0.4)
+    fig.text(0.5, -0.02, 'Test totals are real; the 141→153 step is the Sprint 4 verification pass (PR #8).',
+             ha='center', fontsize=8, style='italic', color='#536471')
     plt.tight_layout()
     plt.savefig('docs/figures/sprint_velocity.png', dpi=140)
     plt.close()

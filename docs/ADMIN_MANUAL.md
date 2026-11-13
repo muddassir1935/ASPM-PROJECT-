@@ -28,6 +28,8 @@ This manual provides authoritative operational documentation for **Society Admin
 
 CampusConnect implements an Agile Role-Based Access Control (RBAC) model configured in the database via the `users.role` enum/varchar column:
 
+> **RBAC status (13 Nov 2026):** the role model, central permission map and 30-minute idle timeout are built on the `feature/sprint-5-rbac` branch (commit `748f65d`) and land in main with that branch (due 15 Nov). The admin panel, society-announcement toggle, CSRF tokens and login rate-limit are still in progress on the same branch. On main today the roles are still `student` / `society` / `admin`, and only admin delete of others' posts/replies is enforced.
+
 | Privilege / Action | Student (`student`) | Society Admin (`society_admin`) | System Admin (`system_admin`) |
 |---|:---:|:---:|:---:|
 | Read Timelines & Explore | Granted | Granted | Granted |
@@ -37,7 +39,9 @@ CampusConnect implements an Agile Role-Based Access Control (RBAC) model configu
 | Soft-Delete Any User's Post (Moderation) | **Denied** | **Denied** | **Granted** |
 | Soft-Delete Any User's Reply | **Denied** | **Denied** | **Granted** |
 | View Admin Panel & User Role Editor | **Denied** | **Denied** | **Granted** |
-| Trigger Manual Cache Flush / Benchmarks | **Denied** | **Denied** | **Granted** |
+| View Benchmark Dashboard (`benchmark.php`) | Granted | Granted | Granted |
+
+*Note: the Admin Panel & User Role Editor and the Society Announcement toggle land with the `feature/sprint-5-rbac` branch (due 15 Nov); they are not in main yet.*
 
 All authorization decisions execute server-side within the domain classes (`PostController`, `Post`, `Reply`, `User`, `Auth`) using strict PDO queries. Front-end hidden buttons are never treated as security boundaries.
 
@@ -48,6 +52,9 @@ All authorization decisions execute server-side within the domain classes (`Post
 Society Administrators represent officially registered student societies, student councils, and academic departments (e.g., Computing Society, Debating Club, Sports Directorate).
 
 ### 2.1 Broadcasting Official Society Announcements
+
+> **In progress** — the announcement toggle lands with the `feature/sprint-5-rbac` branch (due 15 Nov). The flow below describes the planned behaviour once that branch merges.
+
 1. When logged in as a `society_admin`, the compose form on `index.php` unlocks the **Society Announcement** toggle.
 2. Composing an announcement marks the post with an official announcement badge and highlights the border with the university accent style.
 3. Official announcements receive priority distribution in the Explore section and appear with high-visibility markers across student followers' feeds.
@@ -65,31 +72,34 @@ System Administrators hold supreme technical and moderation authority across the
 
 ### 3.1 Global Content Moderation
 CampusConnect operates a zero-tolerance policy for academic dishonesty, harassment, or Terms of Service violations:
-- **Soft-Delete Any Post**: System admins can see a red **Delete Post** button on every post across feeds and detail views (`post.php?id=X`). Clicking it sets `deleted_at = CURRENT_TIMESTAMP`, instantly hiding the post from all public and user feeds.
+- **Soft-Delete Any Post**: System admins can see a red **Delete Post** button on the post detail page (`post.php?id=X`). Clicking it sets `deleted_at = CURRENT_TIMESTAMP`, instantly hiding the post from all public and user feeds. (Feed cards have no admin delete button — moderation happens from the detail page.)
 - **Soft-Delete Any Reply**: Admin accounts possess full privilege to moderate abusive replies on thread detail pages.
 - **Audit Trails**: Soft-deleted records remain intact in the database for legal and academic disciplinary review. Soft-deleted content is never purged by normal application flows.
 
 ### 3.2 User Role Governance
-To upgrade a student to a Society Admin or System Admin:
+To upgrade a student to a Society Admin or System Admin (there is no admin console yet — roles are changed by direct SQL):
+
+> **Applies only after the RBAC migration.** The role values `society_admin` / `system_admin` exist only on the `feature/sprint-5-rbac` branch. On main today the role column is `ENUM('student','admin','society')` — use `'society'` / `'admin'` there instead.
+
 ```sql
--- Upgrading a verified society account:
+-- Upgrading a verified society account (after the RBAC migration):
 UPDATE users 
 SET role = 'society_admin' 
 WHERE email = 'computing.society@campus.edu.pk';
 
--- Appointing a platform administrator:
+-- Appointing a platform administrator (after the RBAC migration):
 UPDATE users 
 SET role = 'system_admin' 
 WHERE email = 'lead.admin@campus.edu.pk';
 ```
-*Note: Any role mutation takes effect immediately on the user's next authenticated request.*
+*Note: on main today a role change takes effect on the user's next login (the session role is not refreshed). After the RBAC merge, the role is refreshed on the next request.*
 
 ### 3.3 Database Session & Security Management
 - Sessions are maintained in the `sessions` table by `DbSessionHandler`.
 - Anti-Fixation & Anti-Hijacking: Sessions are regenerated upon every authentication state change.
 - Automated Garbage Collection: Expired sessions are periodically pruned during `session_start()`. To run a manual purge:
   ```sql
-  DELETE FROM sessions WHERE access < (UNIX_TIMESTAMP() - 86400);
+  DELETE FROM sessions WHERE last_activity < (UNIX_TIMESTAMP() - 86400);
   ```
 
 ---
@@ -104,7 +114,7 @@ php benchmark.php
 The dashboard runs comparative stress iterations of the timeline feed query (limit 20) measuring:
 1. **Direct DB**: Average raw SQL query execution latency (ms).
 2. **Cached**: Latency of responses served from the cache layer.
-3. **Speedup Ratio**: Acceleration factor (typically **50x – 1000x** speedup).
+3. **Speedup Ratio**: Acceleration factor (measured **532×** in the Sprint 4 verification).
 
 ### 4.2 Redis vs. Memory Fallback Diagnostics
 CampusConnect uses a multi-tier caching strategy (`classes/Cache.php`):
@@ -116,37 +126,44 @@ CampusConnect uses a multi-tier caching strategy (`classes/Cache.php`):
 ### 4.3 Cache Invalidation Life-Cycle
 The caching layer automatically maintains consistency:
 - Mutations (`Post::create`, `Post::update`, `Post::delete`) invoke `Cache::getInstance()->deleteByPrefix('feed_')`.
-- Engagement events (`Like::toggle`, `Follow::toggle`, `Bookmark::toggle`) flush relevant cached timeline segments to prevent stale engagement counters.
+- Engagement events (`Follow::toggle`, `Bookmark::toggle`) flush relevant cached timeline segments to prevent stale engagement counters. `Like::toggle` updates the cached like counter directly instead of flushing the feed — the anonymous/global feed `like_count` can sit stale up to the 300s TTL.
 
 ---
 
 ## 5. Database Migrations & Maintenance
 
 ### 5.1 Migration Sequence Guide
-When setting up a new server or upgrading an existing instance, execute SQL scripts strictly in chronological sequence:
-1. `db/schema.sql` — Base schema (Users, Posts, Sessions).
-2. `db/migrate_sprint3_mysql.sql` — Follows, Bookmarks, Replies.
-3. `db/migrate_cover_style_mysql.sql` — User profile cover style attribute.
-4. `db/migrate_sprint4_mysql.sql` — Likes, Hashtags, Post-Hashtags taxonomy.
-5. `db/migrate_sprint5_notifications_mysql.sql` — In-app activity notifications.
+
+**Fresh install (new server, empty database): run `db/schema.sql` ONLY.** It already contains all 10 tables (users, posts, follows, replies, bookmarks, sessions, likes, hashtags, post_hashtags, notifications) with all indexes. Do NOT run any `migrate_*.sql` file afterwards — the tables and indexes already exist, so the migrations error out.
+
+**Upgrading an existing database** created before a sprint: run only the migration(s) for the sprints newer than that database, in chronological order:
+
+1. `db/migrate_sprint3_mysql.sql` — Follows, Bookmarks, Replies (only if the DB predates Sprint 3).
+2. `db/migrate_cover_style_mysql.sql` — User profile cover style attribute (only if the DB predates it).
+3. `db/migrate_sprint4_mysql.sql` — Likes, Hashtags, Post-Hashtags taxonomy (only if the DB predates Sprint 4).
+4. `db/migrate_sprint5_notifications_mysql.sql` — In-app activity notifications (only if the DB predates Sprint 5).
 
 ### 5.2 Seed Data Ingestion
-To populate realistic university test fixtures for accreditation demonstrations or staging:
+To populate realistic university test fixtures for accreditation demonstrations or staging (run after `db/schema.sql` on a fresh install):
 ```bash
-mysql -u root -p campus_connect < db/seed.sql
+mysql -u root -p campusconnect < db/seed.sql
 ```
-This loads verified demo accounts:
-- `admin@campus.edu.pk` (System Admin, Password: `Password123!`)
-- `society@campus.edu.pk` (Society Admin, Password: `Password123!`)
-- `student1@campus.edu.pk`, `student2@campus.edu.pk` (Students, Password: `Password123!`)
+This loads the verified demo accounts from `db/seed.sql` (all with password `StrongPass123!`):
+- `admin@nu.edu.pk` — Campus Administrator (System Admin, role `admin`)
+- `society@nu.edu.pk` — ACM NUCES Chapter (Society, role `society`)
+- `ieee@nu.edu.pk` — IEEE Student Branch (Society, role `society`)
+- `student@nu.edu.pk` — Ali Ahmed (Student)
+- `zainab@nu.edu.pk` — Zainab Malik (Student)
+- `bilal@nu.edu.pk` — Bilal Khan (Student)
+- `sara@nu.edu.pk` — Sara Tariq (Student)
 
 ### 5.3 Backup & Disaster Recovery Procedures
 Recommended nightly backup job:
 ```bash
 # Dump full database including schema and data
-mysqldump -u root -p --single-transaction --quick campus_connect > backup_$(date +%Y%m%d).sql
+mysqldump -u root -p --single-transaction --quick campusconnect > backup_$(date +%Y%m%d).sql
 ```
 To restore from backup:
 ```bash
-mysql -u root -p campus_connect < backup_20261113.sql
+mysql -u root -p campusconnect < backup_20261113.sql
 ```

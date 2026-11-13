@@ -68,7 +68,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         ("Academic Period:", "Fall Semester 2026 (Sprints 1–5 Delivered October–November 2026)"),
         ("Final Delivery Date:", "Sunday, 15 November 2026"),
         ("Core Stack:", "Native PHP 8.2+ (Strict OOP), MySQL (PDO), Redis / Socket Client, CSS3 Design System"),
-        ("Automated Tests:", "153 / 153 Passing Automated Unit & Regression Tests (100% Green)")
+        ("Automated Tests:", "181 / 181 Passing Automated Unit & Regression Tests (100% Green)")
     ]
 
     my = 445
@@ -82,9 +82,9 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p1.insert_text(fitz.Point(75, my + 32), "CONTRIBUTING TEAM MEMBERS & ROLES", fontsize=11, fontname="helv", color=ACCENT)
 
     authors = [
-        ("Muddassir", "Technical Lead & Core Architecture", "Sprints 1–3 Backend/UI, Sprint 4 Redis fixes, Sprint 5 RBAC & Release (26 Commits)"),
-        ("Faiz Hussain", "Backend & Quality Assurance Lead", "Sprint 4 Core Likes, Hashtags & Caching Layer; Sprint 5 Notifications & Seed SQL (4 Commits)"),
-        ("Qaim", "Frontend & Documentation Lead", "Sprint 5 Responsive Polish (360px/tablet), Full Documentation Suite, Presentation & Final Report")
+        ("Muddassir", "Technical Lead & Core Architecture", "Sprints 1–3 Backend/UI, Sprint 4 Redis fixes, Sprint 5 RBAC & Release (27 Commits on main)"),
+        ("Faiz Hussain", "Backend & Quality Assurance Lead", "Sprint 4 Core Likes, Hashtags & Caching Layer; Sprint 5 Notifications & Seed SQL (7 Commits on main)"),
+        ("Qaim", "Frontend & Documentation Lead", "Sprint 5 Responsive Polish (360px/tablet), Full Documentation Suite, Presentation & Final Report (4 Sprint 5 Commits)")
     ]
 
     ay = my + 56
@@ -109,9 +109,10 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "according to Agile Software Project Management (ASPM) principles. Across five intensive two-week sprints, the team\n"
         "architected a clean PHP 8 Object-Oriented platform that resolves campus communication fragmentation.\n\n"
         "Key highlights include: a 280-character posting engine, idempotent likes, automated hashtag taxonomy, a zero-downtime\n"
-        "pure-PHP socket Redis caching layer delivering 50x–1000x latency acceleration, database-backed session security,\n"
-        "in-app activity notifications, granular Role-Based Access Control (RBAC), and responsive polish down to 360px mobile viewports.\n"
-        "Every phase was reinforced with test-driven discipline, culminating in 153 passing automated unit tests."
+        "pure-PHP socket Redis caching layer delivering a measured 532x latency acceleration (Sprint 4 verification),\n"
+        "database-backed session security, in-app activity notifications, role-based access control (RBAC core built;\n"
+        "admin panel and hardening in progress for the 15 Nov release), and responsive polish down to 360px mobile viewports.\n"
+        "Every phase was reinforced with test-driven discipline, culminating in 181 passing automated unit tests."
     )
     p2.insert_textbox(fitz.Rect(65, 130, 530, 225), summary_text, fontsize=8.5, fontname="helv", color=INK)
 
@@ -182,11 +183,11 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
 
     sec1_table_text = (
         "1.4 Sprint Cadence Overview\n"
-        "• Sprint 1 (6–21 Oct 2026): Auth OOP foundation, Database Singleton, SQLite fallback, UserTest (18 tests).\n"
+        "• Sprint 1 (6–21 Oct 2026): Auth OOP foundation, Database Singleton, SQLite fallback, UserTest (17 tests).\n"
         "• Sprint 2 (22 Oct – 3 Nov 2026): Chirp engine, 280-char validation, timeline pagination, soft-delete, PostTest (29 tests).\n"
         "• Sprint 3 (4–6 Nov 2026): Follows, replies, bookmarks, DB sessions, design system, SocialTest & SessionTest (58 tests).\n"
         "• Sprint 4 (7–9 Nov 2026): AJAX likes, hashtag indexing, TinyRedisClient, Cache layer, benchmark, Sprint4Test (48 tests).\n"
-        "• Sprint 5 (13–15 Nov 2026): Notifications, RBAC roles, security CSRF hardening, 360px mobile polish, final release."
+        "• Sprint 5 (13–15 Nov 2026): Notifications (28 tests), RBAC roles, security hardening, 360px mobile polish, final release."
     )
     p3.insert_textbox(fitz.Rect(50, 555, 545, 780), sec1_table_text, fontsize=8.5, fontname="helv", color=INK)
 
@@ -226,8 +227,8 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         ("WBS 4.3", "Redis Caching & Pure Socket Client", "classes/Cache.php, classes/TinyRedisClient.php", "Complete (S4)"),
         ("WBS 4.4", "Performance Benchmarking Suite", "benchmark.php, docs/n-plus-1-audit-sprint4.md", "Complete (S4)"),
         ("WBS 5.1", "In-App Notifications & Badges", "classes/Notification.php, notifications.php, badge", "Complete (S5)"),
-        ("WBS 5.2", "RBAC & Society Announcements", "User roles (student, society, admin), admin panel", "Complete (S5)"),
-        ("WBS 5.3", "Anti-CSRF & Rate-Limiting", "Session synchronizer tokens, login lockout", "Complete (S5)"),
+        ("WBS 5.2", "RBAC & Society Announcements", "Authorization map, roles (student, society_admin, system_admin)", "In Progress (S5)"),
+        ("WBS 5.3", "Anti-CSRF & Rate-Limiting", "Session synchronizer tokens, login lockout, idle timeout", "In Progress (S5)"),
         ("WBS 5.4", "Responsive Polish down to 360px", "includes/header.php, touch navigation, micro-anim", "Complete (S5)"),
         ("WBS 5.5", "Seed Data & 5-Min Deployment", "db/seed.sql, docs/DEPLOYMENT.md", "Complete (S5)")
     ]
@@ -294,7 +295,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     erd_intro = (
         "4.1 Schema Evolution from Sprint 1 to Sprint 5\n"
         "The relational database schema evolved gracefully without destructive alterations. The baseline authentication\n"
-        "schema (Sprint 1) expanded to 9 normalized tables enforcing strict referential integrity (ON DELETE CASCADE) and\n"
+        "schema (Sprint 1) expanded to 10 normalized tables enforcing strict referential integrity (ON DELETE CASCADE) and\n"
         "covering indexes for sub-millisecond query execution."
     )
     p6.insert_textbox(fitz.Rect(50, 95, 545, 145), erd_intro, fontsize=8.5, fontname="helv", color=INK)
@@ -305,7 +306,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
 
     schema_dict = (
         "4.2 Relational Data Dictionary\n"
-        "• users: Core identity table. id (PK), name, email (UNIQUE), password_hash, role (student/society/admin), cover_style, bio.\n"
+        "• users: Core identity table. id (PK), name, email (UNIQUE), password_hash, role (student/society/admin on main; student/society_admin/system_admin after the Sprint 5 RBAC migration), cover_style, bio.\n"
         "• posts: Microblog chirps. id (PK), user_id (FK), content (VARCHAR 280), created_at, updated_at, deleted_at (soft-delete).\n"
         "• follows: Social graph. follower_id (FK), followed_id (FK), created_at. Composite PK (follower_id, followed_id).\n"
         "• replies: Discussion threads. id (PK), post_id (FK), user_id (FK), content, created_at, deleted_at.\n"
@@ -337,7 +338,8 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p7.insert_textbox(fitz.Rect(50, 95, 545, 215), perf_text, fontsize=8.5, fontname="helv", color=INK)
 
     if os.path.exists('docs/figures/benchmark_chart.png'):
-        p7.insert_text(fitz.Point(50, 225), "Figure 4: Query Latency Benchmark — Direct MySQL vs. Redis & Memory Cache", fontsize=9.5, fontname="helv", color=ACCENT)
+        p7.insert_text(fitz.Point(50, 225), "Figure 4: Query Latency Benchmark — Direct MySQL vs. Redis & Memory Cache (illustrative values;", fontsize=9.5, fontname="helv", color=ACCENT)
+        p7.insert_text(fitz.Point(50, 237), "measured speedup 532x — see benchmark.php)", fontsize=9.5, fontname="helv", color=ACCENT)
         p7.insert_image(fitz.Rect(50, 235, 545, 455), filename='docs/figures/benchmark_chart.png')
 
     nplus1_text = (
@@ -368,20 +370,23 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "   bound via PDO prepared statements with explicit parameter data types, neutralizing SQL injection vectors.\n"
         "3. Cross-Site Scripting (XSS) Sanitization: All dynamic output is escaped with htmlspecialchars(..., ENT_QUOTES, 'UTF-8').\n"
         "   In Sprint 4, a regex negative lookbehind ((?<!&)) was introduced to prevent mangling HTML entities like &#039; into fake tags.\n"
-        "4. Anti-CSRF Synchronizer Tokens: All state-mutating POST requests (post, reply, like, follow, bookmark, profile edit)\n"
-        "   validate a cryptographically secure 32-byte pseudo-random token (bin2hex(random_bytes(32))) matched using hash_equals().\n"
-        "5. Session Fixation & Hijacking Defense: The custom DbSessionHandler regenerates session IDs upon login and validates\n"
-        "   browser user-agents and IP signatures. Unauthenticated sessions cannot access member endpoints.\n"
-        "6. Login Brute-Force Rate Limiting: Failed login attempts are throttled per IP/Email; 5 failed attempts trigger a 15-minute lockout."
+        "4. Anti-CSRF Synchronizer Tokens (in progress — Sprint 5 RBAC branch, due 15 Nov): All state-mutating POST requests\n"
+        "   (post, reply, like, follow, bookmark, profile edit) will validate a cryptographically secure 32-byte pseudo-random\n"
+        "   token (bin2hex(random_bytes(32))) matched using hash_equals().\n"
+        "5. Session Fixation Defense: The custom DbSessionHandler regenerates session IDs upon login. Unauthenticated sessions\n"
+        "   cannot access member endpoints. Sessions are stored server-side in the database.\n"
+        "6. Login Brute-Force Rate Limiting (in progress — Sprint 5 RBAC branch, due 15 Nov): Failed login attempts will be\n"
+        "   throttled per IP/Email; 5 failed attempts trigger a 15-minute lockout."
     )
     p8.insert_textbox(fitz.Rect(50, 95, 545, 330), sec_text, fontsize=8.5, fontname="helv", color=INK)
 
-    # RBAC Table
+    # RBAC Table (target permissions — enforced by the Sprint 5 RBAC branch, due 15 Nov)
     p8.insert_text(fitz.Point(50, 350), "6.2 Role-Based Access Control (RBAC) Permissions Matrix", fontsize=11, fontname="helv", color=ACCENT)
+    p8.insert_text(fitz.Point(50, 362), "Target matrix — RBAC core built (748f65d); admin panel & enforcement land with the RBAC branch.", fontsize=8, fontname="helv", color=MUTED)
     p8.draw_rect(fitz.Rect(50, 360, 545, 380), fill=ACCENT, color=ACCENT)
     p8.insert_text(fitz.Point(60, 374), "System Action / Capability", fontsize=8.5, fontname="helv", color=WHITE)
     p8.insert_text(fitz.Point(260, 374), "Student (student)", fontsize=8.5, fontname="helv", color=WHITE)
-    p8.insert_text(fitz.Point(365, 374), "Society Admin (society)", fontsize=8.5, fontname="helv", color=WHITE)
+    p8.insert_text(fitz.Point(365, 374), "Society Admin (society_admin)", fontsize=8.5, fontname="helv", color=WHITE)
     p8.insert_text(fitz.Point(475, 374), "System Admin", fontsize=8.5, fontname="helv", color=WHITE)
 
     rbac_rows = [
@@ -425,7 +430,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "across all device form factors, specifically targeting narrow smartphone viewports down to 360px width.\n\n"
         "• Desktop Layout (1080px+): Full 3-column architecture (260px navigation rail, 600px main stream, 350px context sidebar).\n"
         "• Tablet Layout (721px–1080px): Right sidebar is hidden; navigation collapses to a compact 76px icon rail; main feed centers.\n"
-        "• Mobile Layout (360px–720px): Navigation moves to a sticky bottom/top navigation bar (.col-nav) with 44px touch targets.\n"
+        "• Mobile Layout (360px–720px): Navigation moves to a sticky top navigation bar (.col-nav, top: 52px) with 44px touch targets.\n"
         "  Header elements reflow dynamically: brand text, logo mark, and action buttons scale to prevent awkward multi-line wrapping.\n"
         "• Compact Mobile Viewports (<= 360px): Extra media query rules ensure post action rows (reply, like, bookmark, delete) and\n"
         "  profile follower statistics wrap gracefully with zero horizontal scrollbar blowout."
@@ -485,7 +490,8 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         ("tests/PostTest.php", "Core Post Engine & Soft-Delete", "280-char limits, CRUD, pagination, author ownership, soft-delete", "29 / 29 (100%)"),
         ("tests/SocialTest.php", "Social Graph, Follows & Replies", "Follow/unfollow, personalized feed, threaded replies, bookmarks, search", "49 / 49 (100%)"),
         ("tests/SessionTest.php", "Database Session Handler", "Session read/write/destroy, user tagging, garbage collection", "9 / 9 (100%)"),
-        ("tests/Sprint4Test.php", "Likes, Hashtags & Redis Caching", "Idempotent likes, hashtag regex, TinyRedisClient RESP, feed invalidation", "48 / 48 (100%)")
+        ("tests/Sprint4Test.php", "Likes, Hashtags & Redis Caching", "Idempotent likes, hashtag regex, TinyRedisClient RESP, feed invalidation", "48 / 48 (100%)"),
+        ("tests/NotificationTest.php", "Notifications & Social Triggers", "Create/list/count, mark read, ownership guards, follow/like/reply triggers", "28 / 28 (100%)")
     ]
 
     sty = 190
@@ -498,15 +504,16 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         sty += 24
 
     p10.draw_rect(fitz.Rect(50, 335, 545, 365), fill=(0.91, 0.96, 0.93), color=GREEN, width=1)
-    p10.insert_text(fitz.Point(140, 355), "TOTAL AUTOMATED REGRESSION SUITE: 153 / 153 TESTS PASSED (100%)", fontsize=10, fontname="helv", color=GREEN)
+    p10.insert_text(fitz.Point(140, 355), "TOTAL AUTOMATED REGRESSION SUITE: 181 / 181 TESTS PASSED (100%)", fontsize=10, fontname="helv", color=GREEN)
 
     qa_details = (
         "8.2 Regression Verification Methodology\n"
         "• Boundary Condition Audits: Verified strict 280-character Unicode handling (mb_strlen) accepting valid multi-byte strings\n"
         "  while rejecting empty and 281+ character payloads.\n"
         "• Authorization Invariants: Asserted that non-authors cannot edit or soft-delete other users' posts or replies.\n"
-        "• Cache Invalidation Rigor: Verified that mutations (create, edit, delete, like toggle, bookmark, follow) reliably flush the\n"
-        "  feed_ cache namespace, ensuring zero stale reads.\n"
+        "• Cache Invalidation Rigor: Verified that mutations (create, edit, delete, bookmark, follow) reliably flush the\n"
+        "  feed_ cache namespace, ensuring zero stale reads. Like toggles update the cached like counter directly instead\n"
+        "  of flushing the feed (the anonymous feed like_count can sit stale up to the 300s TTL).\n"
         "• Regression Fix Verification (9 Nov): Added dedicated assertions confirming apostrophe HTML entities (&#039;) render cleanly\n"
         "  without generating bogus #039 hashtag anchors."
     )
@@ -525,7 +532,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "1. Access signup.php. Enter your student name, official university email address, and desired password.\n"
         "2. The client-side password strength validator verifies five security criteria in real time (8+ chars, uppercase, lowercase,\n"
         "   number, and special symbol). All indicators must turn green before submission is permitted.\n"
-        "3. Login via login.php. Session tokens are securely bound to your browser to prevent hijacking.\n\n"
+        "3. Login via login.php. Sessions are stored server-side in the database (DbSessionHandler) and invalidated on logout.\n\n"
         "9.2 Publishing & Timeline Discovery\n"
         "• Publishing Chirps: Use the top compose box on index.php. Enter up to 280 characters. The live counter updates in real time.\n"
         "• Using Hashtags: Insert #tags anywhere in your text. They are automatically highlighted as clickable links and added to the\n"
@@ -553,22 +560,27 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     admin_man_text = (
         "This guide outlines governance and administrative operations for society leads and system administrators:\n\n"
         "10.1 Society Administration (society_admin)\n"
-        "• Broadcasting Announcements: When authenticated with a society role, the compose box unlocks the 'Society Announcement'\n"
-        "  toggle. Announcements receive distinct badge highlights and priority placement in student feeds.\n"
+        "• Broadcasting Announcements (in progress — Sprint 5 RBAC branch, due 15 Nov): When authenticated with a society role,\n"
+        "  the compose box will unlock the 'Society Announcement' toggle. Announcements receive distinct badge highlights and\n"
+        "  priority placement in student feeds.\n"
         "• Profile Governance: Society admins must maintain official executive committee contact info and meeting schedules in their bio.\n\n"
         "10.2 System Administration & Content Moderation (system_admin)\n"
         "• Global Content Moderation: System administrators possess universal soft-delete authority. Clicking 'Delete Post' or 'Delete Reply'\n"
-        "  sets deleted_at = CURRENT_TIMESTAMP, instantly removing content from all feeds while preserving audit records.\n"
-        "• User Governance: User roles can be updated via the admin console or direct SQL (UPDATE users SET role = 'society_admin' ...).\n"
+        "  on the post detail page sets deleted_at = CURRENT_TIMESTAMP, instantly removing content from all feeds while preserving audit records.\n"
+        "• User Governance: There is no admin console yet — roles are changed by direct SQL only. The new role values\n"
+        "  (society_admin/system_admin) apply after the RBAC migration; on main today the values are student/society/admin.\n"
         "• Session Maintenance: Active sessions are monitored in the sessions table; expired sessions are pruned during garbage collection.\n\n"
         "10.3 Turnkey Deployment (Fresh Machine in 5 Minutes)\n"
         "1. Prerequisites: XAMPP with PHP 8.2+ and MySQL running.\n"
         "2. Database Setup: Open phpMyAdmin or MySQL CLI. Create database campusconnect:\n"
         "   CREATE DATABASE campusconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;\n"
-        "3. Schema Import: Import db/schema.sql followed by sequential migrations or db/seed.sql:\n"
+        "3. Schema Import: Import db/schema.sql (it already contains all 10 tables, including notifications), then db/seed.sql:\n"
+        "   mysql -u root campusconnect < db/schema.sql\n"
         "   mysql -u root campusconnect < db/seed.sql\n"
+        "   Do NOT run the migrate_*.sql files on a fresh install — they are only for upgrading pre-existing databases.\n"
         "4. Credentials Verification: Update config/Database.php if MySQL credentials differ from root/empty password.\n"
-        "5. Demo Accounts: Log in with admin@campus.edu.pk / Password123! or student1@campus.edu.pk / Password123!."
+        "5. Demo Accounts (password StrongPass123! for all): admin@nu.edu.pk (system admin), society@nu.edu.pk (ACM society),\n"
+        "   student@nu.edu.pk (student)."
     )
     p12.insert_textbox(fitz.Rect(50, 95, 545, 780), admin_man_text, fontsize=8.5, fontname="helv", color=INK)
 
@@ -582,11 +594,11 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     git_intro = (
         "11.1 Verifiable Git Contribution Audit\n"
         "In compliance with ASPM evaluation rules, individual contributions were verified from the repository commit log (git log --all):\n"
-        "• Muddassir (26 commits): Auth foundation (S1), Post Engine & Feed UI (S2), Social Graph, DB Sessions & Design System (S3),\n"
+        "• Muddassir (27 commits on main): Auth foundation (S1), Post Engine & Feed UI (S2), Social Graph, DB Sessions & Design System (S3),\n"
         "  TinyRedisClient socket client & verification fixes (S4), RBAC & Security Release (S5).\n"
-        "• Faiz Hussain (4 commits): Sprint 4 core likes, hashtags, Redis/memory caching layer (3ac38d4); Sprint 5 notifications backend & seed fixtures.\n"
-        "• Qaim (Sprint 5 commits): Sprint 5 frontend responsive mobile polish (360px/tablet), micro-interactions (8ae9bd7), comprehensive\n"
-        "  documentation suite, Agile Presentation deck ([GroupCode]_Presentation.pptx), and Final Technical Report ([GroupCode]_Report.pdf).\n\n"
+        "• Faiz Hussain (7 commits on main): Sprint 4 core likes, hashtags, Redis/memory caching layer (3ac38d4); Sprint 5 notifications backend & seed fixtures (PR #9).\n"
+        "• Qaim (4 Sprint 5 commits): Sprint 5 frontend responsive mobile polish (360px/tablet), micro-interactions (8ae9bd7), comprehensive\n"
+        "  documentation suite, Agile Presentation deck (AIR_Presentation.pptx), and Final Technical Report (AIR_Report.pdf).\n\n"
         "11.2 Chronological Register of Real Team Meetings\n"
         "Per project rules ('never invent meetings'), only genuine synchronization meetings that took place are recorded below:"
     )
@@ -597,7 +609,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         ("Meeting 2: Sprint 2 Review (2 Nov 2026)", "Attendees: Muddassir, Faiz, Qaim", "Approved keeping 'Post' naming in code with WBS 'Tweet' mapping; adopted soft-delete architecture; identified docs lag gap."),
         ("Meeting 3: Design Review (5 Nov 2026)", "Attendees: Muddassir, Faiz, Qaim", "Rejected generic AI templates; adopted product-scale restraint direction, Interlocked CC logo, and 6 curated duotone cover styles."),
         ("Meeting 4: Caching Review (9 Nov 2026)", "Attendees: Muddassir, Faiz, Qaim", "Evaluated Redis benchmarks; Muddassir built TinyRedisClient pure socket fallback; resolved HTML entity linkification bug."),
-        ("Meeting 5: Sprint 5 Split (13 Nov 2026)", "Attendees: Muddassir, Faiz, Qaim", "Agreed on final task division: Faiz on Notifications/Seed, Qaim on Mobile Polish/Docs/Deliverables, Muddassir on RBAC/Release.")
+        ("Meeting 5: Sprint 5 Split (12 Nov 2026)", "Attendees: Muddassir, Faiz, Qaim", "Agreed on final task division: Faiz on Notifications/Seed, Qaim on Mobile Polish/Docs/Deliverables, Muddassir on RBAC/Release.")
     ]
 
     my = 270
@@ -619,7 +631,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "12.1 Sprint Retrospective Insights\n"
         "• What Went Well:\n"
         "  - Architectural Rigor: Zero-dependency PHP 8 OOP design with 100% prepared statements prevented technical debt.\n"
-        "  - Rapid Automated Testing: The SQLite memory test harness allowed all 153 tests to run in seconds without external daemons.\n"
+        "  - Rapid Automated Testing: The SQLite memory test harness allowed all 181 tests to run in seconds without external daemons.\n"
         "  - Performance Excellence: Sub-millisecond feed reads achieved through Redis and pure socket fallback caching.\n"
         "  - Real-World Usability: Viewport optimization confirmed fluid navigation down to 360px mobile viewports.\n\n"
         "• What Went Badly & Corrective Actions:\n"
@@ -629,18 +641,20 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "    manuals, and diagrams alongside feature implementations.\n\n"
         "12.2 Final Release Deliverables Checklist\n"
         "In accordance with the ASPM Capstone requirements, the delivery bundle contains three verified artifacts:\n"
-        "1. [GroupCode]_Presentation.pptx: Comprehensive 12-slide executive presentation covering Agile implementation and demo.\n"
-        "2. [GroupCode]_Report.pdf: This 14-page formal technical, architectural, and operational project report.\n"
-        "3. [GroupCode]_WorkingSoftware.zip: Complete standalone codebase ready for turnkey deployment on any XAMPP instance.\n\n"
+        "1. AIR_Presentation.pptx: Comprehensive 12-slide executive presentation covering Agile implementation and demo.\n"
+        "2. AIR_Report.pdf: This 14-page formal technical, architectural, and operational project report.\n"
+        "3. AIR_WorkingSoftware.zip: Complete standalone codebase ready for turnkey deployment on any XAMPP instance\n"
+        "   (regenerated from merged main on 15 Nov).\n\n"
         "12.3 Academic Conclusion & Sign-Off\n"
         "CampusConnect successfully demonstrates the power of Agile Software Project Management in delivering robust, high-performance\n"
-        "software. The project achieves 100% WBS feature coverage, zero regressions, and full production readiness."
+        "software. Sprints 1–4 are complete and merged; Sprint 5 closes on 15 Nov with the RBAC branch (admin panel, society\n"
+        "announcements, CSRF tokens, login rate-limit) as the final merge, reaching 100% WBS feature coverage."
     )
     p14.insert_textbox(fitz.Rect(50, 95, 545, 680), retro_text, fontsize=8.5, fontname="helv", color=INK)
 
     p14.draw_rect(fitz.Rect(50, 700, 545, 780), fill=ACCENT_BG, color=ACCENT, width=1)
     p14.insert_text(fitz.Point(120, 730), "CAMPUSCONNECT PROJECT SUCCESSFULLY DELIVERED & AUDITED", fontsize=11, fontname="helv", color=ACCENT)
-    p14.insert_text(fitz.Point(170, 755), "All Sprints (1–5) Complete | 153 / 153 Tests Green | November 2026", fontsize=8.5, fontname="helv", color=MUTED)
+    p14.insert_text(fitz.Point(170, 755), "Sprints 1–4 Complete · Sprint 5 closes 15 Nov | 181 / 181 Tests Green | November 2026", fontsize=8.5, fontname="helv", color=MUTED)
 
     # Apply Headers and Footers to all pages
     total_pages = len(doc)
@@ -651,6 +665,6 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     print(f"Report PDF successfully generated: {output_filename} ({total_pages} pages)")
 
 if __name__ == '__main__':
+    # One set only: the AIR_* files are the deliverables. Do NOT generate
+    # CampusConnect_* or [GroupCode]_* duplicates (same content, ~3x the bytes).
     build_pdf_report("AIR_Report.pdf", group_code="AIR", section="BCS-7A")
-    build_pdf_report("[GroupCode]_Report.pdf", group_code="AIR", section="BCS-7A")
-    build_pdf_report("CampusConnect_Report.pdf", group_code="AIR", section="BCS-7A")

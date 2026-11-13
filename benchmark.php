@@ -24,7 +24,7 @@ $isCli = (php_sapi_name() === 'cli');
 $eol = $isCli ? PHP_EOL : "<br>";
 
 if (!$isCli) {
-    echo "<pre>";
+    echo '<pre style="white-space: pre-wrap; overflow-wrap: break-word; max-width: 100%;">';
 }
 
 echo "==========================================================" . $eol;
@@ -81,7 +81,7 @@ if (!$isCli) {
     };
     $dbDriverLabel = htmlspecialchars(Database::getInstance()->getDriver());
     $cacheDriverLabel = htmlspecialchars($cache->getDriverName() . ' / ' . $cache->getBackendName());
-    echo '<section style="font-family: sans-serif; max-width: 640px;">';
+    echo '<section style="font-family: sans-serif; max-width: 640px; overflow-wrap: break-word;">';
     echo '<h2 style="font-size: 1.1rem;">Benchmark dashboard</h2>';
     echo '<svg width="100%" height="120" viewBox="0 0 640 120" style="max-width: 640px; height: auto;" role="img" aria-label="Average latency bar chart">';
     echo '<text x="0" y="24" font-size="13">Direct DB (' . $dbDriverLabel . ')</text>';

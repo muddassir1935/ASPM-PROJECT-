@@ -105,14 +105,14 @@ Read "Tweet" in the WBS as "Post" in the code everywhere below.
 
 | WBS item | Implemented as | Status |
 |---|---|---|
-| 5.1 notifications schema | `notifications` table, FKs to `users` on `user_id` and `actor_id` | Done (`db/migrate_sprint5_notifications_mysql.sql`) |
-| 5.1 Notification model | `classes/Notification.php` (create, getUnread, getUnreadCount, markAsRead, markAllAsRead) | Done (`classes/Notification.php`) |
+| 5.1 notifications schema | `notifications` table, FKs to `users` on `user_id` and `actor_id` | Done (`db/schema.sql` + `db/migrate_sprint5_notifications_mysql.sql` for older DBs) |
+| 5.1 Notification model | `classes/Notification.php` (create, listUnread, listAll, countUnread, markRead, markAllRead, delete) | Done (`classes/Notification.php`, PR #9, main `8f516cf`) |
 | 5.1 notification triggers & UI | Triggered on follow, reply, like; unread bell badge in header; `notifications.php` center | Done (`includes/header.php`, `notifications.php`) |
-| 5.2 RBAC hierarchy & permissions | Roles `student`, `society_admin`, `system_admin`, server-side authorization enforcement | Done (`classes/User.php`, `classes/PostController.php`) |
-| 5.2 society announcements | Official society announcement dispatch with badge styling | Done (`index.php`, `post.php`) |
-| 5.2 moderation & admin panel | System admin moderation (soft-deleting violating content, user governance) | Done (`post.php`, `admin.php`) |
-| 5.3 security hardening | Anti-CSRF token lifecycle, brute-force login rate limiting, session idle timeout | Done (`classes/Auth.php`, action endpoints) |
+| 5.2 RBAC hierarchy & permissions | Roles `student`, `society_admin`, `system_admin`, central `Authorization` permission map, server-side enforcement | In Progress — core built (`748f65d`, branch `feature/sprint-5-rbac`, due 15 Nov) |
+| 5.2 society announcements | Official society announcement dispatch with badge styling | In Progress (branch `feature/sprint-5-rbac`, due 15 Nov) |
+| 5.2 moderation & admin panel | System admin moderation (soft-deleting violating content, user governance) | In Progress — admin delete on detail page exists; admin panel on branch `feature/sprint-5-rbac`, due 15 Nov |
+| 5.3 security hardening | Anti-CSRF token lifecycle, brute-force login rate limiting, session idle timeout | In Progress — idle timeout (30 min) built in RBAC core; CSRF + rate-limit on branch `feature/sprint-5-rbac`, due 15 Nov |
 | 5.4 responsive polish & mobile UX | 360px viewport audit, tablet 768px layout, micro-interactions, responsive SVGs | Done (`includes/header.php`, `benchmark.php`, `profile.php`, `post.php`) |
-| 5.5 seed dataset & deployment guide | `db/seed.sql` university fixtures + `docs/DEPLOYMENT.md` 5-min quick start | Done (`db/seed.sql`, `docs/DEPLOYMENT.md`) |
+| 5.5 seed dataset & deployment guide | `db/seed.sql` university fixtures + `docs/DEPLOYMENT.md` 5-min quick start | Done (`db/seed.sql`, `docs/DEPLOYMENT.md`, PR #9) |
 | 5.6 comprehensive docs suite | `sprint-5-srs-increment.md`, `USER_MANUAL.md`, `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md` | Done (this docs increment) |
-| 5.7 final deliverables | Agile Presentation Deck (`.pptx`), Technical Report (`.pdf`), Working Software Zip | Done (`docs/`, root deliverables) |
+| 5.7 final deliverables | Agile Presentation Deck (`.pptx`), Technical Report (`.pdf`), Working Software Zip | In Progress — deck + report generated from `scripts/`; zip regenerates from merged main on 15 Nov |

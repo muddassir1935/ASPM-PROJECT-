@@ -28,7 +28,7 @@
 - **Attendees**:
   - Muddassir, Faiz Hussain, Qaim
 - **Agenda**:
-  1. Review of Sprint 1 Auth deliverables and test verification (18/18 green).
+  1. Review of Sprint 1 Auth deliverables and test verification (17/17 green).
   2. Sprint 2 Post Engine and Timeline feed delivery (PR #1 & PR #2).
   3. Resolving the WBS "Tweet" vs. Code "Post" nomenclature dispute.
 - **Decisions & Outcomes**:
@@ -68,13 +68,13 @@
 - **Decisions & Outcomes**:
   - **Pure-PHP Socket Client (`TinyRedisClient`)**: Testing revealed that standard demo machines often lack the compiled `phpredis` PECL extension. To make the Redis tier run anywhere, Muddassir added `classes/TinyRedisClient.php` implementing raw RESP sockets with automatic fallback to memory.
   - **Entity Linkification Bug**: Identified that apostrophe HTML entities (`&#039;`) were being mangled by the hashtag regex into bogus `#039` tags. Fixed via regex negative lookbehind `(?<!&)`.
-  - **Benchmark Validation**: Benchmark script confirmed 1000x+ memory read acceleration over direct MySQL queries. N+1 audit confirmed zero PHP-level loops on timeline feed queries.
+  - **Benchmark Validation**: Benchmark script confirmed 532× measured memory-read speedup over direct MySQL queries (Sprint 4 verification). N+1 audit confirmed zero PHP-level loops on timeline feed queries.
   - **Action Items**: Merge Sprint 4 (`d7f1938`, `d1e4400`); prepare for final Sprint 5 push.
 
 ---
 
 ## Meeting 5: Sprint 5 Planning & Final Release Split Meeting
-- **Date**: 13 November 2026
+- **Date**: 12 November 2026
 - **Format**: Sprint 5 Task Allocation & Final Academic Delivery Planning
 - **Attendees**:
   - Muddassir (Technical Lead)
@@ -87,12 +87,12 @@
 - **Decisions & Outcomes**:
   - **Task Split Agreement**:
     - **Faiz Hussain** (`feature/sprint-5-notifications`): Owns the `notifications` table, `Notification.php` domain model, header badge, notification triggers on likes/follows/replies, `tests/NotificationTest.php`, and `db/seed.sql` + `docs/DEPLOYMENT.md`.
-    - **Qaim** (`feature/sprint-5-docs`): Owns responsive mobile polish down to 360px viewports, tablet optimization, tactile micro-interactions, complete documentation suite (`sprint-5-srs-increment.md`, `USER_MANUAL.md`, `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md`, Sprint 5 retro notes), Agile Presentation deck (`AIR_Presentation.pptx` / `[GroupCode]_Presentation.pptx`), and Technical Project Report (`AIR_Report.pdf` / `[GroupCode]_Report.pdf`).
+    - **Qaim** (`feature/sprint-5-docs`): Owns responsive mobile polish down to 360px viewports, tablet optimization, tactile micro-interactions, complete documentation suite (`sprint-5-srs-increment.md`, `USER_MANUAL.md`, `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md`, Sprint 5 retro notes), Agile Presentation deck (`AIR_Presentation.pptx`), and Technical Project Report (`AIR_Report.pdf`).
     - **Muddassir & Muse** (`feature/sprint-5-rbac`): Owns RBAC roles (`student`, `society_admin`, `system_admin`), central permissions matrix, society announcement channels, admin panel, CSRF tokens, login rate limiting, session idle timeout, and final release tagging/packaging.
   - **Coordination Protocols**:
-    - `includes/header.php` is touched by both RBAC (admin link) and notifications (bell badge). RBAC merges first; notifications rebases on updated `main` before PR.
+    - `includes/header.php` is touched by both RBAC (admin link) and notifications (bell badge). All three Sprint 5 branches work in parallel from main `d1e4400`; the header changes are in disjoint regions (verified conflict-free by merge-tree). Merge order: notifications (PR #9, merged 13 Nov as `8f516cf`), docs (PR #10), RBAC last.
     - Database migrations remain isolated in separate files (`db/migrate_sprint5_*.sql`).
   - **Hard Deadlines**:
     - *Saturday 14 Nov, 12:00 Noon*: All code merged into `main`.
     - *Saturday 14 Nov, Evening*: All documentation, presentation deck, and technical report drafts completed.
-    - *Sunday 15 Nov*: Final end-to-end verification walkthrough, release tagging, and zip packaging (`AIR_WorkingSoftware.zip` / `[GroupCode]_WorkingSoftware.zip`).
+    - *Sunday 15 Nov*: Final end-to-end verification walkthrough, release tagging, and zip packaging (`AIR_WorkingSoftware.zip`, regenerated from merged main).

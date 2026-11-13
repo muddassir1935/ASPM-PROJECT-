@@ -203,8 +203,8 @@
   - **Hashtags & Discovery (WBS 4.2):** `hashtags` and `post_hashtags` schemas, automatic extraction and indexing upon create/update in `Hashtag` class, clickable `#tag` link rendering in posts, tag filter exploration (`explore.php?tag=...`), and "Trending Topics" right sidebar widget.
   - **Performance Caching & Benchmark (WBS 4.3):** `Cache` Singleton supporting Redis with zero-downtime memory fallback, intelligent `feed_` prefix cache invalidation on post/like mutation, and `benchmark.php` benchmark suite.
   - **Sprint 3 Polish Items Closed:** Compose box auto-grow on multi-line text and filled bookmark icon SVG when saved.
-  - **Automated Tests:** Comprehensive `tests/Sprint4Test.php` suite (36 tests) and regression validation across all 5 project suites (141/141 tests passed).
-- **Verified 9 Nov 2026:** All 141 tests pass locally; cache benchmark shows 1000x+ memory read acceleration over direct database queries.
+  - **Automated Tests:** Comprehensive `tests/Sprint4Test.php` suite (36 tests) and regression validation across all 5 project suites (140/141 tests passed — 1 pre-existing flaky test).
+- **Verified 9 Nov 2026:** 140/141 tests pass locally (1 pre-existing flaky test); cache benchmark shows 532× measured memory-read speedup over direct database queries.
 
 ## Sprint 4 retro notes
 
@@ -216,9 +216,9 @@
   - [x] Likes system functional and tested (WBS 4.1)
   - [x] Hashtags and trending topics functional and tested (WBS 4.2)
   - [x] Redis caching layer with seamless memory fallback and benchmark (WBS 4.3)
-  - [x] All 141 unit tests green (141/141)
+  - [x] 140/141 unit tests green (1 pre-existing flaky test)
   - [x] Documentation, SRS increment, WBS mapping, and UML/ERD synchronized
-  - [x] User runs `db/migrate_sprint4_mysql.sql` on XAMPP MySQL before demoing
+  - [ ] User runs `db/schema.sql` on XAMPP MySQL before demoing (XAMPP not set up yet — fresh setup is schema.sql only)
   - [x] Push to remote and merge `feature/sprint-4-core` into `main` after user consent (Merged `d7f1938`)
 
 ---
@@ -227,8 +227,8 @@
 
 - **Delivered (13–15 Nov 2026):**
   - **In-App Activity Notifications (WBS 5.1):** `notifications` table, `Notification` model, unread notification counter badge in the navigation header, and a dedicated notifications activity feed (`notifications.php`).
-  - **Role-Based Access Control & Society Management (WBS 5.2):** Tiered roles (`student`, `society_admin`, `system_admin`), official society announcements with verified badging, and system administrative content moderation.
-  - **Security Hardening (WBS 5.3):** Anti-CSRF token verification across all forms, brute-force login rate limiting, session idle expiry, and full parameter binding audit.
+  - **Role-Based Access Control & Society Management (WBS 5.2):** Tiered roles (`student`, `society_admin`, `system_admin`) and central permission map built on `feature/sprint-5-rbac` (`748f65d`); official society announcements with verified badging and system administrative content moderation panel in progress (due 15 Nov).
+  - **Security Hardening (WBS 5.3):** 30-minute session idle expiry built (RBAC core); anti-CSRF token verification across all forms and brute-force login rate limiting in progress on `feature/sprint-5-rbac` (due 15 Nov); full parameter binding audit done.
   - **Responsive Polish & Micro-interactions (WBS 5.4):** Viewport optimization down to 360px mobile viewports and tablets, overflow bug resolutions, tactile physical button press feedback (`transform: scale(0.97)`), like pop animation, and fluid SVG benchmark dashboards.
   - **Seed Dataset & 5-Minute Deployment (WBS 5.5):** Comprehensive `db/seed.sql` pre-loading verified university accounts, posts, and society channels, coupled with `docs/DEPLOYMENT.md` for turnkey XAMPP evaluation.
   - **Academic Documentation & Release Deliverables (WBS 5.6 & 5.7):**
@@ -237,7 +237,7 @@
     - `docs/ADMIN_MANUAL.md` (Operations & administration manual)
     - `docs/CONTRIBUTION.md` (Verifiable Git audit)
     - `docs/MEETINGS.md` (Real team meeting minutes)
-    - Final Academic Presentation (`AIR_Presentation.pptx` / `[GroupCode]_Presentation.pptx`) and Technical Report (`AIR_Report.pdf` / `[GroupCode]_Report.pdf`)
+    - Final Academic Presentation (`AIR_Presentation.pptx`) and Technical Report (`AIR_Report.pdf`)
 
 ## Sprint 5 retro notes
 
@@ -253,6 +253,6 @@
   - [x] Responsive mobile polish (360px & tablet) implemented and verified
   - [x] Complete documentation suite written and committed
   - [x] SRS increment, WBS mapping, and contribution matrix synchronized
-  - [x] All 153 unit tests passing (153/153)
+  - [x] All 181 unit tests passing (181/181, incl. 28 NotificationTest after the PR #9 merge)
   - [x] GroupCode confirmed by user: Section `BCS-7A`, Group Code `AIR`
   - [x] Final deliverables generated: `AIR_Presentation.pptx`, `AIR_Report.pdf`, `AIR_WorkingSoftware.zip`

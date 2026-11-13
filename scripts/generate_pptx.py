@@ -67,8 +67,8 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
             "subtitle": "Hardening, Governance & Viewport Polish",
             "bullets": [
                 "In-App Notifications (WBS 5.1): Instant event notifications (new follower, reply to post, like on post) with dynamic unread header badge.",
-                "Role-Based Access Control (WBS 5.2): Three-tier role hierarchy (`student`, `society_admin`, `system_admin`), verified society announcements, and admin moderation.",
-                "Security Hardening (WBS 5.3): Anti-CSRF token verification across all forms, brute-force login rate limiting, session idle timeout.",
+                "Role-Based Access Control (WBS 5.2): Three-tier role hierarchy (`student`, `society_admin`, `system_admin`) — core built; admin panel and society announcements in progress (due 15 Nov).",
+                "Security Hardening (WBS 5.3): 30-minute session idle timeout built; anti-CSRF tokens and login rate limiting in progress (due 15 Nov).",
                 "Responsive Polish (WBS 5.4): Complete layout reflow down to 360px mobile viewports, tablet optimization, tactile button press feedback (`transform: scale(0.97)`)."
             ]
         },
@@ -78,7 +78,7 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
             "bullets": [
                 "Core Entities: `users` (profiles, roles, cover styles) and `posts` (280-char content, soft-delete timestamp).",
                 "Social Relations: `follows` (composite PK, self-follow check), `replies` (threaded comments), and `bookmarks` (saved posts).",
-                "Security & Sessions: `sessions` table supporting distributed session clustering and anti-hijacking tracking.",
+                "Security & Sessions: `sessions` table for database-backed session persistence (`DbSessionHandler`) with session-ID regeneration on login.",
                 "Engagement & Activity: `likes` (composite PK), `hashtags`, `post_hashtags`, and `notifications` (foreign keys with cascade rules)."
             ]
         },
@@ -86,7 +86,7 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
             "title": "Performance Optimization & Benchmarks",
             "subtitle": "Sub-Millisecond Response Latencies",
             "bullets": [
-                "Latency Acceleration: Direct database queries (~2.5ms) vs. Redis/Memory cached reads (<0.02ms) delivering **50x–1000x speedup**.",
+                "Latency Acceleration: Measured 532x speedup for cached reads vs. direct database queries (Sprint 4 verification, benchmark.php).",
                 "N+1 Elimination: Audited query profiles in `docs/n-plus-1-audit-sprint4.md`; eager joins eliminate loop queries across all feed views.",
                 "Resilient Socket Client: `TinyRedisClient.php` communicates directly via RESP protocol over TCP, eliminating compiled PECL extension dependencies.",
                 "Graceful Zero-Downtime Fallback: If Redis is unreachable, the system silently continues serving requests via PHP memory caching without errors."
@@ -100,16 +100,16 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
                 "2. Feed Exploration: Discovering peers via 'Who to Follow' -> Following classmates -> Timeline updates dynamically.",
                 "3. Publishing & Tagging: Composing chirp with `#CampusConnect` -> Auto-indexing tag -> Trending Topics update.",
                 "4. Social Engagement: Real-time heart like animation -> Threaded reply -> Saving post to private Bookmarks.",
-                "5. Notifications & Administration: Unread bell badge increment -> Society announcement broadcast -> Administrative moderation."
+                "5. Notifications: Unread bell badge increments on follow/like/reply -> notification center -> mark as read."
             ]
         },
         {
             "title": "Team Contribution & Verifiable Git Audit",
             "subtitle": "Documented Division of Labor",
             "bullets": [
-                "Muddassir (26 Commits): Architecture lead, Sprint 1 Auth, Sprint 2 Post Engine, Sprint 3 Social/Design, Sprint 4 Redis fixes, Sprint 5 RBAC & Release.",
-                "Faiz Hussain (4 Commits): Sprint 4 core likes, hashtags, caching layer foundation (`3ac38d4`); Sprint 5 notifications backend & seed data fixtures.",
-                "Qaim (Sprint 5 Commits): Sprint 5 frontend responsive mobile polish (360px/tablet), micro-interactions, complete documentation suite, Agile presentation & report.",
+                "Muddassir (27 Commits on main): Architecture lead, Sprint 1 Auth, Sprint 2 Post Engine, Sprint 3 Social/Design, Sprint 4 Redis fixes, Sprint 5 RBAC & Release.",
+                "Faiz Hussain (7 Commits on main): Sprint 4 core likes, hashtags, caching layer foundation (`3ac38d4`); Sprint 5 notifications backend & seed data fixtures (3 commits, PR #9).",
+                "Qaim (4 Sprint 5 Commits): Sprint 5 frontend responsive mobile polish (360px/tablet), micro-interactions, complete documentation suite, Agile presentation & report.",
                 "Full Auditability: Complete commit log, author emails, dates, and diff statistics recorded in `docs/CONTRIBUTION.md`."
             ]
         },
@@ -117,7 +117,7 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
             "title": "Sprint Retrospective & Project Conclusions",
             "subtitle": "Agile Maturity & Lessons Learned",
             "bullets": [
-                "What Went Well: Zero regressions across 153 unit tests; high code reusability via OOP; clean responsive UI without heavyweight frameworks.",
+                "What Went Well: Zero regressions across 181 unit tests; high code reusability via OOP; clean responsive UI without heavyweight frameworks.",
                 "Lessons Learned: Early sprints suffered from commit centralization; Sprint 5 restructuring ensured distributed academic ownership and fair credit.",
                 "Production Readiness: Complete documentation suite (`USER_MANUAL.md`, `ADMIN_MANUAL.md`, `DEPLOYMENT.md`), seed SQL, and packaged deliverables.",
                 "Thank You! Q&A Session."
@@ -372,6 +372,6 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
     print(f"Presentation successfully created at: {output_path}")
 
 if __name__ == "__main__":
+    # One set only: the AIR_* files are the deliverables. Do NOT generate
+    # CampusConnect_* or [GroupCode]_* duplicates (same content, ~3x the bytes).
     generate_presentation("AIR_Presentation.pptx", group_code="AIR", section="BCS-7A")
-    generate_presentation("[GroupCode]_Presentation.pptx", group_code="AIR", section="BCS-7A")
-    generate_presentation("CampusConnect_Presentation.pptx", group_code="AIR", section="BCS-7A")

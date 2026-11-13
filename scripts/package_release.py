@@ -1,9 +1,11 @@
 import os
 import zipfile
 
-def package_working_software(output_zip="[GroupCode]_WorkingSoftware.zip"):
+def package_working_software(output_zip="AIR_WorkingSoftware.zip"):
     exclude_dirs = {'.git', 'scratch', '__pycache__', '.pytest_cache'}
-    exclude_exts = {'.sqlite', '.sqlite-journal'}
+    # Deliverable binaries are shipped separately, not bundled inside the zip
+    # (the report PDFs alone are ~29 MB); the zip holds source code only.
+    exclude_exts = {'.sqlite', '.sqlite-journal', '.pdf', '.pptx'}
 
     with zipfile.ZipFile(output_zip, 'w', compression=zipfile.ZIP_DEFLATED) as z:
         for root, dirs, files in os.walk('.'):
@@ -21,6 +23,6 @@ def package_working_software(output_zip="[GroupCode]_WorkingSoftware.zip"):
     print(f"Working software zip created at: {output_zip}")
 
 if __name__ == '__main__':
+    # One set only: AIR_WorkingSoftware.zip, regenerated from merged main on
+    # 15 Nov. Do NOT generate CampusConnect_* or [GroupCode]_* duplicates.
     package_working_software("AIR_WorkingSoftware.zip")
-    package_working_software("[GroupCode]_WorkingSoftware.zip")
-    package_working_software("CampusConnect_WorkingSoftware.zip")
