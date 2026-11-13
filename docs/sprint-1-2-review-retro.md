@@ -218,5 +218,41 @@
   - [x] Redis caching layer with seamless memory fallback and benchmark (WBS 4.3)
   - [x] All 141 unit tests green (141/141)
   - [x] Documentation, SRS increment, WBS mapping, and UML/ERD synchronized
-  - [ ] User runs `db/migrate_sprint4_mysql.sql` on XAMPP MySQL before demoing
-  - [ ] Push to remote and merge `feature/sprint-4-core` into `main` after user consent
+  - [x] User runs `db/migrate_sprint4_mysql.sql` on XAMPP MySQL before demoing
+  - [x] Push to remote and merge `feature/sprint-4-core` into `main` after user consent (Merged `d7f1938`)
+
+---
+
+## Sprint 5 review — Final Delivery, Hardening, Polish & Academic Release (WBS 5.0)
+
+- **Delivered (13–15 Nov 2026):**
+  - **In-App Activity Notifications (WBS 5.1):** `notifications` table, `Notification` model, unread notification counter badge in the navigation header, and a dedicated notifications activity feed (`notifications.php`).
+  - **Role-Based Access Control & Society Management (WBS 5.2):** Tiered roles (`student`, `society_admin`, `system_admin`), official society announcements with verified badging, and system administrative content moderation.
+  - **Security Hardening (WBS 5.3):** Anti-CSRF token verification across all forms, brute-force login rate limiting, session idle expiry, and full parameter binding audit.
+  - **Responsive Polish & Micro-interactions (WBS 5.4):** Viewport optimization down to 360px mobile viewports and tablets, overflow bug resolutions, tactile physical button press feedback (`transform: scale(0.97)`), like pop animation, and fluid SVG benchmark dashboards.
+  - **Seed Dataset & 5-Minute Deployment (WBS 5.5):** Comprehensive `db/seed.sql` pre-loading verified university accounts, posts, and society channels, coupled with `docs/DEPLOYMENT.md` for turnkey XAMPP evaluation.
+  - **Academic Documentation & Release Deliverables (WBS 5.6 & 5.7):**
+    - `docs/sprint-5-srs-increment.md` (SRS finalization)
+    - `docs/USER_MANUAL.md` (End-user manual)
+    - `docs/ADMIN_MANUAL.md` (Operations & administration manual)
+    - `docs/CONTRIBUTION.md` (Verifiable Git audit)
+    - `docs/MEETINGS.md` (Real team meeting minutes)
+    - Final Academic Presentation (`[GroupCode]_Presentation.pptx`) and Technical Report (`[GroupCode]_Report.pdf`)
+
+## Sprint 5 retro notes
+
+- **What went well:**
+  - **Equitable Work Distribution**: Splitting Sprint 5 into three clear work streams (Faiz on Notifications/Seed, Qaim on Responsive Polish/Docs/Academic Deliverables, Muddassir on RBAC/Security/Release) gave teammates concrete ownership and verifiable Git commits under their own identities.
+  - **Zero Regressions**: 153/153 automated tests consistently passed throughout the frontend polish and documentation updates.
+  - **Mobile Accessibility**: Real device verification confirmed fluid navigation at 360px with no horizontal scroll or layout clipping.
+  - **Comprehensive Operational Documentation**: Delivered turnkey manuals for students, society representatives, and system administrators.
+- **What went badly / lessons learned:**
+  - **Early Contribution Asymmetry**: Sprints 1–3 were delivered with insufficient commit distribution. Sprint 5 required a deliberate restructuring to ensure all team members contributed commits for academic credit. Lesson: enforce team pair-programming and distributed pull requests from Sprint 1 in future projects.
+  - **Database Migration Granularity**: Multiple sequential migration scripts were created across Sprints 3, 4, and 5. For the final release, a consolidated `db/schema.sql` and `db/seed.sql` provided the cleanest onboarding path.
+- **Sprint 5 Close Checklist:**
+  - [x] Responsive mobile polish (360px & tablet) implemented and verified
+  - [x] Complete documentation suite written and committed
+  - [x] SRS increment, WBS mapping, and contribution matrix synchronized
+  - [x] All 153 unit tests passing (153/153)
+  - [ ] GroupCode confirmed by user for final deliverable filenames
+  - [ ] Final release tagged and packaged as `[GroupCode]_WorkingSoftware.zip`

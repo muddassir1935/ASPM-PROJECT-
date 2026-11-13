@@ -101,9 +101,18 @@ Read "Tweet" in the WBS as "Post" in the code everywhere below.
 | 4.4 sprint 4 tests | `tests/Sprint4Test.php` (comprehensive unit tests for Likes, Hashtags, and Cache) | Done (48 tests after the verification pass) |
 | 4.5 docs increment | `docs/sprint-4-srs-increment.md` | Done |
 
-## Carried forward to Sprint 5 (13–15 Nov)
+## Sprint 5 coverage (WBS 5.0 → code)
 
-- In-app Notifications (`notifications` table, header bell badge) — Sprint 5.
-- Full security audit & CSRF hardening — Sprint 5.
-- Realistic university seed data & demo fixtures — Sprint 5.
-- Final deployment guide & project retro — Sprint 5.
+| WBS item | Implemented as | Status |
+|---|---|---|
+| 5.1 notifications schema | `notifications` table, FKs to `users` on `user_id` and `actor_id` | Done (`db/migrate_sprint5_notifications_mysql.sql`) |
+| 5.1 Notification model | `classes/Notification.php` (create, getUnread, getUnreadCount, markAsRead, markAllAsRead) | Done (`classes/Notification.php`) |
+| 5.1 notification triggers & UI | Triggered on follow, reply, like; unread bell badge in header; `notifications.php` center | Done (`includes/header.php`, `notifications.php`) |
+| 5.2 RBAC hierarchy & permissions | Roles `student`, `society_admin`, `system_admin`, server-side authorization enforcement | Done (`classes/User.php`, `classes/PostController.php`) |
+| 5.2 society announcements | Official society announcement dispatch with badge styling | Done (`index.php`, `post.php`) |
+| 5.2 moderation & admin panel | System admin moderation (soft-deleting violating content, user governance) | Done (`post.php`, `admin.php`) |
+| 5.3 security hardening | Anti-CSRF token lifecycle, brute-force login rate limiting, session idle timeout | Done (`classes/Auth.php`, action endpoints) |
+| 5.4 responsive polish & mobile UX | 360px viewport audit, tablet 768px layout, micro-interactions, responsive SVGs | Done (`includes/header.php`, `benchmark.php`, `profile.php`, `post.php`) |
+| 5.5 seed dataset & deployment guide | `db/seed.sql` university fixtures + `docs/DEPLOYMENT.md` 5-min quick start | Done (`db/seed.sql`, `docs/DEPLOYMENT.md`) |
+| 5.6 comprehensive docs suite | `sprint-5-srs-increment.md`, `USER_MANUAL.md`, `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md` | Done (this docs increment) |
+| 5.7 final deliverables | Agile Presentation Deck (`.pptx`), Technical Report (`.pdf`), Working Software Zip | Done (`docs/`, root deliverables) |
