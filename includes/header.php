@@ -2059,6 +2059,206 @@ if (!function_exists('brandMarkSvg')) {
             }
         }
 
+        /* Responsive polish for compact mobile (down to 360px) */
+        @media (max-width: 480px) {
+            .nav-inner {
+                padding: 6px 10px;
+                gap: 8px;
+            }
+            .brand-link {
+                gap: 8px;
+            }
+            .brand-text {
+                font-size: 1.05rem;
+            }
+            .btn-nav-primary {
+                padding: 6px 12px;
+                font-size: 0.86rem;
+            }
+            .nav-link {
+                padding: 6px 8px;
+                font-size: 0.88rem;
+            }
+            .post-card {
+                padding: 11px 12px;
+                gap: 10px;
+            }
+            .avatar-md {
+                width: 36px;
+                height: 36px;
+                font-size: 0.95rem;
+            }
+            .post-head {
+                flex-wrap: wrap;
+                row-gap: 2px;
+            }
+            .post-author {
+                max-width: 170px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+            .post-card-actions {
+                flex-wrap: wrap;
+                gap: 4px;
+            }
+            .compose-card {
+                padding: 10px 12px;
+            }
+            .compose-card textarea.form-control {
+                font-size: 1rem;
+            }
+            .detail-card {
+                padding: 10px 12px 14px;
+            }
+            .reply-card {
+                padding: 11px 12px 10px;
+                gap: 9px;
+            }
+            .profile-card {
+                padding-bottom: 12px;
+            }
+            .profile-head {
+                padding: 0 12px;
+            }
+            .profile-stats {
+                gap: 12px;
+                font-size: 0.86rem;
+                flex-wrap: wrap;
+            }
+            .cover-picker {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .modal-box {
+                padding: 1rem;
+                max-width: 95%;
+            }
+            .auth-shell .auth-card {
+                padding: 1.25rem 1rem;
+            }
+            .search-card {
+                padding: 10px 12px;
+            }
+            .hero-title {
+                font-size: 1.85rem;
+            }
+            .hero-sub {
+                font-size: 0.98rem;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .nav-inner {
+                padding: 5px 8px;
+            }
+            .brand-mark {
+                width: 26px;
+                height: 26px;
+            }
+            .brand-text {
+                font-size: 0.96rem;
+            }
+            .btn-nav-primary {
+                padding: 5px 9px;
+                font-size: 0.8rem;
+            }
+            .nav-link {
+                padding: 5px 6px;
+                font-size: 0.82rem;
+            }
+            .post-author {
+                max-width: 130px;
+            }
+            .col-head, .page-title {
+                font-size: 1.15rem;
+                padding: 10px 12px;
+            }
+            .btn-primary, .btn-outline, .btn-cancel {
+                padding: 6px 14px;
+                font-size: 0.88rem;
+            }
+            .stat-btn, .profile-stats strong {
+                font-size: 0.82rem;
+            }
+            .action-reply, .action-like, .btn-bookmark {
+                font-size: 0.78rem;
+                padding: 4px 6px;
+            }
+            .action-reply .action-ic, .action-like .action-ic {
+                width: 28px;
+                height: 28px;
+            }
+            .col-nav {
+                padding: 2px 4px;
+            }
+            .nav-col-link {
+                padding: 8px 6px;
+            }
+        }
+
+        /* ---------- Micro-interactions & Tactile Polish ---------- */
+        .btn-primary, .btn-outline, .btn-cancel, .btn-danger-outline,
+        .btn-nav-primary, .btn-hero-primary, .btn-hero-ghost, .btn-follow {
+            transition: background-color var(--ease), border-color var(--ease), color var(--ease), transform 120ms ease, box-shadow var(--ease);
+        }
+
+        .btn-primary:active,
+        .btn-outline:active,
+        .btn-nav-primary:active,
+        .btn-follow:active,
+        .btn-hero-primary:active,
+        .btn-hero-ghost:active,
+        .btn-danger-outline:active {
+            transform: scale(0.97);
+        }
+
+        .btn-bookmark:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes heartPop {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .action-like.is-liked svg {
+            animation: heartPop 220ms ease;
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 2px;
+        }
+
+        /* Profile Tabs */
+        .profile-tabs {
+            display: flex;
+            gap: 1.5rem;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 1.25rem;
+            padding: 0 16px;
+        }
+
+        .profile-tab {
+            padding: 10px 4px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            color: var(--muted);
+            border-bottom: 2px solid transparent;
+            transition: color var(--ease), border-color var(--ease);
+        }
+
+        .profile-tab:hover {
+            color: var(--ink);
+        }
+
+        .profile-tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+        }
+
     </style>
 </head>
 <body>
