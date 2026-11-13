@@ -124,9 +124,9 @@ if ($profile) {
             </div>
 
             <!-- Profile Tabs (Posts / Likes) -->
-            <div class="profile-tabs" style="display: flex; gap: 1.5rem; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem;">
-                <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=posts" style="padding: 10px 4px; font-weight: 600; font-size: 0.95rem; text-decoration: none; color: <?= $activeTab === 'posts' ? 'var(--accent)' : 'var(--muted)' ?>; border-bottom: 2px solid <?= $activeTab === 'posts' ? 'var(--accent)' : 'transparent' ?>;">Posts (<?= (int)$feed['total'] ?>)</a>
-                <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=likes" style="padding: 10px 4px; font-weight: 600; font-size: 0.95rem; text-decoration: none; color: <?= $activeTab === 'likes' ? 'var(--accent)' : 'var(--muted)' ?>; border-bottom: 2px solid <?= $activeTab === 'likes' ? 'var(--accent)' : 'transparent' ?>;">Likes (<?= (int)$likesTotal ?>)</a>
+            <div class="profile-tabs">
+                <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=posts" class="profile-tab<?= $activeTab === 'posts' ? ' active' : '' ?>">Posts (<?= (int)$feed['total'] ?>)</a>
+                <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=likes" class="profile-tab<?= $activeTab === 'likes' ? ' active' : '' ?>">Likes (<?= (int)$likesTotal ?>)</a>
             </div>
 
             <?php if ($activeTab === 'likes'): ?>

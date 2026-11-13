@@ -83,7 +83,7 @@ if (!$isCli) {
     $cacheDriverLabel = htmlspecialchars($cache->getDriverName() . ' / ' . $cache->getBackendName());
     echo '<section style="font-family: sans-serif; max-width: 640px;">';
     echo '<h2 style="font-size: 1.1rem;">Benchmark dashboard</h2>';
-    echo '<svg width="640" height="120" viewBox="0 0 640 120" role="img" aria-label="Average latency bar chart">';
+    echo '<svg width="100%" height="120" viewBox="0 0 640 120" style="max-width: 640px; height: auto;" role="img" aria-label="Average latency bar chart">';
     echo '<text x="0" y="24" font-size="13">Direct DB (' . $dbDriverLabel . ')</text>';
     echo '<rect x="150" y="10" width="' . $barW($dbAvg) . '" height="20" fill="#B42318"></rect>';
     echo '<text x="' . (158 + $barW($dbAvg)) . '" y="25" font-size="13">' . sprintf('%.3f ms', $dbAvg) . '</text>';

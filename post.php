@@ -100,11 +100,23 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                 </div>
             <?php endif; ?>
 
-            <?php if ($isOwner): ?>
-                <div style="margin-top: 1rem;">
-                    <button type="button" class="btn-outline" onclick="toggleDetailEdit()">Edit Post</button>
+            <?php if ($isOwner || $canDelete): ?>
+                <div class="post-owner-actions" style="margin-top: 1rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <?php if ($isOwner): ?>
+                        <button type="button" class="btn-outline" onclick="toggleDetailEdit()">Edit Post</button>
+                    <?php endif; ?>
+                    <?php if ($canDelete): ?>
+                        <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="margin: 0;">
+                            <input type="hidden" name="action" value="delete">
+                            <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
+                            <button type="submit" class="btn-danger-outline">Delete Post</button>
+                        </form>
+                    <?php endif; ?>
                 </div>
-                <form id="detail-edit-form" method="POST" action="post_action.php" class="edit-form" style="display: none;">
+            <?php endif; ?>
+
+            <?php if ($isOwner): ?>
+                <form id="detail-edit-form" method="POST" action="post_action.php" class="edit-form" style="display: none; margin-top: 1rem;">
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <input type="hidden" name="return" value="<?= (int)$post['id'] ?>">
@@ -120,14 +132,6 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                         form.style.display = (form.style.display === 'none') ? 'block' : 'none';
                     }
                 </script>
-            <?php endif; ?>
-
-            <?php if ($canDelete): ?>
-                <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="margin-top: 1rem;">
-                    <input type="hidden" name="action" value="delete">
-                    <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
-                    <button type="submit" class="btn-danger-outline">Delete Post</button>
-                </form>
             <?php endif; ?>
         </div>
 
