@@ -5,11 +5,11 @@ import html
 def escape_xml(s):
     return html.escape(s, quote=True)
 
-def generate_presentation(output_path="[GroupCode]_Presentation.pptx"):
+def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR", section="BCS-7A"):
     slides_data = [
         {
             "title": "CampusConnect",
-            "subtitle": "University Microblogging & Announcement Hub\nAgile Software Project Management (ASPM) — Sprint 1–5 Final Review\nTeam: Muddassir (Lead Backend) | Faiz Hussain (Backend & QA) | Qaim (Frontend & Docs)",
+            "subtitle": f"University Microblogging & Announcement Hub\nAgile Software Project Management (ASPM) — Sprint 1–5 Final Review\nSection: {section} | Group Code: {group_code}\nTeam: Muddassir (Lead Backend) | Faiz Hussain (Backend & QA) | Qaim (Frontend & Docs)",
             "bullets": []
         },
         {
@@ -305,8 +305,9 @@ def generate_presentation(output_path="[GroupCode]_Presentation.pptx"):
         <p:txBody>
           <a:bodyPr anchor="top"/>
           <a:p><a:pPr algn="ctr"/><a:r><a:rPr sz="2000" b="1"><a:solidFill><a:srgbClr val="FFFFFF"/></a:solidFill></a:rPr><a:t>Agile Software Project Management (ASPM) — Final Project Review (Sprints 1–5)</a:t></a:r></a:p>
-          <a:p><a:pPr algn="ctr"/><a:r><a:rPr sz="1800"><a:solidFill><a:srgbClr val="ECEEFE"/></a:solidFill></a:rPr><a:t>Team: Muddassir (Lead Backend) | Faiz Hussain (Backend &amp; QA) | Qaim (Frontend &amp; Docs)</a:t></a:r></a:p>
-          <a:p><a:pPr algn="ctr"/><a:r><a:rPr sz="1600"><a:solidFill><a:srgbClr val="A5B4FF"/></a:solidFill></a:rPr><a:t>November 2026</a:t></a:r></a:p>
+          <a:p><a:pPr algn="ctr"/><a:r><a:rPr sz="1900" b="1"><a:solidFill><a:srgbClr val="ECEEFE"/></a:solidFill></a:rPr><a:t>Section: BCS-7A | Group Code: AIR</a:t></a:r></a:p>
+          <a:p><a:pPr algn="ctr"/><a:r><a:rPr sz="1700"><a:solidFill><a:srgbClr val="ECEEFE"/></a:solidFill></a:rPr><a:t>Team: Muddassir (Lead Backend) | Faiz Hussain (Backend &amp; QA) | Qaim (Frontend &amp; Docs)</a:t></a:r></a:p>
+          <a:p><a:pPr algn="ctr"/><a:r><a:rPr sz="1500"><a:solidFill><a:srgbClr val="A5B4FF"/></a:solidFill></a:rPr><a:t>November 2026</a:t></a:r></a:p>
         </p:txBody>
       </p:sp>
     </p:spTree>
@@ -371,5 +372,6 @@ def generate_presentation(output_path="[GroupCode]_Presentation.pptx"):
     print(f"Presentation successfully created at: {output_path}")
 
 if __name__ == "__main__":
-    generate_presentation("[GroupCode]_Presentation.pptx")
-    generate_presentation("CampusConnect_Presentation.pptx")
+    generate_presentation("AIR_Presentation.pptx", group_code="AIR", section="BCS-7A")
+    generate_presentation("[GroupCode]_Presentation.pptx", group_code="AIR", section="BCS-7A")
+    generate_presentation("CampusConnect_Presentation.pptx", group_code="AIR", section="BCS-7A")

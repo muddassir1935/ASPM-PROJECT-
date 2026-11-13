@@ -1,6 +1,6 @@
 # Team Contribution Matrix & Git Audit
 
-> **Honesty & Verification Notice**: This matrix is constructed directly from the verifiable Git repository commit history (`git log --all`). It documents the exact division of labor across all 5 Agile sprints for project **CampusConnect** (`ASPM-PROJECT-`).
+> **Honesty & Verification Notice**: This matrix is constructed directly from the verifiable Git repository commit history (`git log --all`). It documents the exact division of labor across all 5 Agile sprints for project **CampusConnect** (`ASPM-PROJECT-`), Section **BCS-7A**, Group Code **AIR**.
 
 ---
 
@@ -92,8 +92,8 @@ gantt
       - `docs/MEETINGS.md` (Official meeting minutes)
       - Sprint 5 Review and Retrospective notes
     - **Final Academic Deliverables**:
-      - Agile Presentation Deck (`[GroupCode]_Presentation.pptx`)
-      - Comprehensive Technical Project Report (`[GroupCode]_Report.pdf`)
+      - Agile Presentation Deck (`AIR_Presentation.pptx` / `[GroupCode]_Presentation.pptx`)
+      - Comprehensive Technical Project Report (`AIR_Report.pdf` / `[GroupCode]_Report.pdf`)
   - **Faiz Hussain** (Branch `feature/sprint-5-notifications`):
     - `Notification.php` model, notifications center page, header unread badge.
     - Notification triggers for follow, reply, and like events.
@@ -104,7 +104,7 @@ gantt
     - Role-Based Access Control (`student`, `society_admin`, `system_admin`).
     - Central permissions matrix, society announcement channels, admin moderation panel.
     - Security hardening: CSRF token validation, login rate limiting, session idle timeout.
-    - Final release verification, tagging, and zip packaging (`[GroupCode]_WorkingSoftware.zip`).
+    - Final release verification, tagging, and zip packaging (`AIR_WorkingSoftware.zip` / `[GroupCode]_WorkingSoftware.zip`).
 
 ---
 

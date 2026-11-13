@@ -21,5 +21,6 @@ def package_working_software(output_zip="[GroupCode]_WorkingSoftware.zip"):
     print(f"Working software zip created at: {output_zip}")
 
 if __name__ == '__main__':
+    package_working_software("AIR_WorkingSoftware.zip")
     package_working_software("[GroupCode]_WorkingSoftware.zip")
     package_working_software("CampusConnect_WorkingSoftware.zip")

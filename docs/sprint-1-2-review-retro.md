@@ -237,7 +237,7 @@
     - `docs/ADMIN_MANUAL.md` (Operations & administration manual)
     - `docs/CONTRIBUTION.md` (Verifiable Git audit)
     - `docs/MEETINGS.md` (Real team meeting minutes)
-    - Final Academic Presentation (`[GroupCode]_Presentation.pptx`) and Technical Report (`[GroupCode]_Report.pdf`)
+    - Final Academic Presentation (`AIR_Presentation.pptx` / `[GroupCode]_Presentation.pptx`) and Technical Report (`AIR_Report.pdf` / `[GroupCode]_Report.pdf`)
 
 ## Sprint 5 retro notes
 
@@ -254,5 +254,5 @@
   - [x] Complete documentation suite written and committed
   - [x] SRS increment, WBS mapping, and contribution matrix synchronized
   - [x] All 153 unit tests passing (153/153)
-  - [ ] GroupCode confirmed by user for final deliverable filenames
-  - [ ] Final release tagged and packaged as `[GroupCode]_WorkingSoftware.zip`
+  - [x] GroupCode confirmed by user: Section `BCS-7A`, Group Code `AIR`
+  - [x] Final deliverables generated: `AIR_Presentation.pptx`, `AIR_Report.pdf`, `AIR_WorkingSoftware.zip`

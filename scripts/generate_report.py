@@ -1,7 +1,7 @@
 import os
 import fitz  # PyMuPDF
 
-def build_pdf_report(output_filename="[GroupCode]_Report.pdf", group_code="[GroupCode]"):
+def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section="BCS-7A"):
     doc = fitz.open()
 
     # Brand Colors
@@ -21,7 +21,7 @@ def build_pdf_report(output_filename="[GroupCode]_Report.pdf", group_code="[Grou
         # Header
         page.draw_line(fitz.Point(50, 42), fitz.Point(545, 42), color=LINE, width=0.8)
         page.insert_text(fitz.Point(50, 36), title, fontsize=8.5, fontname="helv", color=MUTED)
-        page.insert_text(fitz.Point(450, 36), f"Group: {group_code}", fontsize=8.5, fontname="helv", color=MUTED)
+        page.insert_text(fitz.Point(380, 36), f"Section: {section} | Group: {group_code}", fontsize=8.5, fontname="helv", color=MUTED)
         # Footer
         page.draw_line(fitz.Point(50, 800), fitz.Point(545, 800), color=LINE, width=0.8)
         page.insert_text(fitz.Point(50, 814), "Agile Software Project Management (ASPM) | Sprints 1–5 Final Delivery", fontsize=8, fontname="helv", color=MUTED)
@@ -38,7 +38,7 @@ def build_pdf_report(output_filename="[GroupCode]_Report.pdf", group_code="[Grou
 
     # Decorative Accent Tag
     p1.draw_rect(fitz.Rect(70, 75, 230, 97), fill=ACCENT, color=ACCENT)
-    p1.insert_text(fitz.Point(82, 90), "ASPM FINAL CAPSTONE PROJECT", fontsize=9, fontname="helv", color=WHITE)
+    p1.insert_text(fitz.Point(82, 90), f"ASPM SECTION {section}", fontsize=9, fontname="helv", color=WHITE)
 
     # Main Project Title
     p1.insert_text(fitz.Point(70, 150), "CampusConnect", fontsize=38, fontname="helv", color=WHITE)
@@ -53,7 +53,7 @@ def build_pdf_report(output_filename="[GroupCode]_Report.pdf", group_code="[Grou
         p1.insert_text(fitz.Point(tx + 7, 273), tag, fontsize=7.5, fontname="helv", color=WHITE)
         tx += len(tag)*5.8 + 20
 
-    p1.insert_text(fitz.Point(70, 315), "Comprehensive Technical & Project Management Report (Sprints 1–5)", fontsize=11, fontname="helv", color=WHITE)
+    p1.insert_text(fitz.Point(70, 315), f"Comprehensive Technical & Project Management Report (Group Code: {group_code})", fontsize=11, fontname="helv", color=WHITE)
 
     # Metadata Card Below
     p1.draw_rect(fitz.Rect(50, 375, 545, 780), fill=WHITE, color=LINE, width=1.2)
@@ -62,13 +62,13 @@ def build_pdf_report(output_filename="[GroupCode]_Report.pdf", group_code="[Grou
 
     meta_items = [
         ("Course Name:", "Agile Software Project Management (ASPM)"),
-        ("Project Title:", "CampusConnect (Repository: ASPM-PROJECT-)"),
+        ("Class Section:", section),
         ("Group / Team Code:", group_code),
+        ("Project Title:", "CampusConnect (Repository: ASPM-PROJECT-)"),
         ("Academic Period:", "Fall Semester 2026 (Sprints 1–5 Delivered October–November 2026)"),
         ("Final Delivery Date:", "Sunday, 15 November 2026"),
         ("Core Stack:", "Native PHP 8.2+ (Strict OOP), MySQL (PDO), Redis / Socket Client, CSS3 Design System"),
-        ("Automated Tests:", "153 / 153 Passing Automated Unit & Regression Tests (100% Green)"),
-        ("Repository Rules:", "Strict Git Feature Branching, Prepared Statements Only, No Spaghetti Code")
+        ("Automated Tests:", "153 / 153 Passing Automated Unit & Regression Tests (100% Green)")
     ]
 
     my = 445
@@ -651,5 +651,6 @@ def build_pdf_report(output_filename="[GroupCode]_Report.pdf", group_code="[Grou
     print(f"Report PDF successfully generated: {output_filename} ({total_pages} pages)")
 
 if __name__ == '__main__':
-    build_pdf_report("[GroupCode]_Report.pdf", "[GroupCode]")
-    build_pdf_report("CampusConnect_Report.pdf", "CampusConnect")
+    build_pdf_report("AIR_Report.pdf", group_code="AIR", section="BCS-7A")
+    build_pdf_report("[GroupCode]_Report.pdf", group_code="AIR", section="BCS-7A")
+    build_pdf_report("CampusConnect_Report.pdf", group_code="AIR", section="BCS-7A")

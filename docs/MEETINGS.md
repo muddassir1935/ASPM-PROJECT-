@@ -87,7 +87,7 @@
 - **Decisions & Outcomes**:
   - **Task Split Agreement**:
     - **Faiz Hussain** (`feature/sprint-5-notifications`): Owns the `notifications` table, `Notification.php` domain model, header badge, notification triggers on likes/follows/replies, `tests/NotificationTest.php`, and `db/seed.sql` + `docs/DEPLOYMENT.md`.
-    - **Qaim** (`feature/sprint-5-docs`): Owns responsive mobile polish down to 360px viewports, tablet optimization, tactile micro-interactions, complete documentation suite (`sprint-5-srs-increment.md`, `USER_MANUAL.md`, `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md`, Sprint 5 retro notes), Agile Presentation deck (`[GroupCode]_Presentation.pptx`), and Technical Project Report (`[GroupCode]_Report.pdf`).
+    - **Qaim** (`feature/sprint-5-docs`): Owns responsive mobile polish down to 360px viewports, tablet optimization, tactile micro-interactions, complete documentation suite (`sprint-5-srs-increment.md`, `USER_MANUAL.md`, `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md`, Sprint 5 retro notes), Agile Presentation deck (`AIR_Presentation.pptx` / `[GroupCode]_Presentation.pptx`), and Technical Project Report (`AIR_Report.pdf` / `[GroupCode]_Report.pdf`).
     - **Muddassir & Muse** (`feature/sprint-5-rbac`): Owns RBAC roles (`student`, `society_admin`, `system_admin`), central permissions matrix, society announcement channels, admin panel, CSRF tokens, login rate limiting, session idle timeout, and final release tagging/packaging.
   - **Coordination Protocols**:
     - `includes/header.php` is touched by both RBAC (admin link) and notifications (bell badge). RBAC merges first; notifications rebases on updated `main` before PR.
@@ -95,4 +95,4 @@
   - **Hard Deadlines**:
     - *Saturday 14 Nov, 12:00 Noon*: All code merged into `main`.
     - *Saturday 14 Nov, Evening*: All documentation, presentation deck, and technical report drafts completed.
-    - *Sunday 15 Nov*: Final end-to-end verification walkthrough, release tagging, and zip packaging (`[GroupCode]_WorkingSoftware.zip`).
+    - *Sunday 15 Nov*: Final end-to-end verification walkthrough, release tagging, and zip packaging (`AIR_WorkingSoftware.zip` / `[GroupCode]_WorkingSoftware.zip`).
