@@ -27,11 +27,12 @@ class Like {
             return true;
         }
 
-        $checkSql = "SELECT id FROM posts WHERE id = :id AND deleted_at IS NULL LIMIT 1";
+        $checkSql = "SELECT id, user_id FROM posts WHERE id = :id AND deleted_at IS NULL LIMIT 1";
         $checkStmt = $this->db->prepare($checkSql);
         $checkStmt->bindParam(':id', $postId, PDO::PARAM_INT);
         $checkStmt->execute();
-        if (!$checkStmt->fetch(PDO::FETCH_ASSOC)) {
+        $postRow = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        if (!$postRow) {
             return false;
         }
 
@@ -46,6 +47,23 @@ class Like {
             if ($ok) {
                 // Keep a cached like counter (if one exists) in step.
                 Cache::getInstance()->incrementCounter("like_count_{$postId}");
+
+                // Sprint 5 (WBS 5.x): Notify post author if not liking own post
+                try {
+                    $postAuthorId = (int)$postRow['user_id'];
+                    if ($postAuthorId > 0 && $postAuthorId !== $userId) {
+                        require_once __DIR__ . '/Notification.php';
+                        $uStmt = $this->db->prepare("SELECT name FROM users WHERE id = :id LIMIT 1");
+                        $uStmt->bindParam(':id', $userId, PDO::PARAM_INT);
+                        $uStmt->execute();
+                        $likerName = $uStmt->fetchColumn() ?: 'Someone';
+
+                        $notif = new Notification($this->db);
+                        $notif->create($postAuthorId, Notification::TYPE_LIKE, $postId, "{$likerName} liked your post.", $userId);
+                    }
+                } catch (Throwable $t) {
+                    error_log("Like notification error: " . $t->getMessage());
+                }
             }
             return $ok;
         } catch (PDOException $e) {

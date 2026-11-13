@@ -75,10 +75,34 @@ class Reply {
 
         try {
             if ($stmt->execute()) {
+                $newReplyId = (int)$this->db->lastInsertId();
+
                 // Reply counts are rendered inside cached feed rows:
                 // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
                 Cache::getInstance()->deleteByPrefix('feed_');
-                return (int)$this->db->lastInsertId();
+
+                // Sprint 5 (WBS 5.x): Notify post author if not replying to own post
+                try {
+                    require_once __DIR__ . '/Notification.php';
+                    $postAuthorStmt = $this->db->prepare("SELECT user_id FROM posts WHERE id = :id LIMIT 1");
+                    $postAuthorStmt->bindParam(':id', $postId, PDO::PARAM_INT);
+                    $postAuthorStmt->execute();
+                    $postAuthorId = (int)$postAuthorStmt->fetchColumn();
+
+                    if ($postAuthorId > 0 && $postAuthorId !== $userId) {
+                        $uStmt = $this->db->prepare("SELECT name FROM users WHERE id = :id LIMIT 1");
+                        $uStmt->bindParam(':id', $userId, PDO::PARAM_INT);
+                        $uStmt->execute();
+                        $replierName = $uStmt->fetchColumn() ?: 'Someone';
+
+                        $notif = new Notification($this->db);
+                        $notif->create($postAuthorId, Notification::TYPE_REPLY, $postId, "{$replierName} replied to your post.", $userId);
+                    }
+                } catch (Throwable $t) {
+                    error_log("Reply notification error: " . $t->getMessage());
+                }
+
+                return $newReplyId;
             }
             return false;
         } catch (PDOException $e) {

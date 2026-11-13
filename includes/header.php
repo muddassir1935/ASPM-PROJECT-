@@ -1201,6 +1201,141 @@ if (!function_exists('brandMarkSvg')) {
             color: var(--muted);
         }
 
+        /* Sprint 5: Notifications Center & Header Bell (WBS 5.x) */
+        .nav-bell {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            color: var(--muted);
+            text-decoration: none;
+            transition: background-color var(--ease), color var(--ease);
+        }
+
+        .nav-bell:hover {
+            color: var(--ink);
+            background: var(--surface-hover);
+        }
+
+        .nav-bell svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .nav-bell-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: #E0245E;
+            color: #FFFFFF;
+            font-size: 0.68rem;
+            font-weight: 700;
+            min-width: 17px;
+            height: 17px;
+            line-height: 17px;
+            border-radius: 999px;
+            text-align: center;
+            padding: 0 4px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #FFFFFF;
+        }
+
+        .nav-col-link .nav-badge {
+            margin-left: auto;
+            background: var(--accent);
+            color: #FFFFFF;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 2px 7px;
+            border-radius: 999px;
+        }
+
+        .notif-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            transition: background var(--ease);
+            position: relative;
+        }
+
+        .notif-card:hover {
+            background: var(--surface-hover);
+        }
+
+        .notif-card.is-unread {
+            background: rgba(43, 63, 224, 0.04);
+            border-left: 3px solid var(--accent);
+        }
+
+        .notif-type-icon {
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .notif-badge-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: var(--surface);
+        }
+
+        .notif-badge-icon svg {
+            width: 17px;
+            height: 17px;
+        }
+
+        .notif-content-wrap {
+            flex: 1;
+        }
+
+        .notif-user-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .notif-body-text {
+            flex: 1;
+        }
+
+        .notif-target-link {
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .notif-msg {
+            font-size: 0.92rem;
+            color: var(--ink);
+            line-height: 1.4;
+            margin-bottom: 3px;
+        }
+
+        .notif-time {
+            font-size: 0.78rem;
+            color: var(--muted);
+        }
+
+        .btn-notif-mark {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 1.4rem;
+            line-height: 1;
+            padding: 4px;
+            cursor: pointer;
+        }
+
         .action-stat {
             display: inline-flex;
             align-items: center;
@@ -1939,6 +2074,20 @@ if (!function_exists('brandMarkSvg')) {
 
         <ul class="nav-menu">
             <?php if($currentUser): ?>
+                <?php
+                    $unreadNotifCount = 0;
+                    try {
+                        require_once __DIR__ . '/../classes/Notification.php';
+                        $headerDb = isset($db) ? $db : Database::getInstance()->getConnection();
+                        $unreadNotifCount = (new Notification($headerDb))->countUnread((int)$currentUser['id']);
+                    } catch (Throwable $e) {}
+                ?>
+                <li>
+                    <a href="notifications.php" class="nav-bell" aria-label="Notifications" title="Notifications">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+                        <span class="nav-bell-badge" data-notif-badge style="<?= $unreadNotifCount > 0 ? '' : 'display:none;' ?>"><?= $unreadNotifCount > 99 ? '99+' : $unreadNotifCount ?></span>
+                    </a>
+                </li>
                 <li>
                     <span class="user-tag">
                         <span class="avatar-xs<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
