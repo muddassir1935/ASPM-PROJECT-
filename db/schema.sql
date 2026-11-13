@@ -108,3 +108,21 @@ CREATE TABLE IF NOT EXISTS post_hashtags (
     CONSTRAINT fk_post_hashtags_tag FOREIGN KEY (hashtag_id) REFERENCES hashtags(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_post_hashtags_tag ON post_hashtags(hashtag_id);
+
+-- Notifications Table (Sprint 5: In-App Notifications, WBS 5.x)
+-- Fresh installs get this table from schema.sql; migrate_sprint5_notifications_mysql.sql
+-- is only for databases created before Sprint 5.
+CREATE TABLE IF NOT EXISTS notifications (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    actor_id INT DEFAULT NULL,
+    type VARCHAR(32) NOT NULL,
+    reference_id INT DEFAULT NULL,
+    message VARCHAR(255) NOT NULL,
+    is_read TINYINT(1) DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_notifications_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read);
+CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at DESC);
