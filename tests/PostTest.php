@@ -5,6 +5,7 @@
  * 
  * Run via CLI: php tests/PostTest.php
  */
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Post.php';
@@ -45,8 +46,8 @@ $userB = $userModel->verifyPassword($emailB, $password);
 $userAdmin = $userModel->verifyPassword($emailAdmin, $password);
 
 // Set admin role for userAdmin
-$db->exec("UPDATE users SET role = 'admin' WHERE id = " . (int)$userAdmin['id']);
-$userAdmin['role'] = 'admin';
+$db->exec("UPDATE users SET role = 'system_admin' WHERE id = " . (int)$userAdmin['id']);
+$userAdmin['role'] = 'system_admin';
 
 $authorId = (int)$userA['id'];
 $intruderId = (int)$userB['id'];
@@ -93,8 +94,8 @@ assertTest("Retrieve post by ID includes author name and relative time",
 
 // Timeline Feed
 $feed = $postModel->getFeed(10, 0);
-assertTest("Feed returns non-empty list of posts with authors", 
-    is_array($feed) && count($feed) >= 1 && isset($feed[0]['author_email'])
+assertTest("Feed returns non-empty list of posts with authors",
+    is_array($feed) && count($feed) >= 1 && isset($feed[0]['author_name'])
 );
 
 
@@ -145,16 +146,16 @@ echo PHP_EOL . "--- DELETION & PRIVILEGE TESTS ---" . PHP_EOL;
 
 $postId2 = $postModel->create($authorId, "Post to be deleted by intruder (should fail)");
 
-$intruderDelete = $postModel->delete($postId2, $intruderId, 'student');
+$intruderDelete = $postModel->delete($postId2, $intruderId, false);
 assertTest("Intruder cannot delete another user's post", $intruderDelete === false);
 
-$authorDelete = $postModel->delete($postId2, $authorId, 'student');
+$authorDelete = $postModel->delete($postId2, $authorId, false);
 assertTest("Author can delete their own post", $authorDelete === true);
 assertTest("Deleted post no longer exists in database", $postModel->getById($postId2) === false);
 
 // Admin deletion of foreign post
 $postId3 = $postModel->create($authorId, "Inappropriate post requiring admin moderation");
-$adminDelete = $postModel->delete($postId3, $adminId, 'admin');
+$adminDelete = $postModel->delete($postId3, $adminId, true);
 assertTest("Admin can moderate/delete any post (Role-based access)", $adminDelete === true);
 
 
@@ -163,7 +164,7 @@ echo PHP_EOL . "--- SOFT-DELETE TESTS ---" . PHP_EOL;
 
 $postId4 = $postModel->create($authorId, "Post that will be soft deleted");
 $countBeforeDelete = $postModel->countByUser($authorId);
-$softDelete = $postModel->delete($postId4, $authorId, 'student');
+$softDelete = $postModel->delete($postId4, $authorId, false);
 assertTest("Soft-delete returns true for the author", $softDelete === true);
 
 // The row must still exist in the database, with deleted_at set
@@ -184,7 +185,7 @@ assertTest("Soft-deleted post is excluded from the feed", !in_array($postId4, $f
 assertTest("Soft-deleted post cannot be updated",
     $postModel->update($postId4, $authorId, "Trying to revive a deleted post") === false);
 assertTest("Soft-deleted post cannot be deleted twice",
-    $postModel->delete($postId4, $authorId, 'student') === false);
+    $postModel->delete($postId4, $authorId, false) === false);
 
 
 echo PHP_EOL . "=================================================" . PHP_EOL;

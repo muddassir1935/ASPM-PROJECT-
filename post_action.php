@@ -17,6 +17,7 @@ require_once 'config/Database.php';
 require_once 'classes/Post.php';
 require_once 'classes/PostController.php';
 require_once 'classes/Auth.php';
+require_once 'classes/Csrf.php';
 
 // Every post action requires a logged-in user.
 if (!Auth::isLoggedIn()) {
@@ -31,25 +32,33 @@ if (session_status() === PHP_SESSION_NONE) {
 $result = ['success' => false, 'message' => 'Invalid request.'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $db = Database::getInstance()->getConnection();
-    $controller = new PostController(new Post($db));
+    // Sprint 5 CSRF: refuse the request when the token is missing or wrong.
+    if (!Csrf::validatePost()) {
+        $result = ['success' => false, 'message' => 'Security token expired. Please try again.'];
+    } else {
+        $db = Database::getInstance()->getConnection();
+        $controller = new PostController(new Post($db));
 
-    $action = $_POST['action'] ?? '';
-    $postId = (int)($_POST['post_id'] ?? 0);
+        $action = $_POST['action'] ?? '';
+        $postId = (int)($_POST['post_id'] ?? 0);
 
-    switch ($action) {
-        case 'create':
-            $result = $controller->handleCreate((string)($_POST['content'] ?? ''));
-            break;
-        case 'update':
-            $result = $controller->handleUpdate($postId, (string)($_POST['content'] ?? ''));
-            break;
-        case 'delete':
-            $result = $controller->handleDelete($postId);
-            break;
-        default:
-            $result = ['success' => false, 'message' => 'Unknown action.'];
-            break;
+        switch ($action) {
+            case 'create':
+                $result = $controller->handleCreate(
+                    (string)($_POST['content'] ?? ''),
+                    !empty($_POST['is_announcement'])
+                );
+                break;
+            case 'update':
+                $result = $controller->handleUpdate($postId, (string)($_POST['content'] ?? ''));
+                break;
+            case 'delete':
+                $result = $controller->handleDelete($postId);
+                break;
+            default:
+                $result = ['success' => false, 'message' => 'Unknown action.'];
+                break;
+        }
     }
 }
 

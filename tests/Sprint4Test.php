@@ -6,6 +6,7 @@
  *
  * Run via CLI: php tests/Sprint4Test.php
  */
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Post.php';

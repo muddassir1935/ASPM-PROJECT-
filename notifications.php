@@ -125,11 +125,19 @@ $unreadCount = $notifModel->countUnread($userId);
 </div>
 
 <script>
+    // Sprint 5 CSRF: the token comes from the <meta> tag header.php emits.
+    var csrfToken = '';
+    (function () {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) { csrfToken = meta.getAttribute('content') || ''; }
+    })();
+
     function markNotificationRead(id, btnElement) {
         fetch('notification_action.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'action=mark_read&id=' + encodeURIComponent(id)
+                + '&csrf_token=' + encodeURIComponent(csrfToken)
         })
         .then(function (r) { return r.json(); })
         .then(function (data) {
@@ -155,6 +163,7 @@ $unreadCount = $notifModel->countUnread($userId);
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'action=mark_all_read'
+                    + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
             .then(function (r) { return r.json(); })
             .then(function (data) {

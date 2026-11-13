@@ -2,6 +2,8 @@
 require_once 'config/Database.php';
 require_once 'classes/User.php';
 require_once 'classes/Auth.php';
+require_once 'classes/Csrf.php';
+require_once 'classes/LoginRateLimiter.php';
 
 $error = "";
 $success = "";
@@ -14,22 +16,39 @@ if (isset($_GET['logged_out'])) {
 }
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-
-    if(empty($email) || empty($password)) {
-        $error = "Please fill in all fields.";
+    // Sprint 5 CSRF: the login form carries a token too.
+    if (!Csrf::validatePost()) {
+        $error = "Security token expired. Please try again.";
     } else {
-        $db = Database::getInstance()->getConnection();
-        $user = new User($db);
-        $userData = $user->verifyPassword($email, $password);
-        
-        if($userData) {
-            Auth::login($userData);
-            header("Location: index.php");
-            exit;
+        $email = trim($_POST['email'] ?? '');
+        // Passwords are never trimmed: a leading/trailing space is part of
+        // the password, and trimming here but not at signup would lock users out.
+        $password = (string)($_POST['password'] ?? '');
+
+        if(empty($email) || empty($password)) {
+            $error = "Please fill in all fields.";
         } else {
-            $error = "Invalid email or password. Please try again.";
+            $db = Database::getInstance()->getConnection();
+            $user = new User($db);
+            // Sprint 5 rate-limit: 5 failed attempts per (email, IP) in
+            // 15 minutes locks logins for that pair for 15 minutes.
+            $limiter = new LoginRateLimiter($db);
+            if ($limiter->isLocked($email)) {
+                $minutes = (int)ceil($limiter->lockRemainingSeconds($email) / 60);
+                $error = "Too many failed login attempts. Please try again in {$minutes} minute" . ($minutes === 1 ? '' : 's') . ".";
+            } else {
+                $userData = $user->verifyPassword($email, $password);
+
+                if($userData) {
+                    $limiter->recordSuccess($email);
+                    Auth::login($userData);
+                    header("Location: index.php");
+                    exit;
+                } else {
+                    $limiter->recordFailure($email);
+                    $error = "Invalid email or password. Please try again.";
+                }
+            }
         }
     }
 }
@@ -71,6 +90,7 @@ require_once 'includes/header.php';
         <?php endif; ?>
 
         <form method="POST" action="login.php" autocomplete="off">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label" for="email">Campus Email</label>
                 <input 

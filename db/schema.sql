@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role ENUM('student', 'admin', 'society') DEFAULT 'student',
+    role ENUM('student', 'society_admin', 'system_admin') DEFAULT 'student',
     bio TEXT DEFAULT NULL,
     cover_style VARCHAR(20) NOT NULL DEFAULT 'signature',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS posts (
     id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     content TEXT NOT NULL,
+    is_announcement TINYINT(1) NOT NULL DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
@@ -126,3 +127,16 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read);
 CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at DESC);
+
+-- Login Attempts Table (Sprint 5: login rate-limit / lockout)
+-- One row per (email, IP) pair; see classes/LoginRateLimiter.php.
+-- Fresh installs get this table from schema.sql; migrate_sprint5_rbac_mysql.sql
+-- is only for databases created before Sprint 5.
+CREATE TABLE IF NOT EXISTS login_attempts (
+    email VARCHAR(255) NOT NULL,
+    ip VARCHAR(45) NOT NULL,
+    attempts INT NOT NULL DEFAULT 0,
+    last_attempt INT NOT NULL DEFAULT 0,
+    locked_until INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (email, ip)
+);

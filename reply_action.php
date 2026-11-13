@@ -15,6 +15,7 @@
 require_once 'config/Database.php';
 require_once 'classes/Reply.php';
 require_once 'classes/Auth.php';
+require_once 'classes/Csrf.php';
 
 // Every reply action requires a logged-in user.
 if (!Auth::isLoggedIn()) {
@@ -30,17 +31,22 @@ $result = ['success' => false, 'message' => 'Invalid request.'];
 $returnPostId = 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $db = Database::getInstance()->getConnection();
-    $replyModel = new Reply($db);
-    $currentUser = Auth::user();
+    // Sprint 5 CSRF: refuse the request when the token is missing or wrong.
+    if (!Csrf::validatePost()) {
+        $result = ['success' => false, 'message' => 'Security token expired. Please try again.'];
+        $returnPostId = (int)($_POST['return_post_id'] ?? $_POST['post_id'] ?? 0);
+    } else {
+        $db = Database::getInstance()->getConnection();
+        $replyModel = new Reply($db);
+        $currentUser = Auth::user();
 
-    $action = $_POST['action'] ?? '';
-    $postId = (int)($_POST['post_id'] ?? 0);
-    $replyId = (int)($_POST['reply_id'] ?? 0);
-    $returnPostId = $postId > 0 ? $postId : (int)($_POST['return_post_id'] ?? 0);
+        $action = $_POST['action'] ?? '';
+        $postId = (int)($_POST['post_id'] ?? 0);
+        $replyId = (int)($_POST['reply_id'] ?? 0);
+        $returnPostId = $postId > 0 ? $postId : (int)($_POST['return_post_id'] ?? 0);
 
-    switch ($action) {
-        case 'create':
+        switch ($action) {
+            case 'create':
             if ($postId <= 0) {
                 $result = ['success' => false, 'message' => 'Invalid post.'];
                 break;
@@ -60,8 +66,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = ['success' => false, 'message' => 'Invalid reply.'];
                 break;
             }
-            $role = $currentUser['role'] ?? 'student';
-            $deleted = $replyModel->delete($replyId, (int)$currentUser['id'], $role);
+            $deleted = $replyModel->delete($replyId, (int)$currentUser['id'], Auth::can('reply.delete_any'));
             $result = $deleted
                 ? ['success' => true, 'message' => 'Reply deleted.']
                 : ['success' => false, 'message' => 'Permission denied or reply not found.'];
@@ -69,6 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         default:
             $result = ['success' => false, 'message' => 'Unknown action.'];
             break;
+    }
     }
 }
 

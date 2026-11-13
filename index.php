@@ -42,12 +42,18 @@ if ($currentUser) {
         <div class="compose-card">
             <form method="POST" action="post_action.php" id="compose-form">
                 <input type="hidden" name="action" value="create">
+                <?= Csrf::field() ?>
                 <div class="compose-flex">
                     <span class="avatar-md<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
                     <textarea id="compose-content" class="form-control" name="content" rows="3" maxlength="280" placeholder="Share an update or announcement with the campus..."></textarea>
                 </div>
                 <div class="compose-row">
                     <span id="compose-counter" class="char-counter">0 / 280</span>
+                    <?php if (Auth::can('announcement.create')): ?>
+                        <label class="char-counter" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--ink); font-weight: 600;">
+                            <input type="checkbox" name="is_announcement" value="1" style="accent-color: var(--accent);"> Post as announcement
+                        </label>
+                    <?php endif; ?>
                     <button type="submit" id="compose-submit" class="btn-primary" disabled>
                         Post
                     </button>
@@ -94,11 +100,11 @@ if ($currentUser) {
                     $isOwnPost = (int)$feedPost['user_id'] === (int)$currentUser['id'];
                     $authorInitial = strtoupper(mb_substr(trim($feedPost['author_name']), 0, 1, 'UTF-8'));
                 ?>
-                <?php $feedIsAdmin = ($feedPost['author_role'] ?? '') === 'admin'; ?>
+                <?php $feedIsAnnouncement = !empty($feedPost['is_announcement']); ?>
                 <div class="post-card">
                     <span class="avatar-md<?= avatarToneClass((int)$feedPost['user_id'], (string)($feedPost['author_role'] ?? '')) ?>"><?= htmlspecialchars($authorInitial) ?></span>
                     <div class="post-body">
-                        <?php if ($feedIsAdmin): ?>
+                        <?php if ($feedIsAnnouncement): ?>
                             <div class="announce-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg>Announcement</div>
                         <?php endif; ?>
                         <div class="post-card-head">
@@ -116,6 +122,7 @@ if ($currentUser) {
                             <?php if ($isOwnPost): ?>
                                 <button type="button" class="btn-text" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)">Edit</button>
                                 <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" class="inline-form">
+                                    <?= Csrf::field() ?>
                                     <input type="hidden" name="action" value="delete">
                                     <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                     <button type="submit" class="btn-text btn-text-danger">Delete</button>
@@ -125,6 +132,7 @@ if ($currentUser) {
 
                         <?php if ($isOwnPost): ?>
                             <form id="feed-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" class="edit-form" style="display: none;">
+                                <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                 <textarea name="content" class="form-control" rows="3" maxlength="280" required><?= htmlspecialchars($feedPost['content']) ?></textarea>

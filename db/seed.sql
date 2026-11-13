@@ -7,32 +7,40 @@
 
 -- Default password for all seed accounts: StrongPass123!
 -- Bcrypt Hash: $2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e
+--
+-- Sprint 5 RBAC: the seed system-admin account is Campus Administrator
+-- (admin@nu.edu.pk, role system_admin, same default password above).
+-- It can sign in and open the Admin Panel to assign roles. The demo
+-- society accounts use role society_admin (renamed from the old
+-- 'society' value in Sprint 5; the old 'admin' value is now
+-- 'system_admin').
 
 -- ---------------------------------------------------------------------
 -- 1. DEMO USERS
 -- ---------------------------------------------------------------------
 INSERT INTO users (id, name, email, password_hash, role, bio, cover_style, created_at) VALUES
 (1, 'Ali Ahmed', 'student@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'student', 'BS Computer Science (Junior) @ FAST-NUCES. Full-stack developer & open-source enthusiast.', 'cobalt', NOW() - INTERVAL 10 DAY),
-(2, 'ACM NUCES Chapter', 'society@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'society', 'Official ACM Student Chapter. Fostering technical excellence, workshops, and annual hackathons.', 'teal', NOW() - INTERVAL 14 DAY),
-(3, 'Campus Administrator', 'admin@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'admin', 'Central University Administration & Academic Coordination Hub.', 'signature', NOW() - INTERVAL 30 DAY),
+(2, 'ACM NUCES Chapter', 'society@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'society_admin', 'Official ACM Student Chapter. Fostering technical excellence, workshops, and annual hackathons.', 'teal', NOW() - INTERVAL 14 DAY),
+(3, 'Campus Administrator', 'admin@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'system_admin', 'Central University Administration & Academic Coordination Hub.', 'signature', NOW() - INTERVAL 30 DAY),
 (4, 'Zainab Malik', 'zainab@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'student', 'AI & Machine Learning researcher. Working on NLP for regional languages. Coffee and code.', 'sunset', NOW() - INTERVAL 8 DAY),
 (5, 'Bilal Khan', 'bilal@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'student', 'Software Engineering senior. President of Competitive Programming Club. Solved 500+ problems.', 'violet', NOW() - INTERVAL 6 DAY),
 (6, 'Sara Tariq', 'sara@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'student', 'Computer Systems Engineering sophomore. Robotics lover and embedded hardware geek.', 'graphite', NOW() - INTERVAL 5 DAY),
-(7, 'IEEE Student Branch', 'ieee@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'society', 'IEEE FAST Student Branch. Empowering engineers through innovation, seminars, and networking.', 'signature', NOW() - INTERVAL 12 DAY)
+(7, 'IEEE Student Branch', 'ieee@nu.edu.pk', '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e', 'society_admin', 'IEEE FAST Student Branch. Empowering engineers through innovation, seminars, and networking.', 'signature', NOW() - INTERVAL 12 DAY)
 ON DUPLICATE KEY UPDATE name=VALUES(name), bio=VALUES(bio);
 
 -- ---------------------------------------------------------------------
 -- 2. DEMO POSTS & ANNOUNCEMENTS
 -- ---------------------------------------------------------------------
-INSERT INTO posts (id, user_id, content, created_at, updated_at, deleted_at) VALUES
-(1, 3, 'Welcome to the new academic semester on CampusConnect! Please review the updated library timings and lab schedule on the student portal. #FASTNUCES #CampusConnect', NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 3 DAY, NULL),
-(2, 2, 'Registrations are now officially live for FAST Hackathon 2026! 48 hours of building, mentoring, and prizes worth 200,000 PKR. Form link in bio! #Hackathon2026 #ACM #Tech', NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY, NULL),
-(3, 1, 'Working on our ASPM microblogging project with PHP and MySQL. Super excited to present the working software! #WebDev #CampusConnect #Agile', NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY, NULL),
-(4, 4, 'Our research paper on Transformers for Low-Resource Languages has been accepted at ACL 2026! Big thanks to the CS faculty for their support. #Research #NLP #AI', NOW() - INTERVAL 20 HOUR, NOW() - INTERVAL 20 HOUR, NULL),
-(5, 5, 'Competitive Programming practice session this Saturday at 3 PM in Lab 3. We will cover dynamic programming and graph trees. All batches welcome! #Code #CS', NOW() - INTERVAL 14 HOUR, NOW() - INTERVAL 14 HOUR, NULL),
-(6, 6, 'Anyone know if the hardware robotics lab is open over the weekend? Need to calibrate sensor rigs for our FYP prototype. #Robotics #FYP', NOW() - INTERVAL 8 HOUR, NOW() - INTERVAL 8 HOUR, NULL),
-(7, 7, 'Workshop Alert: Cloud Computing with AWS & Kubernetes happening next Tuesday! Certified instructor session with hands-on labs. #IEEE #Cloud #AWS', NOW() - INTERVAL 5 HOUR, NOW() - INTERVAL 5 HOUR, NULL),
-(8, 1, 'Quick poll for CS batch: who is attending the Hackathon next week? Looking for one more frontend teammate! #Hackathon2026 #WebDev', NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 2 HOUR, NULL)
+-- Posts 1 and 2 are society announcements (is_announcement = 1, Sprint 5 RBAC).
+INSERT INTO posts (id, user_id, content, is_announcement, created_at, updated_at, deleted_at) VALUES
+(1, 3, 'Welcome to the new academic semester on CampusConnect! Please review the updated library timings and lab schedule on the student portal. #FASTNUCES #CampusConnect', 1, NOW() - INTERVAL 3 DAY, NOW() - INTERVAL 3 DAY, NULL),
+(2, 2, 'Registrations are now officially live for FAST Hackathon 2026! 48 hours of building, mentoring, and prizes worth 200,000 PKR. Form link in bio! #Hackathon2026 #ACM #Tech', 1, NOW() - INTERVAL 2 DAY, NOW() - INTERVAL 2 DAY, NULL),
+(3, 1, 'Working on our ASPM microblogging project with PHP and MySQL. Super excited to present the working software! #WebDev #CampusConnect #Agile', 0, NOW() - INTERVAL 1 DAY, NOW() - INTERVAL 1 DAY, NULL),
+(4, 4, 'Our research paper on Transformers for Low-Resource Languages has been accepted at ACL 2026! Big thanks to the CS faculty for their support. #Research #NLP #AI', 0, NOW() - INTERVAL 20 HOUR, NOW() - INTERVAL 20 HOUR, NULL),
+(5, 5, 'Competitive Programming practice session this Saturday at 3 PM in Lab 3. We will cover dynamic programming and graph trees. All batches welcome! #Code #CS', 0, NOW() - INTERVAL 14 HOUR, NOW() - INTERVAL 14 HOUR, NULL),
+(6, 6, 'Anyone know if the hardware robotics lab is open over the weekend? Need to calibrate sensor rigs for our FYP prototype. #Robotics #FYP', 0, NOW() - INTERVAL 8 HOUR, NOW() - INTERVAL 8 HOUR, NULL),
+(7, 7, 'Workshop Alert: Cloud Computing with AWS & Kubernetes happening next Tuesday! Certified instructor session with hands-on labs. #IEEE #Cloud #AWS', 0, NOW() - INTERVAL 5 HOUR, NOW() - INTERVAL 5 HOUR, NULL),
+(8, 1, 'Quick poll for CS batch: who is attending the Hackathon next week? Looking for one more frontend teammate! #Hackathon2026 #WebDev', 0, NOW() - INTERVAL 2 HOUR, NOW() - INTERVAL 2 HOUR, NULL)
 ON DUPLICATE KEY UPDATE content=VALUES(content);
 
 -- ---------------------------------------------------------------------

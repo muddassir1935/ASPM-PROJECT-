@@ -5,6 +5,7 @@
  *
  * Run via CLI: php tests/NotificationTest.php
  */
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Post.php';

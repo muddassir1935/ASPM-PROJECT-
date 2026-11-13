@@ -3,6 +3,7 @@
  * Unit Testing 
  * Run via CLI: php tests/UserTest.php
  */
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 

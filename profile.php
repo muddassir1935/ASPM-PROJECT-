@@ -88,7 +88,7 @@ if ($profile) {
             <?php endif; ?>
 
             <!-- Profile header card -->
-            <?php $profileIsAdmin = ($profile['role'] ?? '') === 'admin'; ?>
+            <?php $profileIsAdmin = Authorization::isOfficialRole($profile['role'] ?? ''); ?>
             <div class="profile-card">
                 <div class="profile-cover cover-<?= htmlspecialchars($coverStyle) ?>" aria-hidden="true"></div>
                 <div class="profile-head">
@@ -97,7 +97,7 @@ if ($profile) {
                         <div class="profile-name">
                             <?= htmlspecialchars($profile['name']) ?>
                         </div>
-                        <div class="profile-email"><?= htmlspecialchars($profile['email']) ?> &middot; <?= htmlspecialchars(ucfirst((string)$profile['role'])) ?></div>
+                        <div class="profile-email"><?php if ($isOwnProfile): ?><?= htmlspecialchars($profile['email']) ?> &middot; <?php endif; ?><?= htmlspecialchars(Authorization::displayLabel($profile['role'] ?? '')) ?></div>
                         <?php if (!empty($profile['bio'])): ?>
                             <p class="profile-bio"><?= htmlspecialchars($profile['bio']) ?></p>
                         <?php endif; ?>
@@ -195,7 +195,7 @@ if ($profile) {
                     <div class="user-row">
                         <a href="profile.php?id=<?= (int)$follower['id'] ?>" class="user-row-link">
                             <span class="avatar-sm<?= avatarToneClass((int)$follower['id'], (string)($follower['role'] ?? '')) ?>"><?= htmlspecialchars($fInitial) ?></span>
-                            <span class="user-row-text"><strong><?= htmlspecialchars($follower['name']) ?></strong><span><?= htmlspecialchars($follower['role']) ?></span></span>
+                            <span class="user-row-text"><strong><?= htmlspecialchars($follower['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($follower['role'] ?? '')) ?></span></span>
                         </a>
                         <?php if ($currentUser && !$fIsSelf): ?>
                             <button type="button" class="btn-follow<?= $fIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$follower['id'] ?>"><?= $fIsFollowing ? 'Following' : 'Follow' ?></button>
@@ -225,7 +225,7 @@ if ($profile) {
                     <div class="user-row">
                         <a href="profile.php?id=<?= (int)$followed['id'] ?>" class="user-row-link">
                             <span class="avatar-sm<?= avatarToneClass((int)$followed['id'], (string)($followed['role'] ?? '')) ?>"><?= htmlspecialchars($fInitial) ?></span>
-                            <span class="user-row-text"><strong><?= htmlspecialchars($followed['name']) ?></strong><span><?= htmlspecialchars($followed['role']) ?></span></span>
+                            <span class="user-row-text"><strong><?= htmlspecialchars($followed['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($followed['role'] ?? '')) ?></span></span>
                         </a>
                         <?php if ($currentUser && !$fIsSelf): ?>
                             <button type="button" class="btn-follow<?= $fIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$followed['id'] ?>"><?= $fIsFollowing ? 'Following' : 'Follow' ?></button>
@@ -245,6 +245,7 @@ if ($profile) {
                     <button type="button" class="modal-close" onclick="toggleModal('edit-profile-modal')">&times;</button>
                 </div>
                 <form method="POST" action="profile_action.php">
+                    <?= Csrf::field() ?>
                     <div class="form-group">
                         <label class="form-label" for="edit-name">Name</label>
                         <input class="form-control" type="text" id="edit-name" name="name" maxlength="255" required value="<?= htmlspecialchars($profile['name']) ?>">

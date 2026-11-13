@@ -1,15 +1,46 @@
 <?php
+// Sprint 5 (H7): baseline security headers on every page using the
+// shared shell. Guarded: a few entry points may have echoed already.
+if (!headers_sent()) {
+    header('X-Frame-Options: SAMEORIGIN');
+    header('X-Content-Type-Options: nosniff');
+    header('Referrer-Policy: no-referrer-when-downgrade');
+}
+// Sprint 5 (M1): never leak stack traces / file paths to the browser.
+// Errors still go to the PHP error log.
+ini_set('display_errors', '0');
+
 if(file_exists(__DIR__ . '/../classes/Auth.php')) {
     require_once __DIR__ . '/../classes/Auth.php';
 }
+if(file_exists(__DIR__ . '/../classes/Authorization.php')) {
+    require_once __DIR__ . '/../classes/Authorization.php';
+}
+if(file_exists(__DIR__ . '/../classes/Csrf.php')) {
+    require_once __DIR__ . '/../classes/Csrf.php';
+}
 $currentUser = class_exists('Auth') ? Auth::user() : null;
+
+// Sprint 5 (H3): if MySQL is down the app runs on the SQLite fallback —
+// a DIFFERENT database with its own users and posts. Say so visibly
+// instead of failing logins with a bare "Invalid email or password".
+// (Auth::user() above already opened the connection, so this is free.)
+$isDbFallback = false;
+try {
+    if (class_exists('Database')) {
+        $isDbFallback = Database::getInstance()->isFallback();
+    }
+} catch (Throwable $e) {
+    $isDbFallback = false;
+}
 
 // Design v2: initial avatars take a fixed muted tone per user (like
 // contact apps), so a person reads the same colour everywhere.
-// Admins get the ink tone; everyone else cycles six product tones.
+// Official accounts (system + society admins) get the ink tone;
+// everyone else cycles six product tones.
 if (!function_exists('avatarToneClass')) {
     function avatarToneClass(int $userId, string $role = ''): string {
-        if ($role === 'admin') {
+        if (class_exists('Authorization') && Authorization::isOfficialRole($role)) {
             return ' avatar-admin';
         }
         return ' avatar-t' . (($userId % 6) + 1);
@@ -36,6 +67,10 @@ if (!function_exists('brandMarkSvg')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CampusConnect — University Microblogging Platform</title>
+    <?php if ($currentUser && class_exists('Csrf')): ?>
+    <!-- Sprint 5 CSRF: AJAX POSTs (like/follow/bookmark/notifications) read the token from here. -->
+    <meta name="csrf-token" content="<?= htmlspecialchars(Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+    <?php endif; ?>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2259,9 +2294,25 @@ if (!function_exists('brandMarkSvg')) {
             border-bottom-color: var(--accent);
         }
 
+        /* Sprint 5 (H3): SQLite-fallback banner — amber strip, impossible
+           to miss, because the app is on a different database. */
+        .db-fallback-banner {
+            background: #FEF3C7;
+            color: #92400E;
+            border-bottom: 1px solid #F59E0B;
+            text-align: center;
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 7px 16px;
+        }
+
     </style>
 </head>
 <body>
+
+<?php if ($isDbFallback): ?>
+    <div class="db-fallback-banner" role="alert">Notice: MySQL is unreachable — running on the local SQLite fallback. Accounts and posts saved here will not appear once MySQL is back.</div>
+<?php endif; ?>
 
 <header class="navbar">
     <div class="nav-inner">
@@ -2291,10 +2342,19 @@ if (!function_exists('brandMarkSvg')) {
                 <li>
                     <span class="user-tag">
                         <span class="avatar-xs<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
-                        <?= htmlspecialchars($currentUser['name']) ?> <span class="user-role">(<?= htmlspecialchars($currentUser['role']) ?>)</span>
+                        <?= htmlspecialchars($currentUser['name']) ?> <span class="user-role">(<?= htmlspecialchars(class_exists('Authorization') ? Authorization::displayLabel($currentUser['role'] ?? '') : ($currentUser['role'] ?? '')) ?>)</span>
                     </span>
                 </li>
-                <li><a href="logout.php" class="nav-link nav-link-logout">Logout</a></li>
+                <?php if (class_exists('Auth') && Auth::can('user.manage')): ?>
+                    <li><a href="admin.php" class="nav-link">Admin</a></li>
+                <?php endif; ?>
+                <li>
+                    <!-- Sprint 5: logout is a POST with a CSRF token, like every other state change. -->
+                    <form method="POST" action="logout.php" class="inline-form">
+                        <?= class_exists('Csrf') ? Csrf::field() : '' ?>
+                        <button type="submit" class="nav-link nav-link-logout" style="background: none; border: none; font: inherit; cursor: pointer;">Logout</button>
+                    </form>
+                </li>
             <?php else: ?>
                 <li><a href="login.php" class="nav-link">Log In</a></li>
                 <li><a href="signup.php" class="btn-nav-primary">Create Account</a></li>

@@ -135,7 +135,90 @@ class User {
     }
 
     /**
-     * Search users by name or email (Sprint 3 explore page).
+     * Admin user list (Sprint 5 RBAC, admin panel): newest first,
+     * searchable by name or email, paginated. Returns id, name, email,
+     * role, created_at and post count per user.
+     */
+    public function listUsers(string $search = '', int $limit = 50, int $offset = 0): array {
+        $clean = trim($search);
+        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+        $sql = "SELECT u.id, u.name, u.email, u.role, u.created_at,
+                       (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id AND p.deleted_at IS NULL) AS post_count
+                FROM users u";
+        $params = [];
+        if ($clean !== '') {
+            $sql .= " WHERE (u.name LIKE :q ESCAPE '\\' OR u.email LIKE :q2 ESCAPE '\\')";
+            $params[':q'] = $like;
+            $params[':q2'] = $like;
+        }
+        $sql .= " ORDER BY u.created_at DESC, u.id DESC LIMIT :limit OFFSET :offset";
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->bindValue(':limit', max(1, $limit), PDO::PARAM_INT);
+        $stmt->bindValue(':offset', max(0, $offset), PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /** Count users matching the admin list search (for pagination). */
+    public function countUsers(string $search = ''): int {
+        $clean = trim($search);
+        $sql = "SELECT COUNT(*) FROM users u";
+        $params = [];
+        if ($clean !== '') {
+            $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+            $sql .= " WHERE (u.name LIKE :q ESCAPE '\\' OR u.email LIKE :q2 ESCAPE '\\')";
+            $params[':q'] = $like;
+            $params[':q2'] = $like;
+        }
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value, PDO::PARAM_STR);
+        }
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Assign a role to a user (Sprint 5 RBAC, admin panel only).
+     * Only the three current role names are accepted — legacy values
+     * ('admin', 'society') are rejected here, never stored. Returns
+     * false for an invalid role, unknown user, or DB failure.
+     */
+    public function setRole($userId, $role): bool {
+        if ((int)$userId <= 0) {
+            return false;
+        }
+        require_once __DIR__ . '/Authorization.php';
+        if (!class_exists('Authorization') || !Authorization::isValidRole($role)) {
+            return false;
+        }
+        $stmt = $this->db->prepare("UPDATE users SET role = :role WHERE id = :id");
+        $stmt->bindValue(':role', strtolower(trim((string)$role)), PDO::PARAM_STR);
+        $stmt->bindValue(':id', (int)$userId, PDO::PARAM_INT);
+        try {
+            $stmt->execute();
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            return false;
+        }
+    }
+
+    /** How many system admins exist (guards against demoting the last one). */
+    public function countSystemAdmins(): int {
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE role = 'system_admin'");
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
+    }
+
+    /**
+     * Search users by NAME only (Sprint 3 explore page).
+     * Sprint 5 (H5): matching on email let anyone harvest addresses
+     * by searching "@nu.edu.pk" (or "a"), and the results displayed
+     * them. Email is no longer matched or returned here; the admin
+     * panel's listUsers() still searches email (admin-only).
      * The searching user is excluded from their own results.
      */
     public function searchUsers($query, $excludeUserId = 0, $limit = 20): array {
@@ -145,16 +228,15 @@ class User {
         }
         $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
         $stmt = $this->db->prepare(
-            "SELECT u.id, u.name, u.email, u.role, u.bio,
+            "SELECT u.id, u.name, u.role, u.bio,
                     (SELECT COUNT(*) FROM follows f WHERE f.followed_id = u.id) AS follower_count
              FROM users u
-             WHERE (u.name LIKE :q ESCAPE '\\' OR u.email LIKE :q2 ESCAPE '\\')
+             WHERE u.name LIKE :q ESCAPE '\\'
                AND u.id <> :exclude_id
              ORDER BY u.name ASC
              LIMIT :limit"
         );
         $stmt->bindParam(':q', $like, PDO::PARAM_STR);
-        $stmt->bindParam(':q2', $like, PDO::PARAM_STR);
         $stmt->bindParam(':exclude_id', $excludeUserId, PDO::PARAM_INT);
         $stmt->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
         $stmt->execute();

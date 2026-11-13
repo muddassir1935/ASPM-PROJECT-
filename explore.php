@@ -2,7 +2,7 @@
 /**
  * Explore / Search Page (Sprint 3 & 4: WBS 3.3.4, 4.2).
  *
- * Search users by name/email, posts by content, or filter by hashtag (#tag).
+ * Search users by name, posts by content, or filter by hashtag (#tag).
  * With no query it shows the latest posts, trending hashtags, and who-to-follow.
  */
 require_once 'config/Database.php';
@@ -79,7 +79,7 @@ if ($currentUser) {
                         <div class="user-row">
                             <a href="profile.php?id=<?= (int)$foundUser['id'] ?>" class="user-row-link">
                                 <span class="avatar-sm<?= avatarToneClass((int)$foundUser['id'], (string)($foundUser['role'] ?? '')) ?>"><?= htmlspecialchars($uInitial) ?></span>
-                                <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars($foundUser['email']) ?> &bull; <?= (int)$foundUser['follower_count'] ?> followers</span></span>
+                                <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($foundUser['role'] ?? 'student')) ?> &bull; <?= (int)$foundUser['follower_count'] ?> followers</span></span>
                             </a>
                             <?php if ($currentUser): ?>
                                 <button type="button" class="btn-follow<?= $uIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$foundUser['id'] ?>"><?= $uIsFollowing ? 'Following' : 'Follow' ?></button>

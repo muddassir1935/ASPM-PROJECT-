@@ -59,12 +59,15 @@ class Post {
 
     /**
      * Create a new post.
-     * 
+     *
      * @param int $userId Author ID
      * @param string $content Raw post text
+     * @param bool $isAnnouncement Society announcement flag. The caller
+     *        (PostController) is responsible for the permission check —
+     *        only society_admin / system_admin may set this.
      * @return int|false The newly created post ID, or false on validation/db failure
      */
-    public function create(int $userId, string $content) {
+    public function create(int $userId, string $content, bool $isAnnouncement = false) {
         if ($userId <= 0) {
             return false;
         }
@@ -76,11 +79,13 @@ class Post {
 
         $cleanContent = $validation['clean'];
 
-        $sql = "INSERT INTO posts (user_id, content, created_at, updated_at) 
-                VALUES (:user_id, :content, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
+        $sql = "INSERT INTO posts (user_id, content, is_announcement, created_at, updated_at)
+                VALUES (:user_id, :content, :is_announcement, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
         $stmt->bindParam(':content', $cleanContent, PDO::PARAM_STR);
+        $announcementFlag = $isAnnouncement ? 1 : 0;
+        $stmt->bindParam(':is_announcement', $announcementFlag, PDO::PARAM_INT);
 
         try {
             if ($stmt->execute()) {
@@ -116,8 +121,8 @@ class Post {
                (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
             : ", 0 AS is_liked, 0 AS is_bookmarked";
 
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+        $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
+                       u.name AS author_name, u.role AS author_role,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
                        {$viewerSubquery}
@@ -160,8 +165,8 @@ class Post {
                    (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
                 : ", 0 AS is_liked, 0 AS is_bookmarked";
 
-            $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                           u.name AS author_name, u.email AS author_email, u.role AS author_role,
+            $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
+                           u.name AS author_name, u.role AS author_role,
                            (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                            (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
                            {$viewerSubquery}
@@ -208,8 +213,8 @@ class Post {
                (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
             : ", 0 AS is_liked, 0 AS is_bookmarked";
 
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+        $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
+                       u.name AS author_name, u.role AS author_role,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
                        {$viewerSubquery}
@@ -296,10 +301,12 @@ class Post {
      * 
      * @param int $postId
      * @param int $userId Requesting user
-     * @param bool|string $isAdmin Whether the user has admin privileges (bool or role string)
+     * @param bool $canDeleteAny Whether the caller holds the
+     *        'post.delete_any' permission (RBAC, Sprint 5 — the caller
+     *        decides via Authorization, this method only enforces)
      * @return bool
      */
-    public function delete(int $postId, int $userId, $isAdmin = false): bool {
+    public function delete(int $postId, int $userId, bool $canDeleteAny = false): bool {
         if ($postId <= 0 || $userId <= 0) {
             return false;
         }
@@ -310,9 +317,8 @@ class Post {
         }
 
         $isAuthor = ((int)$existing['user_id'] === $userId);
-        $hasAdminPrivilege = is_bool($isAdmin) ? $isAdmin : ($isAdmin === 'admin');
 
-        if (!$isAuthor && !$hasAdminPrivilege) {
+        if (!$isAuthor && !$canDeleteAny) {
             return false; // Unauthorized
         }
 
@@ -338,8 +344,8 @@ class Post {
 
         // WBS 4.3.4: timeline cache TTL is 5 minutes (300s), not 60s.
         return $cache->remember($cacheKey, 300, function() use ($userId, $limit, $offset) {
-            $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                           u.name AS author_name, u.email AS author_email, u.role AS author_role,
+            $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
+                           u.name AS author_name, u.role AS author_role,
                            (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                            (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
                            (SELECT COUNT(*) FROM likes l3 WHERE l3.post_id = p.id AND l3.user_id = :viewer_id) AS is_liked,
@@ -396,8 +402,8 @@ class Post {
                (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
             : ", 0 AS is_liked, 0 AS is_bookmarked";
 
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+        $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
+                       u.name AS author_name, u.role AS author_role,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
                        {$viewerSubquery}

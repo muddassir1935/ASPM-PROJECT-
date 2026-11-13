@@ -1,0 +1,51 @@
+# CampusConnect — block direct web access to internals (Sprint 5, H2).
+#
+# The repo root IS the web root on XAMPP, so without this anyone can
+# fetch tests/, config/, db/schema.sql and docs/ straight from the
+# browser — and, once the SQLite fallback has ever run, download
+# db/campusconnect.sqlite itself (password hashes + live session
+# payloads = account takeover). The app never needs these paths over
+# HTTP: all PHP entry points live at the root and include the rest.
+#
+# Two layers: mod_rewrite rules first, <Files>/<FilesMatch> as backup
+# in case mod_rewrite is disabled. Directory listing is off too.
+
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    # Whole internal directories
+    RewriteRule ^(config|classes|db|docs|tests|scripts)/ - [F,L]
+    # Sensitive file types anywhere (SQLite DB, SQL dumps, markdown)
+    RewriteRule \.(sqlite|sqlite3|db|sql|md)$ - [F,L]
+    # benchmark.php is a diagnostic page, not part of the app surface
+    RewriteRule ^benchmark\.php$ - [F,L]
+</IfModule>
+
+<FilesMatch "\.(sqlite|sqlite3|db|sql|md)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</FilesMatch>
+
+<Files "benchmark.php">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order allow,deny
+        Deny from all
+    </IfModule>
+</Files>
+
+# Never leak stack traces / file paths to the browser (audit M1).
+# Errors still go to the PHP error log. mod_php only; php-fpm setups
+# must set display_errors=Off in php.ini instead.
+<IfModule mod_php.c>
+    php_flag display_errors Off
+    php_flag log_errors On
+</IfModule>
