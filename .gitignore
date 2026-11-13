@@ -6,3 +6,5 @@
 *.log
 *.sqlite
 *.db
+scratch/
+__pycache__/
