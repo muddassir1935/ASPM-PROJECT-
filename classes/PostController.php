@@ -7,6 +7,7 @@
  */
 require_once __DIR__ . '/Post.php';
 require_once __DIR__ . '/Auth.php';
+require_once __DIR__ . '/Authorization.php';
 
 class PostController {
     private Post $postModel;
@@ -25,11 +26,16 @@ class PostController {
 
     /**
      * Handle creating a new post.
-     * 
+     *
      * @param string $content Raw content submitted from form/request
+     * @param bool $asAnnouncement Requested announcement flag. It is
+     *        honoured only for roles holding 'announcement.create'
+     *        (society_admin / system_admin); anyone else gets a normal
+     *        post, so a crafted request cannot escalate a plain post
+     *        into an announcement.
      * @return array Response structure: ['success' => bool, 'message' => string, 'post_id' => ?int]
      */
-    public function handleCreate(string $content): array {
+    public function handleCreate(string $content, bool $asAnnouncement = false): array {
         if (!$this->currentUser) {
             return [
                 'success' => false,
@@ -47,11 +53,13 @@ class PostController {
             ];
         }
 
-        $newPostId = $this->postModel->create((int)$this->currentUser['id'], $content);
+        $isAnnouncement = $asAnnouncement
+            && Authorization::can($this->currentUser['role'] ?? 'student', 'announcement.create');
+        $newPostId = $this->postModel->create((int)$this->currentUser['id'], $content, $isAnnouncement);
         if ($newPostId) {
             return [
                 'success' => true,
-                'message' => 'Post published successfully!',
+                'message' => $isAnnouncement ? 'Announcement published successfully!' : 'Post published successfully!',
                 'post_id' => $newPostId
             ];
         }
@@ -129,8 +137,8 @@ class PostController {
         }
 
         $role = $this->currentUser['role'] ?? 'student';
-        $isAdmin = ($role === 'admin');
-        $deleted = $this->postModel->delete($postId, (int)$this->currentUser['id'], $isAdmin);
+        $canDeleteAny = Authorization::can($role, 'post.delete_any');
+        $deleted = $this->postModel->delete($postId, (int)$this->currentUser['id'], $canDeleteAny);
 
         if ($deleted) {
             return [
@@ -177,7 +185,11 @@ class PostController {
     public function getUserFeed(int $userId, int $page = 1, int $limit = 20): array {
         $page = max(1, $page);
         $offset = ($page - 1) * $limit;
-        $posts = $this->postModel->getByUserId($userId, $limit, $offset);
+        // Sprint 5 (M4): pass the viewer through so is_liked /
+        // is_bookmarked are correct on profile lists — without it every
+        // heart on a profile showed empty even for liked posts.
+        $viewerId = isset($this->currentUser['id']) ? (int)$this->currentUser['id'] : 0;
+        $posts = $this->postModel->getByUserId($userId, $limit, $offset, $viewerId);
         $total = $this->postModel->countByUser($userId);
 
         return [

@@ -8,6 +8,7 @@
  * Note: this tests DbSessionHandler directly (read/write/destroy/gc),
  * not a live PHP session, so it runs cleanly under CLI without headers.
  */
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/DbSessionHandler.php';

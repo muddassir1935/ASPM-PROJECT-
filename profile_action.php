@@ -10,6 +10,7 @@
 require_once 'config/Database.php';
 require_once 'classes/User.php';
 require_once 'classes/Auth.php';
+require_once 'classes/Csrf.php';
 
 if (!Auth::isLoggedIn()) {
     header('Location: login.php');
@@ -23,23 +24,28 @@ if (session_status() === PHP_SESSION_NONE) {
 $result = ['success' => false, 'message' => 'Invalid request.'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $db = Database::getInstance()->getConnection();
-    $userModel = new User($db);
-    $currentUser = Auth::user();
+    // Sprint 5 CSRF: refuse the request when the token is missing or wrong.
+    if (!Csrf::validatePost()) {
+        $result = ['success' => false, 'message' => 'Security token expired. Please try again.'];
+    } else {
+        $db = Database::getInstance()->getConnection();
+        $userModel = new User($db);
+        $currentUser = Auth::user();
 
-    $updated = $userModel->updateProfile(
-        (int)$currentUser['id'],
-        (string)($_POST['name'] ?? ''),
-        (string)($_POST['bio'] ?? ''),
-        isset($_POST['cover_style']) ? (string)$_POST['cover_style'] : null
-    );
-    $result = $updated
-        ? ['success' => true, 'message' => 'Profile updated!']
-        : ['success' => false, 'message' => 'Could not update profile. Name is required and bio must be under 500 characters.'];
+        $updated = $userModel->updateProfile(
+            (int)$currentUser['id'],
+            (string)($_POST['name'] ?? ''),
+            (string)($_POST['bio'] ?? ''),
+            isset($_POST['cover_style']) ? (string)$_POST['cover_style'] : null
+        );
+        $result = $updated
+            ? ['success' => true, 'message' => 'Profile updated!']
+            : ['success' => false, 'message' => 'Could not update profile. Name is required and bio must be under 500 characters.'];
 
-    // Keep the header's displayed name in sync after a rename.
-    if ($updated) {
-        $_SESSION['user_name'] = trim((string)$_POST['name']);
+        // Keep the header's displayed name in sync after a rename.
+        if ($updated) {
+            $_SESSION['user_name'] = trim((string)$_POST['name']);
+        }
     }
 }
 

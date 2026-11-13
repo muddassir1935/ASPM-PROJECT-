@@ -38,7 +38,7 @@ $flashMessage = $_SESSION['flash_message'] ?? null;
 unset($_SESSION['flash_type'], $_SESSION['flash_message']);
 
 $isOwner = $post && $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
-$canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admin');
+$canDelete = $isOwner || Auth::can('post.delete_any');
 ?>
 
 <div class="narrow-wrap">
@@ -65,9 +65,9 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
             $isEdited = !empty($post['updated_at']) && $post['updated_at'] !== $post['created_at'];
             $updatedFormatted = $isEdited ? date('M j, Y \a\t g:i A', strtotime($post['updated_at'])) : null;
         ?>
-        <?php $detailIsAdmin = ($post['author_role'] ?? '') === 'admin'; ?>
+        <?php $detailIsAnnouncement = !empty($post['is_announcement']); ?>
         <div class="detail-card">
-            <?php if ($detailIsAdmin): ?>
+            <?php if ($detailIsAnnouncement): ?>
                 <div class="announce-line"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg>Announcement</div>
             <?php endif; ?>
             <div class="detail-head">
@@ -77,7 +77,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                         <?= htmlspecialchars($post['author_name']) ?>
                     </div>
                     <div class="detail-meta">
-                        <?= htmlspecialchars($post['author_email']) ?> &middot; <?= htmlspecialchars($post['time_ago']) ?>
+                        <?= htmlspecialchars(Authorization::displayLabel($post['author_role'] ?? 'student')) ?> &middot; <?= htmlspecialchars($post['time_ago']) ?>
                     </div>
                 </div>
             </div>
@@ -107,6 +107,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                     <?php endif; ?>
                     <?php if ($canDelete): ?>
                         <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="margin: 0;">
+                            <?= Csrf::field() ?>
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                             <button type="submit" class="btn-danger-outline">Delete Post</button>
@@ -117,6 +118,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
 
             <?php if ($isOwner): ?>
                 <form id="detail-edit-form" method="POST" action="post_action.php" class="edit-form" style="display: none; margin-top: 1rem;">
+                    <?= Csrf::field() ?>
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <input type="hidden" name="return" value="<?= (int)$post['id'] ?>">
@@ -143,6 +145,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
         <?php if ($currentUser): ?>
             <div class="compose-card">
                 <form method="POST" action="reply_action.php" id="reply-form">
+                    <?= Csrf::field() ?>
                     <input type="hidden" name="action" value="create">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <div class="compose-flex">
@@ -185,7 +188,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                 <?php
                     $replyInitial = strtoupper(mb_substr(trim($reply['author_name']), 0, 1, 'UTF-8'));
                     $replyIsOwner = $currentUser && (int)$reply['user_id'] === (int)$currentUser['id'];
-                    $replyCanDelete = $replyIsOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admin');
+                    $replyCanDelete = $replyIsOwner || Auth::can('reply.delete_any');
                 ?>
                 <div class="reply-card">
                     <span class="avatar-sm<?= avatarToneClass((int)$reply['user_id']) ?>"><?= htmlspecialchars($replyInitial) ?></span>
@@ -197,6 +200,7 @@ $canDelete = $isOwner || ($currentUser && ($currentUser['role'] ?? '') === 'admi
                         <p class="reply-content"><?= htmlspecialchars($reply['content']) ?></p>
                         <?php if ($replyCanDelete): ?>
                             <form method="POST" action="reply_action.php" onsubmit="return confirm('Delete this reply?');" style="margin-top: 4px;">
+                                <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="reply_id" value="<?= (int)$reply['id'] ?>">
                                 <input type="hidden" name="return_post_id" value="<?= (int)$post['id'] ?>">

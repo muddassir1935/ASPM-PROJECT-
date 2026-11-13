@@ -10,7 +10,17 @@ class Database {
     private $pass = '';
 
     private function __construct() {
+        // Test mode (Sprint 5, H4): when CAMPUSCONNECT_TEST_DB is set,
+        // skip MySQL entirely — the catch block below opens the isolated
+        // throwaway SQLite DB instead of the live one, so the suites can
+        // never pollute the demo database again. Set by
+        // tests/bootstrap.php before the first getInstance() call.
+        $testDb = getenv('CAMPUSCONNECT_TEST_DB');
+        $testMode = is_string($testDb) && $testDb !== '';
         try {
+            if ($testMode) {
+                throw new PDOException('Test mode: use isolated SQLite DB.');
+            }
             // Attempt MySQL connection with a short timeout
             $this->connection = new PDO("mysql:host={$this->host};dbname={$this->db};charset=utf8mb4", $this->user, $this->pass, [
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
@@ -18,8 +28,16 @@ class Database {
             ]);
             $this->driver = 'mysql';
         } catch(PDOException $e) {
-            // Fallback seamlessly to SQLite (Zero-Config mode so it works even if XAMPP is off)
-            $sqlitePath = __DIR__ . '/../db/campusconnect.sqlite';
+            // Fallback to SQLite (Zero-Config mode so it works even if XAMPP is off)
+            // — but LOUDLY, not silently (Sprint 5, H3). The fallback is a
+            // DIFFERENT database: logins fail and written data vanishes once
+            // MySQL returns, so a silent switch is a data-split bug. The
+            // banner in includes/header.php tells the user; this log line
+            // tells the operator. (Test mode skips the log: it is deliberate.)
+            $sqlitePath = $testMode ? $testDb : __DIR__ . '/../db/campusconnect.sqlite';
+            if (!$testMode) {
+                error_log("CampusConnect: MySQL unreachable ({$e->getMessage()}); using SQLite fallback at {$sqlitePath}.");
+            }
             $this->connection = new PDO("sqlite:" . $sqlitePath);
             $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
             $this->driver = 'sqlite';
@@ -124,6 +142,17 @@ class Database {
                     FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
                 );
 
+                -- Sprint 5 RBAC: login brute-force protection. One row per
+                -- (email, IP) pair; see classes/LoginRateLimiter.php.
+                CREATE TABLE IF NOT EXISTS login_attempts (
+                    email TEXT NOT NULL,
+                    ip TEXT NOT NULL,
+                    attempts INTEGER NOT NULL DEFAULT 0,
+                    last_attempt INTEGER NOT NULL DEFAULT 0,
+                    locked_until INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (email, ip)
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
                 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_follows_followed_id ON follows(followed_id);
@@ -160,6 +189,20 @@ class Database {
             if (!in_array('deleted_at', $columnNames, true)) {
                 $this->connection->exec("ALTER TABLE posts ADD COLUMN deleted_at DATETIME DEFAULT NULL");
             }
+
+            // Migration for SQLite files created before Sprint 5 RBAC:
+            // rename legacy role values to the new role names. The role
+            // column is TEXT here, so plain UPDATEs suffice (idempotent).
+            $this->connection->exec("UPDATE users SET role = 'system_admin' WHERE role = 'admin'");
+            $this->connection->exec("UPDATE users SET role = 'society_admin' WHERE role = 'society'");
+
+            // Migration for SQLite files created before society
+            // announcements: add posts.is_announcement when missing.
+            $postColumns = $this->connection->query("PRAGMA table_info(posts)")->fetchAll(PDO::FETCH_ASSOC);
+            $postColumnNames = array_column($postColumns, 'name');
+            if (!in_array('is_announcement', $postColumnNames, true)) {
+                $this->connection->exec("ALTER TABLE posts ADD COLUMN is_announcement INTEGER NOT NULL DEFAULT 0");
+            }
         }
     }
 
@@ -176,5 +219,10 @@ class Database {
 
     public function getDriver() {
         return $this->driver;
+    }
+
+    /** True when the app is running on the SQLite fallback (MySQL unreachable). */
+    public function isFallback() {
+        return $this->driver === 'sqlite';
     }
 }

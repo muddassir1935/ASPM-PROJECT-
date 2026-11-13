@@ -12,6 +12,7 @@
 require_once 'config/Database.php';
 require_once 'classes/Auth.php';
 require_once 'classes/Notification.php';
+require_once 'classes/Csrf.php';
 
 header('Content-Type: application/json');
 
@@ -40,6 +41,15 @@ if ($method === 'GET') {
 }
 
 if ($method === 'POST') {
+    // Sprint 5 CSRF: mark_read / mark_all_read / delete are state
+    // changes; the notifications page JS sends csrf_token with each.
+    // The GET count endpoint above stays token-free (read-only).
+    if (!Csrf::validatePost()) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'message' => 'Security token expired. Please refresh and try again.']);
+        exit;
+    }
+
     $action = $_POST['action'] ?? '';
     
     if ($action === 'mark_read') {

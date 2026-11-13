@@ -124,4 +124,39 @@ class DbSessionHandler implements SessionHandlerInterface {
             return false;
         }
     }
+
+    /**
+     * Revoke every DB session owned by a user (Sprint 5 RBAC: session
+     * invalidation on role change). The admin panel calls this after a
+     * role assignment so a demoted admin loses access immediately
+     * instead of at the next role refresh. $exceptSessionId keeps one
+     * session alive — pass the admin's own session id when the caller
+     * must stay logged in (role changes to others never touch it,
+     * since self-assignment is blocked, but the parameter keeps the
+     * method safe to reuse).
+     * Returns the number of sessions revoked, or false on DB failure.
+     * On native file sessions there are no rows to delete, so this is
+     * a harmless no-op returning 0.
+     */
+    public function destroySessionsForUser(int $userId, ?string $exceptSessionId = null): int|false {
+        if ($userId <= 0) {
+            return false;
+        }
+        $sql = "DELETE FROM sessions WHERE user_id = :user_id";
+        if ($exceptSessionId !== null && $exceptSessionId !== '') {
+            $sql .= " AND id <> :except_id";
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        if ($exceptSessionId !== null && $exceptSessionId !== '') {
+            $stmt->bindParam(':except_id', $exceptSessionId, PDO::PARAM_STR);
+        }
+        try {
+            $stmt->execute();
+            return $stmt->rowCount();
+        } catch (PDOException $e) {
+            error_log("DB session revoke error: " . $e->getMessage());
+            return false;
+        }
+    }
 }

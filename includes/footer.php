@@ -5,6 +5,14 @@
 </footer>
 
 <script>
+    // Sprint 5 CSRF: every AJAX POST carries the session token from the
+    // <meta name="csrf-token"> tag (emitted by header.php when logged in).
+    var csrfToken = '';
+    (function () {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        if (meta) { csrfToken = meta.getAttribute('content') || ''; }
+    })();
+
     // Sprint 3: AJAX toggles for follow and bookmark buttons.
     // Delegated from the document so buttons rendered anywhere on the
     // page (feed, profile, modals, widgets) all work with one handler.
@@ -18,6 +26,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'user_id=' + encodeURIComponent(followBtn.getAttribute('data-user-id'))
+                    + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
             .then(function (r) { return r.json(); })
             .then(function (data) {
@@ -46,6 +55,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'post_id=' + encodeURIComponent(bookmarkBtn.getAttribute('data-post-id'))
+                    + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
             .then(function (r) { return r.json(); })
             .then(function (data) {
@@ -73,6 +83,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: 'post_id=' + encodeURIComponent(postId)
+                    + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
             .then(function (r) { return r.json(); })
             .then(function (data) {

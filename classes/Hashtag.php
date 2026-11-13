@@ -149,7 +149,7 @@ class Hashtag {
             : ", 0 AS is_liked";
 
         $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role,
+                       u.name AS author_name, u.role AS author_role,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
                        {$viewerSubquery}

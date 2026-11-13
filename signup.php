@@ -2,27 +2,35 @@
 require_once 'config/Database.php';
 require_once 'classes/User.php';
 require_once 'classes/Auth.php';
+require_once 'classes/Csrf.php';
 
 $error = "";
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $name = trim($_POST['name'] ?? '');
-    $email = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? '');
-
-    if(empty($name) || empty($email) || empty($password)) {
-        $error = "All fields are required.";
-    } elseif(strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[\W_]/', $password)) {
-        $error = "Password must be at least 8 chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.";
+    // Sprint 5 CSRF: the signup form carries a token too.
+    if (!Csrf::validatePost()) {
+        $error = "Security token expired. Please try again.";
     } else {
-        $db = Database::getInstance()->getConnection();
-        $user = new User($db);
+        $name = trim($_POST['name'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        // Passwords are never trimmed: a leading/trailing space is part of
+        // the password (must match login.php, which does not trim either).
+        $password = (string)($_POST['password'] ?? '');
 
-        if($user->register($name, $email, $password)) {
-            header("Location: login.php?registered=1");
-            exit;
+        if(empty($name) || empty($email) || empty($password)) {
+            $error = "All fields are required.";
+        } elseif(strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[\W_]/', $password)) {
+            $error = "Password must be at least 8 chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.";
         } else {
-            $error = "Registration failed. This email is already registered.";
+            $db = Database::getInstance()->getConnection();
+            $user = new User($db);
+
+            if($user->register($name, $email, $password)) {
+                header("Location: login.php?registered=1");
+                exit;
+            } else {
+                $error = "Registration failed. This email is already registered.";
+            }
         }
     }
 }
@@ -58,6 +66,7 @@ require_once 'includes/header.php';
         <?php endif; ?>
 
         <form method="POST" action="signup.php" autocomplete="off" id="signup-form">
+            <?= Csrf::field() ?>
             <div class="form-group">
                 <label class="form-label" for="name">Full Name</label>
                 <input 

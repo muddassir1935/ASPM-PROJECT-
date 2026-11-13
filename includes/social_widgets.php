@@ -30,6 +30,10 @@ function renderLeftNav(string $active): void {
         'bookmarks' => ['bookmarks.php', 'Bookmarks', '<svg ' . $svgAttrs . '><path d="M7 3.5h10V20l-5-3.8L7 20Z"/></svg>', 0],
         'profile' => [$viewerId ? 'profile.php?id=' . $viewerId : 'login.php', 'Profile', '<svg ' . $svgAttrs . '><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.4 3.6-5 7-5s6.2 1.6 7 5"/></svg>', 0],
     ];
+    // Sprint 5 RBAC: system admins get the Admin Panel in the left nav.
+    if (class_exists('Auth') && Auth::can('user.manage')) {
+        $links['admin'] = ['admin.php', 'Admin', '<svg ' . $svgAttrs . '><path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6Z"/><path d="M9 12l2 2 4-4.5"/></svg>', 0];
+    }
     echo '<nav class="col-nav" aria-label="Section">';
     foreach ($links as $key => [$href, $label, $icon, $badge]) {
         $isActive = $key === $active ? ' nav-col-active' : '';
@@ -115,7 +119,9 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     $isLiked = !empty($post['is_liked']);
     $isBookmarked = in_array($postId, $bookmarkedIds, true) || !empty($post['is_bookmarked']);
 
-    $isAdmin = ($post['author_role'] ?? '') === 'admin';
+    // Sprint 5 RBAC: the badge marks a post flagged as an announcement
+    // (posts.is_announcement), not just any post by an official account.
+    $isAnnouncement = !empty($post['is_announcement']);
     $replySvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>';
     $likeSvg = '<svg viewBox="0 0 24 24" fill="' . ($isLiked ? '#e0245e' : 'none') . '" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>';
     $megaSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg>';
@@ -125,7 +131,7 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     echo '<div class="post-card" data-post-card>';
     echo '<span class="avatar-md' . avatarToneClass((int)$post['user_id'], (string)($post['author_role'] ?? '')) . '">' . htmlspecialchars($authorInitial) . '</span>';
     echo '<div class="post-body">';
-    if ($isAdmin) {
+    if ($isAnnouncement) {
         echo '<div class="announce-line">' . $megaSvg . 'Announcement</div>';
     }
     echo '<div class="post-card-head">';

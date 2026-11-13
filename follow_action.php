@@ -3,11 +3,12 @@
  * AJAX Follow Toggle (Sprint 3, WBS 3.2).
  *
  * POST user_id -> JSON { success, following, followers_count, message }.
- * Requires a logged-in user. (CSRF tokens arrive with Sprint 5 hardening.)
+ * Requires a logged-in user and a valid CSRF token (Sprint 5).
  */
 require_once 'config/Database.php';
 require_once 'classes/Auth.php';
 require_once 'classes/Follow.php';
+require_once 'classes/Csrf.php';
 
 header('Content-Type: application/json');
 
@@ -20,6 +21,13 @@ if (!Auth::isLoggedIn()) {
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'POST required.']);
+    exit;
+}
+
+// Sprint 5 CSRF: the footer JS sends csrf_token with every toggle.
+if (!Csrf::validatePost()) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Security token expired. Please refresh and try again.']);
     exit;
 }
 

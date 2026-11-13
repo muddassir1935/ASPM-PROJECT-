@@ -6,6 +6,7 @@
  *
  * Run via CLI: php tests/SocialTest.php
  */
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Post.php';
@@ -47,7 +48,7 @@ $userA = $userModel->verifyPassword("follower_{$uniq}@nu.edu.pk", $password);
 $userB = $userModel->verifyPassword("followed_{$uniq}@nu.edu.pk", $password);
 $userC = $userModel->verifyPassword("stranger_{$uniq}@nu.edu.pk", $password);
 $userAdmin = $userModel->verifyPassword("admin3_{$uniq}@nu.edu.pk", $password);
-$db->exec("UPDATE users SET role = 'admin' WHERE id = " . (int)$userAdmin['id']);
+$db->exec("UPDATE users SET role = 'system_admin' WHERE id = " . (int)$userAdmin['id']);
 
 $aliceId = (int)$userA['id'];
 $bobId = (int)$userB['id'];
@@ -111,12 +112,12 @@ assertTest("Replies listed oldest first",
     count($replies) === 2 && (int)$replies[0]['id'] === (int)$replyId && (int)$replies[1]['id'] === (int)$replyId2);
 assertTest("Reply count is 2", $replyModel->countByPost($bobPost) === 2);
 assertTest("Non-author cannot delete a reply",
-    $replyModel->delete($replyId, $samId, 'student') === false);
+    $replyModel->delete($replyId, $samId, false) === false);
 assertTest("Author can delete own reply",
-    $replyModel->delete($replyId, $aliceId, 'student') === true
+    $replyModel->delete($replyId, $aliceId, false) === true
     && $replyModel->countByPost($bobPost) === 1);
 assertTest("Admin can delete another user's reply",
-    $replyModel->delete($replyId2, $adminId, 'admin') === true
+    $replyModel->delete($replyId2, $adminId, true) === true
     && $replyModel->countByPost($bobPost) === 0);
 
 echo "--- BOOKMARK TESTS ---" . PHP_EOL;
@@ -132,7 +133,7 @@ $saved = $bookmarkModel->getBookmarkedPosts($aliceId);
 assertTest("Bookmarked list contains the post",
     count($saved) === 1 && (int)$saved[0]['id'] === (int)$bobPost);
 assertTest("Bookmark of unknown post fails", $bookmarkModel->add($aliceId, 999999999) === false);
-$postModel->delete($bobPost, $bobId, 'student'); // soft-delete
+$postModel->delete($bobPost, $bobId, false); // soft-delete
 assertTest("Soft-deleted post drops out of bookmark list",
     $bookmarkModel->countByUser($aliceId) === 0 && $bookmarkModel->getBookmarkedPosts($aliceId) === []);
 assertTest("Reply to soft-deleted post fails",
@@ -156,6 +157,11 @@ assertTest("User search finds by name",
 assertTest("User search excludes the searcher",
     $userModel->searchUsers("Follower Fran Updated {$uniq}", $aliceId) === []);
 assertTest("Empty user search returns nothing", $userModel->searchUsers("   ", $aliceId) === []);
+// Sprint 5 (H5): email must neither match nor leak through user search.
+assertTest("User search does not match by email",
+    $userModel->searchUsers("followed_{$uniq}@nu.edu.pk", $aliceId) === []);
+assertTest("User search results carry no email",
+    !isset($found[0]['email']));
 
 $foundPosts = $postModel->searchPosts("stranger post {$uniq}");
 assertTest("Post search finds by content",

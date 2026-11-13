@@ -117,7 +117,7 @@ class Reply {
      */
     public function getByPostId(int $postId, int $limit = 100, int $offset = 0): array {
         $sql = "SELECT r.id, r.post_id, r.user_id, r.content, r.created_at, r.updated_at,
-                       u.name AS author_name, u.email AS author_email, u.role AS author_role
+                       u.name AS author_name, u.role AS author_role
                 FROM replies r
                 JOIN users u ON r.user_id = u.id
                 WHERE r.post_id = :post_id AND r.deleted_at IS NULL
@@ -134,7 +134,12 @@ class Reply {
     /**
      * Soft-delete a reply. Only the author or an admin may delete it.
      */
-    public function delete(int $replyId, int $userId, string $userRole = 'student'): bool {
+    /**
+     * @param bool $canDeleteAny Whether the caller holds the
+     *        'reply.delete_any' permission (RBAC, Sprint 5 — the caller
+     *        decides via Authorization, this method only enforces)
+     */
+    public function delete(int $replyId, int $userId, bool $canDeleteAny = false): bool {
         $checkSql = "SELECT user_id FROM replies WHERE id = :id AND deleted_at IS NULL LIMIT 1";
         $checkStmt = $this->db->prepare($checkSql);
         $checkStmt->bindParam(':id', $replyId, PDO::PARAM_INT);
@@ -146,8 +151,7 @@ class Reply {
         }
 
         $isAuthor = ((int)$owner['user_id'] === $userId);
-        $isAdmin = ($userRole === 'admin');
-        if (!$isAuthor && !$isAdmin) {
+        if (!$isAuthor && !$canDeleteAny) {
             return false;
         }
 
