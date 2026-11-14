@@ -298,7 +298,7 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .nav-inner {
-            max-width: 1265px;
+            max-width: 1480px;
             margin: 0 auto;
             padding: 7px 16px;
             min-height: 52px;
@@ -425,13 +425,13 @@ if (!function_exists('brandMarkSvg')) {
         /* ---------- Page frame ---------- */
         .page-content {
             flex: 1;
-            max-width: 1265px;
+            max-width: 1480px;
             width: 100%;
             margin: 0 auto;
         }
 
         .narrow-wrap {
-            max-width: 600px;
+            max-width: 760px;
             margin: 0 auto;
             border-left: 1px solid var(--line);
             border-right: 1px solid var(--line);
@@ -1085,7 +1085,7 @@ if (!function_exists('brandMarkSvg')) {
         /* ---------- 3-column layout: rails split by hairlines ---------- */
         .layout-3col {
             display: grid;
-            grid-template-columns: 260px minmax(0, 600px) minmax(0, 350px);
+            grid-template-columns: 260px minmax(0, 1fr) 350px;
             justify-content: center;
             align-items: start;
         }
@@ -3028,7 +3028,7 @@ if (!function_exists('brandMarkSvg')) {
 
         /* ---------- Public Landing View (The Iconic X / Twitter Standard) ---------- */
         .x-landing-shell {
-            max-width: 1280px;
+            max-width: 1480px;
             margin: 0 auto;
             min-height: calc(100vh - 53px - 60px);
             display: flex;
@@ -3348,11 +3348,11 @@ if (!function_exists('brandMarkSvg')) {
 
         /* ---------- Responsive ---------- */
         /* Sprint 5 UI polish (M-19): with the right rail hidden the
-           main column grows to fill the freed space (600px -> 680px)
+           main column grows to fill the freed space
            instead of leaving dead white space beside the feed. */
         @media (max-width: 1080px) {
             .layout-3col {
-                grid-template-columns: 76px minmax(0, 680px);
+                grid-template-columns: 76px minmax(0, 1fr);
             }
             .col-side {
                 display: none;
