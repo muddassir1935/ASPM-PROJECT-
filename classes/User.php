@@ -33,12 +33,19 @@ class User {
             return false;
         }
 
-        // Strong password validation: min 8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
-        if (strlen($password) < 8 || 
-            !preg_match('/[A-Z]/', $password) || 
-            !preg_match('/[a-z]/', $password) || 
-            !preg_match('/[0-9]/', $password) || 
-            !preg_match('/[\W_]/', $password)) {
+        // Sprint 5 final fix (security M6): the model trusted the caller.
+        // Validate here so every path (web form, tests, seed scripts) gets
+        // the same rules: real email shape, name within the column, and a
+        // password cap — Argon2id on a megabyte password is a CPU DoS.
+        $name = trim((string)$name);
+        $email = trim((string)$email);
+        if (mb_strlen($name, 'UTF-8') < 1 || mb_strlen($name, 'UTF-8') > 255) {
+            return false;
+        }
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return false;
+        }
+        if (!self::isValidPassword($password)) {
             return false;
         }
 
@@ -53,6 +60,111 @@ class User {
             return $stmt->execute();
         } catch(PDOException $e) {
             return false; // E.g. Duplicate email
+        }
+    }
+
+    /**
+     * The one password policy, used by register(), changePassword() and
+     * resetPassword() alike: 8–128 chars, at least one uppercase, one
+     * lowercase, one digit and one special character. The 128 cap exists
+     * because Argon2id on a megabyte password is a CPU DoS (audit M6).
+     */
+    public static function isValidPassword($password): bool {
+        if (!is_string($password)) {
+            return false;
+        }
+        $len = strlen($password);
+        return $len >= 8 && $len <= 128
+            && preg_match('/[A-Z]/', $password) === 1
+            && preg_match('/[a-z]/', $password) === 1
+            && preg_match('/[0-9]/', $password) === 1
+            && preg_match('/[\W_]/', $password) === 1;
+    }
+
+    /**
+     * Change a user's own password (Sprint 5 final pass).
+     * Requires the current password — a stolen session alone cannot lock
+     * the owner out. The new password must pass the shared policy and
+     * differ from the current one. Callers revoke the user's other
+     * sessions afterwards (see profile_action.php).
+     */
+    public function changePassword($userId, $currentPassword, $newPassword): bool {
+        if ((int)$userId <= 0 || !is_string($currentPassword) || !is_string($newPassword)) {
+            return false;
+        }
+        if ($newPassword === $currentPassword || !self::isValidPassword($newPassword)) {
+            return false;
+        }
+        $stmt = $this->db->prepare("SELECT password_hash FROM users WHERE id = :id");
+        $stmt->bindValue(':id', (int)$userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $hash = $stmt->fetchColumn();
+        if ($hash === false || !password_verify($currentPassword, (string)$hash)) {
+            return false;
+        }
+        return $this->setPasswordHash((int)$userId, $newPassword);
+    }
+
+    /**
+     * Admin password reset (Sprint 5 final pass): set a user's password
+     * without knowing the current one. The caller (admin_action.php) is
+     * responsible for the permission check, for generating the temporary
+     * password, for showing it to the admin exactly once, and for
+     * revoking the user's sessions. Returns false for an unknown user
+     * or a password that fails the shared policy.
+     */
+    public function resetPassword($userId, $newPassword): bool {
+        if ((int)$userId <= 0 || !self::isValidPassword($newPassword)) {
+            return false;
+        }
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM users WHERE id = :id");
+        $stmt->bindValue(':id', (int)$userId, PDO::PARAM_INT);
+        $stmt->execute();
+        if ((int)$stmt->fetchColumn() === 0) {
+            return false;
+        }
+        return $this->setPasswordHash((int)$userId, $newPassword);
+    }
+
+    /**
+     * Generate a 16-character temporary password that always passes
+     * isValidPassword(): 4 chars from each required class, shuffled with
+     * random_int(). Used by the admin reset flow only.
+     */
+    public static function generateTemporaryPassword(): string {
+        $upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'; // no I, O (readability)
+        $lower = 'abcdefghjkmnpqrstuvwxyz'; // no i, l, o
+        $digits = '23456789'; // no 0, 1
+        $special = '!@#$%&*';
+        $pick = static function (string $pool): string {
+            return $pool[random_int(0, strlen($pool) - 1)];
+        };
+        $chars = [];
+        for ($i = 0; $i < 4; $i++) {
+            $chars[] = $pick($upper);
+            $chars[] = $pick($lower);
+            $chars[] = $pick($digits);
+            $chars[] = $pick($special);
+        }
+        // Fisher–Yates with random_int (shuffle() uses mt_rand).
+        for ($i = count($chars) - 1; $i > 0; $i--) {
+            $j = random_int(0, $i);
+            [$chars[$i], $chars[$j]] = [$chars[$j], $chars[$i]];
+        }
+        return implode('', $chars);
+    }
+
+    /** Hash (Argon2id) and store a new password for $userId. */
+    private function setPasswordHash(int $userId, string $newPassword): bool {
+        $hash = password_hash($newPassword, PASSWORD_ARGON2ID);
+        $stmt = $this->db->prepare("UPDATE users SET password_hash = :hash WHERE id = :id");
+        $stmt->bindValue(':hash', $hash, PDO::PARAM_STR);
+        $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
+        try {
+            $stmt->execute();
+            return $stmt->rowCount() > 0;
+        } catch (PDOException $e) {
+            return false;
         }
     }
 

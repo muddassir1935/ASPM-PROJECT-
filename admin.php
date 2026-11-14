@@ -96,7 +96,7 @@ $recentPosts = $postModel->getFeed(20, 0, $currentUserId, true);
                         <span class="avatar-sm<?= avatarToneClass((int)$row['id'], (string)$row['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($row['name']), 0, 1, 'UTF-8'))) ?></span>
                         <span class="user-row-text">
                             <strong><?= htmlspecialchars($row['name']) ?></strong>
-                            <span><?= htmlspecialchars($row['email']) ?> &middot; <?= htmlspecialchars(Authorization::displayLabel($row['role'])) ?> &middot; <?= (int)$row['post_count'] ?> post<?= (int)$row['post_count'] === 1 ? '' : 's' ?> &middot; joined <?= htmlspecialchars(date('M j, Y', strtotime($row['created_at']))) ?></span>
+                            <span><?= htmlspecialchars($row['email']) ?> &middot; <?= htmlspecialchars(Authorization::displayLabel($row['role'])) ?> &middot; <?= (int)$row['post_count'] ?> <?= pluralize((int)$row['post_count'], 'post') ?> &middot; joined <?= htmlspecialchars(date('M j, Y', strtotime($row['created_at']))) ?></span>
                         </span>
                     </a>
                     <?php if ($isSelf): ?>
@@ -112,6 +112,12 @@ $recentPosts = $postModel->getFeed(20, 0, $currentUserId, true);
                                 <?php endforeach; ?>
                             </select>
                             <button type="submit" class="btn-outline">Update role</button>
+                        </form>
+                        <form method="POST" action="admin_action.php" class="inline-form" style="margin-top: 6px;" onsubmit="return confirm('Reset <?= htmlspecialchars(addslashes($row['name'])) ?>’s password? A temporary password will be shown once — share it with them directly. Their sessions will be signed out.');">
+                            <?= Csrf::field() ?>
+                            <input type="hidden" name="action" value="reset_password">
+                            <input type="hidden" name="user_id" value="<?= (int)$row['id'] ?>">
+                            <button type="submit" class="btn-outline">Reset password</button>
                         </form>
                     <?php endif; ?>
                 </div>

@@ -87,22 +87,32 @@ class Post {
         $announcementFlag = $isAnnouncement ? 1 : 0;
         $stmt->bindParam(':is_announcement', $announcementFlag, PDO::PARAM_INT);
 
+        // Sprint 5 final fix (security M11): post + tag sync must be atomic.
+        // A tag failure used to leave the post saved while reporting failure.
+        // Cache invalidation stays outside the transaction (not rollback-able).
         try {
-            if ($stmt->execute()) {
-                $newPostId = (int)$this->db->lastInsertId();
-
-                // Sprint 4: Extract and link hashtags
-                $tags = Hashtag::extractTags($cleanContent);
-                $hashtagModel = new Hashtag($this->db);
-                $hashtagModel->syncPostTags($newPostId, $tags);
-
-                // Sprint 4: Invalidate feed cache
-                Cache::getInstance()->deleteByPrefix('feed_');
-
-                return $newPostId;
+            $this->db->beginTransaction();
+            if (!$stmt->execute()) {
+                $this->db->rollBack();
+                return false;
             }
-            return false;
+            $newPostId = (int)$this->db->lastInsertId();
+
+            // Sprint 4: Extract and link hashtags
+            $tags = Hashtag::extractTags($cleanContent);
+            $hashtagModel = new Hashtag($this->db);
+            $hashtagModel->syncPostTags($newPostId, $tags);
+
+            $this->db->commit();
+
+            // Sprint 4: Invalidate feed cache
+            Cache::getInstance()->deleteByPrefix('feed_');
+
+            return $newPostId;
         } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Post creation error: " . $e->getMessage());
             return false;
         }
@@ -279,18 +289,28 @@ class Post {
         $stmt->bindParam(':id', $postId, PDO::PARAM_INT);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
 
+        // Sprint 5 final fix (security M11): same atomicity as create() —
+        // content update + tag re-sync commit together or not at all.
         try {
+            $this->db->beginTransaction();
             $res = $stmt->execute();
             if ($res) {
                 // Sprint 4: Re-extract and sync hashtags
                 $tags = Hashtag::extractTags($cleanContent);
                 $hashtagModel = new Hashtag($this->db);
                 $hashtagModel->syncPostTags($postId, $tags);
-
+            }
+            if ($res) {
+                $this->db->commit();
                 Cache::getInstance()->deleteByPrefix('feed_');
+            } else {
+                $this->db->rollBack();
             }
             return $res;
         } catch (PDOException $e) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
             error_log("Post update error: " . $e->getMessage());
             return false;
         }
@@ -470,11 +490,14 @@ class Post {
 
     /**
      * Helper to compute human-readable relative time string.
-     * 
+     * Static (pure function) so other models (Like, Hashtag, Reply)
+     * can stamp the same relative time on their rows — every list the
+     * UI renders must carry time_ago, never a raw DB timestamp.
+     *
      * @param string $datetime
      * @return string
      */
-    public function formatTimeAgo(string $datetime): string {
+    public static function formatTimeAgo(string $datetime): string {
         $timestamp = strtotime($datetime);
         if (!$timestamp) {
             return 'recently';

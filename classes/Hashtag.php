@@ -6,6 +6,8 @@
  * Extracts, normalizes, indexes hashtags from post content,
  * renders clickable links, and provides trending hashtag aggregation.
  */
+require_once __DIR__ . '/Post.php';
+
 class Hashtag {
     private PDO $db;
 
@@ -145,10 +147,11 @@ class Hashtag {
         }
 
         $viewerSubquery = $viewerId > 0
-            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked"
-            : ", 0 AS is_liked";
+            ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked,
+               (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
+            : ", 0 AS is_liked, 0 AS is_bookmarked";
 
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
+        $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
                        u.name AS author_name, u.role AS author_role,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
@@ -165,12 +168,20 @@ class Hashtag {
         $stmt->bindParam(':tag', $cleanTag, PDO::PARAM_STR);
         if ($viewerId > 0) {
             $stmt->bindValue(':viewer_id', $viewerId, PDO::PARAM_INT);
+            $stmt->bindValue(':viewer_id2', $viewerId, PDO::PARAM_INT);
         }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Sprint 5 UI polish (M-4): the hashtag filter rendered raw DB
+        // timestamps because this query skipped the time_ago step every
+        // other post query does. Stamp it here, like Post does.
+        foreach ($rows as &$row) {
+            $row['time_ago'] = Post::formatTimeAgo($row['created_at']);
+        }
+        return $rows;
     }
 }
 

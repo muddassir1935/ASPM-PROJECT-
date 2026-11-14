@@ -5,11 +5,6 @@ mapping is one-to-one and deliberate (approved 2 Nov 2026): renaming the code
 would break tests and cost a sprint's worth of churn for no behaviour change.
 Read "Tweet" in the WBS as "Post" in the code everywhere below.
 
-The official WBS uses **Tweet** terminology; the code uses **Post**. The
-mapping is one-to-one and deliberate (approved 2 Nov 2026): renaming the code
-would break tests and cost a sprint's worth of churn for no behaviour change.
-Read "Tweet" in the WBS as "Post" in the code everywhere below.
-
 ## Naming map
 
 | WBS term | Code term | Location |
@@ -97,8 +92,8 @@ Read "Tweet" in the WBS as "Post" in the code everywhere below.
 | 4.3 timeline caching | Personalized + global feeds cached, 300s TTL; like counters cached (cache-aside, INCR on like, invalidate on unlike) | Done — TTL corrected 60s → 300s and global feed + counters added in the verification pass |
 | 4.3 cache invalidation | Automatic `feed_` prefix invalidation on post create/update/delete, like toggle, follow/unfollow, reply create/delete, bookmark add/remove | Done (`classes/Post.php`, `like_action.php`, `classes/Follow.php`, `classes/Reply.php`, `classes/Bookmark.php`) |
 | 4.4 benchmark + dashboard | `benchmark.php` CLI report; web view renders an SVG bar-chart dashboard | Done (basic single-chart dashboard, verification pass) |
-| 4.4.4 N+1 audit | Measured statement counts per endpoint | Done — `docs/n-plus-1-audit-sprint4.md` (no PHP-level N+1 found) |
-| 4.4 sprint 4 tests | `tests/Sprint4Test.php` (comprehensive unit tests for Likes, Hashtags, and Cache) | Done (48 tests after the verification pass) |
+| 4.4.4 N+1 audit | Measured statement counts per endpoint | Done — `docs/n-plus-1-audit-sprint4.md` (model methods single-statement; per-row `isFollowing()` calls found later in profile modals + Explore and fixed 14 Nov via `Follow::getFollowingIds()`) |
+| 4.4 sprint 4 tests | `tests/Sprint4Test.php` (comprehensive unit tests for Likes, Hashtags, and Cache) | Done (52 tests after the Sprint 5 UI polish pass) |
 | 4.5 docs increment | `docs/sprint-4-srs-increment.md` | Done |
 
 ## Sprint 5 coverage (WBS 5.0 → code)
@@ -108,11 +103,11 @@ Read "Tweet" in the WBS as "Post" in the code everywhere below.
 | 5.1 notifications schema | `notifications` table, FKs to `users` on `user_id` and `actor_id` | Done (`db/schema.sql` + `db/migrate_sprint5_notifications_mysql.sql` for older DBs) |
 | 5.1 Notification model | `classes/Notification.php` (create, listUnread, listAll, countUnread, markRead, markAllRead, delete) | Done (`classes/Notification.php`, PR #9, main `8f516cf`) |
 | 5.1 notification triggers & UI | Triggered on follow, reply, like; unread bell badge in header; `notifications.php` center | Done (`includes/header.php`, `notifications.php`) |
-| 5.2 RBAC hierarchy & permissions | Roles `student`, `society_admin`, `system_admin`, central `Authorization` permission map, server-side enforcement | In Progress — core built (`748f65d`, branch `feature/sprint-5-rbac`, due 15 Nov) |
-| 5.2 society announcements | Official society announcement dispatch with badge styling | In Progress (branch `feature/sprint-5-rbac`, due 15 Nov) |
-| 5.2 moderation & admin panel | System admin moderation (soft-deleting violating content, user governance) | In Progress — admin delete on detail page exists; admin panel on branch `feature/sprint-5-rbac`, due 15 Nov |
-| 5.3 security hardening | Anti-CSRF token lifecycle, brute-force login rate limiting, session idle timeout | In Progress — idle timeout (30 min) built in RBAC core; CSRF + rate-limit on branch `feature/sprint-5-rbac`, due 15 Nov |
+| 5.2 RBAC hierarchy & permissions | Roles `student`, `society_admin`, `system_admin`, central `Authorization` permission map, server-side enforcement | Done (PR #11, main `2c92121`; `classes/Authorization.php`, `tests/RbacTest.php` 92 tests) |
+| 5.2 society announcements | Official society announcement dispatch with badge styling | Done (PR #11; `posts.is_announcement`, compose checkbox for `announcement.create`) |
+| 5.2 moderation & admin panel | System admin moderation (soft-deleting violating content, user governance) | Done (PR #11; `admin.php` role assignment + moderation, `admin_action.php`) |
+| 5.3 security hardening | Anti-CSRF token lifecycle, brute-force login rate limiting, session idle timeout | Done (PR #11; `classes/Csrf.php`, `classes/LoginRateLimiter.php`, 30-min idle timeout, `.htaccess`, security headers) |
 | 5.4 responsive polish & mobile UX | 360px viewport audit, tablet 768px layout, micro-interactions, responsive SVGs | Done (`includes/header.php`, `benchmark.php`, `profile.php`, `post.php`) |
 | 5.5 seed dataset & deployment guide | `db/seed.sql` university fixtures + `docs/DEPLOYMENT.md` 5-min quick start | Done (`db/seed.sql`, `docs/DEPLOYMENT.md`, PR #9) |
 | 5.6 comprehensive docs suite | `sprint-5-srs-increment.md`, `USER_MANUAL.md`, `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md` | Done (this docs increment) |
-| 5.7 final deliverables | Agile Presentation Deck (`.pptx`), Technical Report (`.pdf`), Working Software Zip | In Progress — deck + report generated from `scripts/`; zip regenerates from merged main on 15 Nov |
+| 5.7 final deliverables | Agile Presentation Deck (`.pptx`), Technical Report (`.pdf`), Working Software Zip | In Progress — deck + report regen from merged main pending (Sat evening, after the UI polish merge); zip regenerates from merged main on 15 Nov |

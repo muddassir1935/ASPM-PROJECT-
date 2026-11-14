@@ -10,6 +10,12 @@ if (!headers_sent()) {
 // Errors still go to the PHP error log.
 ini_set('display_errors', '0');
 
+// Sprint 5 final fix (L7): absolute "Posted on" times rendered in the
+// server timezone (XAMPP defaults to UTC — 5 hours off PKT). The app,
+// the team and the demo are all in Karachi, so pin it here; every page
+// using the shared shell (and the CLI scripts that include it) agrees.
+date_default_timezone_set('Asia/Karachi');
+
 if(file_exists(__DIR__ . '/../classes/Auth.php')) {
     require_once __DIR__ . '/../classes/Auth.php';
 }
@@ -47,6 +53,15 @@ if (!function_exists('avatarToneClass')) {
     }
 }
 
+// Sprint 5 UI polish: one plural rule for every count label, so the UI
+// never says "1 posts" or "1 followers" again. Returns the word form
+// only ("post"/"posts") so call sites keep their own number styling.
+if (!function_exists('pluralize')) {
+    function pluralize(int $count, string $singular, ?string $plural = null): string {
+        return $count === 1 ? $singular : ($plural ?? $singular . 's');
+    }
+}
+
 // Brand mark: a "C" drawn as one open arc, with a node plugging into
 // its opening — the campus as a connected network. Colours come from
 // CSS (.mark-arc / .mark-node) so the same mark works on light chrome
@@ -71,10 +86,11 @@ if (!function_exists('brandMarkSvg')) {
     <!-- Sprint 5 CSRF: AJAX POSTs (like/follow/bookmark/notifications) read the token from here. -->
     <meta name="csrf-token" content="<?= htmlspecialchars(Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
-    <!-- Google Fonts -->
+    <!-- Google Fonts: Bricolage Grotesque for display/headings,
+         Public Sans for body and UI (Sprint 5 UI polish). -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
         /* ============================================================
@@ -126,8 +142,11 @@ if (!function_exists('brandMarkSvg')) {
             --cover-violet: linear-gradient(150deg, #181344 0%, #46309C 54%, #7B4BC4 140%);
             --cover-graphite: linear-gradient(150deg, #090C0F 0%, #2E3A42 55%, #5F7280 145%);
 
-            /* Type — one neutral grotesque; weight does the hierarchy */
-            --font: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            /* Type — Public Sans for body/UI, Bricolage Grotesque for
+               display moments (brand, hero, page titles). Inter stays
+               in the fallback stack for machines that have it. */
+            --font: 'Public Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --font-display: 'Bricolage Grotesque', 'Public Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
             --ease: 140ms ease;
         }
@@ -152,6 +171,14 @@ if (!function_exists('brandMarkSvg')) {
 
         h1, h2, h3, h4 {
             color: var(--ink);
+        }
+
+        /* Display type — Bricolage Grotesque on the brand moments only:
+           brand, hero, auth, page/section titles, profile name. */
+        .brand-text, .hero-title, .auth-tagline, .auth-title,
+        .page-title, .col-head, .section-title, .profile-name,
+        .empty-title, .modal-head h3, .widget-title {
+            font-family: var(--font-display);
         }
 
         a, button, input, textarea, select {
@@ -464,11 +491,18 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         /* Follow toggle (AJAX — classes + data hooks are API) */
+        /* Sprint 5 UI polish (M-13): was 78x28px, below the 44px touch
+           target. min-height 36px (audit minimum) keeps the pill slim in
+           user rows while giving fingers a real target. */
         .btn-follow {
             background: var(--accent);
             color: #FFFFFF;
             border: 1px solid var(--accent);
-            padding: 5px 16px;
+            padding: 8px 16px;
+            min-height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 999px;
             font-weight: 700;
             font-size: 0.87rem;
@@ -677,16 +711,19 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         /* Ghost mark: the logo at poster size, barely there — gives
-           the tall panel (signup) a centre instead of a void. */
+           the tall panel (signup) a centre instead of a void.
+           Sprint 5 UI polish (M-14): centered at 225px it sat directly
+           behind the tagline and its strokes crossed the words. Moved to
+           the top-right corner, smaller and fainter, clear of all text. */
         .auth-brand::before {
             content: "";
             position: absolute;
             inset: 0;
             background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M12.61 6.42 A6.9 6.9 0 1 0 12.61 17.58' stroke='%23FFFFFF' stroke-width='2.7' stroke-linecap='round'/%3E%3Cpath d='M11.39 6.42 A6.9 6.9 0 1 1 11.39 17.58' stroke='%23FFFFFF' stroke-width='2.7' stroke-linecap='round'/%3E%3Cpath d='M10.80 5.48 A6.9 6.9 0 0 1 13.08 6.79' stroke='%23FFFFFF' stroke-width='2.7' stroke-linecap='round'/%3E%3C/svg%3E");
             background-repeat: no-repeat;
-            background-position: center;
-            background-size: 225px 225px;
-            opacity: 0.13;
+            background-position: right 28px top 28px;
+            background-size: 160px 160px;
+            opacity: 0.10;
             pointer-events: none;
         }
 
@@ -974,11 +1011,16 @@ if (!function_exists('brandMarkSvg')) {
             text-underline-offset: 2px;
         }
 
+        /* Sprint 5 UI polish (M-17): the column needs min-width: 0 to shrink
+           inside the flex row, and the ellipsis must live on the text lines
+           themselves — on the flex container it never applied, so long names
+           cut mid-word and crowded the Follow button. */
         .user-row-text {
             display: flex;
             flex-direction: column;
             font-size: 0.95rem;
             line-height: 1.3;
+            min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
@@ -986,12 +1028,20 @@ if (!function_exists('brandMarkSvg')) {
 
         .user-row-text strong {
             font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
         }
 
         .user-row-text span {
             font-size: 0.85rem;
             color: var(--muted);
             font-weight: 400;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
         }
 
         /* ---------- Avatars: initials, tone fixed per user ---------- */
@@ -1107,6 +1157,8 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         /* Reply affordance: muted icon + count, accent on hover */
+        /* Sprint 5 UI polish (M-13): the tap target was the 32px icon circle.
+           min 44x44 keeps the icon the same size and grows only the hit area. */
         .action-reply {
             display: inline-flex;
             align-items: center;
@@ -1116,6 +1168,8 @@ if (!function_exists('brandMarkSvg')) {
             font-weight: 500;
             font-size: 0.83rem;
             padding: 4px 10px 4px 4px;
+            min-height: 44px;
+            min-width: 44px;
             border-radius: 999px;
             transition: color var(--ease);
         }
@@ -1145,6 +1199,7 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         /* Sprint 4: Like Action (WBS 4.1) */
+        /* Sprint 5 UI polish (M-13): same 44x44 hit area as .action-reply. */
         .action-like {
             display: inline-flex;
             align-items: center;
@@ -1154,6 +1209,8 @@ if (!function_exists('brandMarkSvg')) {
             font-weight: 500;
             font-size: 0.83rem;
             padding: 4px 10px 4px 4px;
+            min-height: 44px;
+            min-width: 44px;
             border-radius: 999px;
             background: transparent;
             border: none;
@@ -1992,9 +2049,12 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         /* ---------- Responsive ---------- */
+        /* Sprint 5 UI polish (M-19): with the right rail hidden the
+           main column grows to fill the freed space (600px -> 680px)
+           instead of leaving dead white space beside the feed. */
         @media (max-width: 1080px) {
             .layout-3col {
-                grid-template-columns: 76px minmax(0, 600px);
+                grid-template-columns: 76px minmax(0, 680px);
             }
             .col-side {
                 display: none;
@@ -2304,6 +2364,70 @@ if (!function_exists('brandMarkSvg')) {
             font-size: 0.85rem;
             font-weight: 600;
             padding: 7px 16px;
+        }
+
+        /* ---------- Benchmark page (Sprint 5 UI polish, M-11) ---------- */
+        .bench-card {
+            padding: 4px 16px 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .bench-meta {
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        .bench-meta strong {
+            color: var(--ink);
+        }
+
+        .bench-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+            margin-bottom: 14px;
+        }
+
+        .bench-table th, .bench-table td {
+            text-align: left;
+            padding: 8px 10px 8px 0;
+            border-bottom: 1px solid var(--line);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .bench-table th {
+            color: var(--muted);
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .bench-table td:first-child {
+            font-weight: 700;
+        }
+
+        .bench-callout {
+            background: var(--success-tint);
+            border: 1px solid var(--success-border);
+            color: #14532D;
+            border-radius: 12px;
+            padding: 11px 14px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .bench-chart {
+            padding: 4px 16px 16px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .bench-note {
+            font-size: 0.88rem;
+            color: var(--muted);
+            line-height: 1.55;
+            padding: 12px 16px 0;
         }
 
     </style>

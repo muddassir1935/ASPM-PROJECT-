@@ -64,6 +64,13 @@ To protect your account, especially when using shared campus lab computers or pu
 1. Click the **Logout** button located in the top-right corner of the navigation bar.
 2. Your session will be immediately invalidated and purged from the server.
 
+### 1.4 Changing Your Password
+1. Open your own profile and click **Edit Profile**.
+2. In the **Change password** section, enter your current password, then the new password twice (same policy as signup: min 8 characters, 1 uppercase, 1 lowercase, 1 number, 1 special character).
+3. Click **Change Password**. Your other sessions (other browsers/devices) are signed out; the current session stays logged in.
+
+If you forget your password entirely, ask a system admin to reset it — they will give you a temporary password, which you should change immediately after logging in (see above). The app sends no email, so there is no "forgot password" link.
+
 ---
 
 ## 2. Navigating CampusConnect

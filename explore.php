@@ -32,13 +32,32 @@ $hashtagModel = new Hashtag($db);
 $foundUsers = [];
 $foundPosts = [];
 
+// Sprint 5 UI polish (M-12): Explore used to show a fixed 20 posts with
+// the rest unreachable. Same Previous/Next pager as the home feed: fetch
+// one extra row to detect a next page, then slice it off for display.
+$perPage = 20;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $perPage;
+
 if ($tagFilter !== '') {
-    $foundPosts = $hashtagModel->getPostsByTag($tagFilter, $viewerId, 50, 0);
+    $foundPosts = $hashtagModel->getPostsByTag($tagFilter, $viewerId, $perPage + 1, $offset);
 } elseif ($query !== '') {
     $foundUsers = $userModel->searchUsers($query, $viewerId, 20);
-    $foundPosts = $postModel->searchPosts($query, 20, 0, $viewerId);
+    $foundPosts = $postModel->searchPosts($query, $perPage + 1, $offset, $viewerId);
 } else {
-    $foundPosts = $postModel->getFeed(20, 0, $viewerId);
+    $foundPosts = $postModel->getFeed($perPage + 1, $offset, $viewerId);
+}
+$hasMore = count($foundPosts) > $perPage;
+if ($hasMore) {
+    $foundPosts = array_slice($foundPosts, 0, $perPage);
+}
+// Pager links keep the current search/tag so paging never drops the filter.
+$pagerParams = [];
+if ($query !== '') {
+    $pagerParams['q'] = $query;
+}
+if ($tagFilter !== '') {
+    $pagerParams['tag'] = $tagFilter;
 }
 
 $bookmarkedIds = [];
@@ -46,6 +65,11 @@ if ($currentUser) {
     $bookmarkModel = new Bookmark($db);
     $bookmarkedIds = array_map('intval', array_column($bookmarkModel->getBookmarkedPosts($viewerId, 500), 'id'));
 }
+// Sprint 5 final fix (security M3): fetch the viewer's following-set ONCE —
+// the people-search loop below used to call isFollowing() per row (N+1).
+$viewerFollowingIds = $currentUser
+    ? array_flip($followModel->getFollowingIds($viewerId))
+    : [];
 ?>
 
 <div class="layout-3col">
@@ -74,12 +98,12 @@ if ($currentUser) {
                     <?php foreach ($foundUsers as $foundUser): ?>
                         <?php
                             $uInitial = strtoupper(mb_substr(trim($foundUser['name']), 0, 1, 'UTF-8'));
-                            $uIsFollowing = $currentUser ? $followModel->isFollowing($viewerId, (int)$foundUser['id']) : false;
+                            $uIsFollowing = isset($viewerFollowingIds[(int)$foundUser['id']]);
                         ?>
                         <div class="user-row">
                             <a href="profile.php?id=<?= (int)$foundUser['id'] ?>" class="user-row-link">
                                 <span class="avatar-sm<?= avatarToneClass((int)$foundUser['id'], (string)($foundUser['role'] ?? '')) ?>"><?= htmlspecialchars($uInitial) ?></span>
-                                <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($foundUser['role'] ?? 'student')) ?> &bull; <?= (int)$foundUser['follower_count'] ?> followers</span></span>
+                                <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($foundUser['role'] ?? 'student')) ?> &bull; <?= (int)$foundUser['follower_count'] ?> <?= pluralize((int)$foundUser['follower_count'], 'follower') ?></span></span>
                             </a>
                             <?php if ($currentUser): ?>
                                 <button type="button" class="btn-follow<?= $uIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$foundUser['id'] ?>"><?= $uIsFollowing ? 'Following' : 'Follow' ?></button>
@@ -97,13 +121,30 @@ if ($currentUser) {
         <?php endif; ?>
 
         <?php if (empty($foundPosts)): ?>
-            <div class="empty-state">
-                <p class="empty-text">No posts found.</p>
-            </div>
+            <?php /* M-16: same left-aligned .result-note as "No people found."
+                   above — the centered .empty-state made the two empty states
+                   on this one page disagree. */ ?>
+            <p class="result-note">No posts found.</p>
         <?php else: ?>
             <?php foreach ($foundPosts as $foundPost): ?>
                 <?php renderPostCard($foundPost, $currentUser, $bookmarkedIds); ?>
             <?php endforeach; ?>
+        <?php endif; ?>
+
+        <?php if ($page > 1 || $hasMore): ?>
+            <div class="pager">
+                <?php if ($page > 1): ?>
+                    <a href="explore.php?<?= htmlspecialchars(http_build_query($pagerParams + ['page' => $page - 1])) ?>">&larr; Previous</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
+                <span class="pager-info">Page <?= (int)$page ?></span>
+                <?php if ($hasMore): ?>
+                    <a href="explore.php?<?= htmlspecialchars(http_build_query($pagerParams + ['page' => $page + 1])) ?>">Next &rarr;</a>
+                <?php else: ?>
+                    <span></span>
+                <?php endif; ?>
+            </div>
         <?php endif; ?>
     </div>
 

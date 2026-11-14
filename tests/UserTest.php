@@ -190,6 +190,63 @@ runTest("Test 18: Cover style defaults to 'signature' and persists via updatePro
 );
 
 // ---------------------------------------------------------
+// SECTION 4: PASSWORD CHANGE & ADMIN RESET (Sprint 5 final pass)
+// ---------------------------------------------------------
+echo "--- PASSWORD MANAGEMENT TESTS ---\n";
+
+$pwUserId = $coverUserId; // the valid user from Test 1 (password: $validPass)
+
+// Test 19: Change password with the correct current password
+$changed = $user->changePassword($pwUserId, $validPass, "NewPass@456!");
+runTest("Test 19: Change password succeeds, old stops working, new works",
+    $changed === true
+        && $user->verifyPassword($validEmail, $validPass) === false
+        && $user->verifyPassword($validEmail, "NewPass@456!") !== false,
+    true
+);
+
+// Test 20: Change password with the wrong current password
+runTest("Test 20: Change password with wrong current password fails",
+    $user->changePassword($pwUserId, "Wrong@Pass1!", "Another@789!"),
+    false
+);
+
+// Test 21: Change password to a weak new password
+runTest("Test 21: Change password to weak new password fails",
+    $user->changePassword($pwUserId, "NewPass@456!", "weak"),
+    false
+);
+
+// Test 22: Change password to the same password
+runTest("Test 22: Change password to same-as-current fails",
+    $user->changePassword($pwUserId, "NewPass@456!", "NewPass@456!"),
+    false
+);
+
+// Test 23: Admin reset (no current password needed)
+$reset = $user->resetPassword($pwUserId, "Reset@789!");
+runTest("Test 23: Admin reset succeeds, previous password stops working",
+    $reset === true
+        && $user->verifyPassword($validEmail, "NewPass@456!") === false
+        && $user->verifyPassword($validEmail, "Reset@789!") !== false,
+    true
+);
+
+// Test 24: Generated temporary passwords always pass the policy
+$tempsOk = true;
+for ($i = 0; $i < 5; $i++) {
+    $temp = User::generateTemporaryPassword();
+    if (strlen($temp) !== 16 || !User::isValidPassword($temp)) {
+        $tempsOk = false;
+        break;
+    }
+}
+runTest("Test 24: Generated temporary passwords are 16 chars and policy-valid",
+    $tempsOk,
+    true
+);
+
+// ---------------------------------------------------------
 echo "\n=================================================\n";
 echo "TEST SUMMARY: $passedTests / $totalTests Passed\n";
 echo "=================================================\n";

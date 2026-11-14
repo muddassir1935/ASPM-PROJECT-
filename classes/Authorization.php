@@ -62,6 +62,7 @@ class Authorization {
         'announcement.delete_any' => [self::ROLE_SYSTEM_ADMIN],
         'user.manage' => [self::ROLE_SYSTEM_ADMIN],
         'role.assign' => [self::ROLE_SYSTEM_ADMIN],
+        'user.reset_password' => [self::ROLE_SYSTEM_ADMIN],
     ];
 
     /**

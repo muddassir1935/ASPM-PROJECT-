@@ -10,16 +10,17 @@ require_once 'config/Database.php';
 require_once 'classes/Post.php';
 require_once 'classes/Reply.php';
 require_once 'classes/Bookmark.php';
+require_once 'includes/social_widgets.php';
 
 require_once 'includes/header.php';
 
+$db = Database::getInstance()->getConnection();
 $postId = (int)($_GET['id'] ?? 0);
 $post = false;
 $replies = [];
 $isBookmarked = false;
 
 if ($postId > 0) {
-    $db = Database::getInstance()->getConnection();
     $postModel = new Post($db);
     $viewerId = $currentUser ? (int)$currentUser['id'] : 0;
     $post = $postModel->getById($postId, $viewerId);
@@ -41,7 +42,12 @@ $isOwner = $post && $currentUser && (int)$post['user_id'] === (int)$currentUser[
 $canDelete = $isOwner || Auth::can('post.delete_any');
 ?>
 
-<div class="narrow-wrap">
+<!-- Sprint 5 UI polish (M-3): the detail page now lives in the standard
+     3-column shell like feed/explore/profile, instead of a narrow
+     centered column with no nav and no sidebar. -->
+<div class="layout-3col">
+    <?php renderLeftNav(''); ?>
+    <div class="col-main">
     <a href="index.php" class="back-link">&larr; Back to Feed</a>
 
     <?php if ($flashMessage): ?>
@@ -97,20 +103,15 @@ $canDelete = $isOwner || Auth::can('post.delete_any');
                     <button type="button" class="action-like <?= !empty($post['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$post['id'] ?>" aria-label="Like post"><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($post['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($post['like_count'] ?? 0) ?></span></button>
                     <span class="spacer" style="flex: 1;"></span>
                     <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$post['id'] ?>"><?= $isBookmarked ? 'Saved' : 'Save' ?></button>
-                </div>
-            <?php endif; ?>
-
-            <?php if ($isOwner || $canDelete): ?>
-                <div class="post-owner-actions" style="margin-top: 1rem; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <?php if ($isOwner): ?>
-                        <button type="button" class="btn-outline" onclick="toggleDetailEdit()">Edit Post</button>
+                        <button type="button" class="btn-text" onclick="toggleDetailEdit()">Edit</button>
                     <?php endif; ?>
-                    <?php if ($canDelete): ?>
-                        <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="margin: 0;">
+                    <?php if ($isOwner || $canDelete): ?>
+                        <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" class="inline-form">
                             <?= Csrf::field() ?>
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
-                            <button type="submit" class="btn-danger-outline">Delete Post</button>
+                            <button type="submit" class="btn-text btn-text-danger">Delete</button>
                         </form>
                     <?php endif; ?>
                 </div>
@@ -195,9 +196,10 @@ $canDelete = $isOwner || Auth::can('post.delete_any');
                     <div class="reply-body">
                         <div class="reply-head">
                             <a class="reply-author" href="profile.php?id=<?= (int)$reply['user_id'] ?>"><?= htmlspecialchars($reply['author_name']) ?></a>
-                            <span class="reply-time">&middot; <?= htmlspecialchars(date('M j, g:i A', strtotime($reply['created_at']))) ?></span>
+                            <span class="reply-time">&middot; <?= htmlspecialchars($reply['time_ago'] ?? date('M j, g:i A', strtotime($reply['created_at']))) ?></span>
                         </div>
-                        <p class="reply-content"><?= htmlspecialchars($reply['content']) ?></p>
+                        <?php /* Sprint 5 final fix (L12): replies linkify hashtags like posts do. */ ?>
+                        <p class="reply-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($reply['content'])) ?></p>
                         <?php if ($replyCanDelete): ?>
                             <form method="POST" action="reply_action.php" onsubmit="return confirm('Delete this reply?');" style="margin-top: 4px;">
                                 <?= Csrf::field() ?>
@@ -212,6 +214,14 @@ $canDelete = $isOwner || Auth::can('post.delete_any');
             <?php endforeach; ?>
         <?php endif; ?>
     <?php endif; ?>
+    </div>
+
+    <div class="col-side">
+        <?php renderTrendingHashtagsWidget($db); ?>
+        <?php if ($currentUser): ?>
+            <?php renderWhoToFollowWidget($db, (int)$currentUser['id']); ?>
+        <?php endif; ?>
+    </div>
 </div>
 
 <?php require_once 'includes/footer.php'; ?>

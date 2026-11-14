@@ -32,7 +32,10 @@ $followers = [];
 $following = [];
 $feed = ['posts' => [], 'total' => 0, 'page' => 1, 'has_more' => false];
 $bookmarkedIds = [];
-$activeTab = ($_GET['tab'] ?? 'posts') === 'likes' ? 'likes' : 'posts';
+// Sprint 5 final fix (L9): the Likes tab is the owner's private list —
+// anyone could open ?tab=likes on any profile. Non-owners fall back to
+// the Posts tab (the tab link is hidden for them below too).
+$activeTab = ($_GET['tab'] ?? 'posts') === 'likes' && $isOwnProfile ? 'likes' : 'posts';
 $likesTotal = 0;
 $likedPosts = [];
 
@@ -42,6 +45,11 @@ if ($profile) {
     $followers = $followModel->getFollowers((int)$profile['id'], 100);
     $following = $followModel->getFollowing((int)$profile['id'], 100);
     $likesTotal = $likeModel->countByUser((int)$profile['id']);
+    // Sprint 5 final fix (security M3): fetch the viewer's following-set
+    // ONCE — the modals below used to call isFollowing() per row (N+1).
+    $viewerFollowingIds = $currentUser
+        ? array_flip($followModel->getFollowingIds((int)$currentUser['id']))
+        : [];
 
     if ($currentUser && !$isOwnProfile) {
         $isFollowing = $followModel->isFollowing((int)$currentUser['id'], (int)$profile['id']);
@@ -104,13 +112,13 @@ if ($profile) {
                         <div class="profile-stats">
                             <button type="button" class="stat-btn" onclick="toggleModal('followers-modal')">
                                 <strong data-followers-count-for="<?= (int)$profile['id'] ?>"><?= $followerCount ?></strong>
-                                <span> follower<?= $followerCount === 1 ? '' : 's' ?></span>
+                                <span> <?= pluralize($followerCount, 'follower') ?></span>
                             </button>
                             <button type="button" class="stat-btn" onclick="toggleModal('following-modal')">
                                 <strong><?= $followingCount ?></strong>
                                 <span> following</span>
                             </button>
-                            <span><strong><?= (int)$feed['total'] ?></strong> posts</span>
+                            <span><strong><?= (int)$feed['total'] ?></strong> <?= pluralize((int)$feed['total'], 'post') ?></span>
                         </div>
                     </div>
                     <div class="profile-action">
@@ -126,7 +134,9 @@ if ($profile) {
             <!-- Profile Tabs (Posts / Likes) -->
             <div class="profile-tabs">
                 <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=posts" class="profile-tab<?= $activeTab === 'posts' ? ' active' : '' ?>">Posts (<?= (int)$feed['total'] ?>)</a>
+                <?php if ($isOwnProfile): ?>
                 <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=likes" class="profile-tab<?= $activeTab === 'likes' ? ' active' : '' ?>">Likes (<?= (int)$likesTotal ?>)</a>
+                <?php endif; ?>
             </div>
 
             <?php if ($activeTab === 'likes'): ?>
@@ -189,7 +199,7 @@ if ($profile) {
                 <?php foreach ($followers as $follower): ?>
                     <?php
                         $fInitial = strtoupper(mb_substr(trim($follower['name']), 0, 1, 'UTF-8'));
-                        $fIsFollowing = $currentUser ? $followModel->isFollowing((int)$currentUser['id'], (int)$follower['id']) : false;
+                        $fIsFollowing = isset($viewerFollowingIds[(int)$follower['id']]);
                         $fIsSelf = $currentUser && (int)$follower['id'] === (int)$currentUser['id'];
                     ?>
                     <div class="user-row">
@@ -219,7 +229,7 @@ if ($profile) {
                 <?php foreach ($following as $followed): ?>
                     <?php
                         $fInitial = strtoupper(mb_substr(trim($followed['name']), 0, 1, 'UTF-8'));
-                        $fIsFollowing = $currentUser ? $followModel->isFollowing((int)$currentUser['id'], (int)$followed['id']) : false;
+                        $fIsFollowing = isset($viewerFollowingIds[(int)$followed['id']]);
                         $fIsSelf = $currentUser && (int)$followed['id'] === (int)$currentUser['id'];
                     ?>
                     <div class="user-row">
@@ -266,6 +276,26 @@ if ($profile) {
                         </div>
                     </div>
                     <button type="submit" class="btn-submit">Save Changes</button>
+                </form>
+                <hr style="border: none; border-top: 1px solid var(--line); margin: 20px 0;">
+                <h3 style="font-size: 1rem; margin-bottom: 12px;">Change password</h3>
+                <form method="POST" action="profile_action.php" id="change-password-form">
+                    <?= Csrf::field() ?>
+                    <input type="hidden" name="action" value="change_password">
+                    <div class="form-group">
+                        <label class="form-label" for="current-password">Current password</label>
+                        <input class="form-control" type="password" id="current-password" name="current_password" required autocomplete="current-password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="new-password">New password</label>
+                        <input class="form-control" type="password" id="new-password" name="new_password" required autocomplete="new-password">
+                        <p class="field-hint">Min 8 characters, with 1 uppercase, 1 lowercase, 1 number, and 1 special character.</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="confirm-password">Confirm new password</label>
+                        <input class="form-control" type="password" id="confirm-password" name="confirm_password" required autocomplete="new-password">
+                    </div>
+                    <button type="submit" class="btn-submit">Change Password</button>
                 </form>
             </div>
         </div>
