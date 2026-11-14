@@ -193,7 +193,7 @@ $recentPosts = $postModel->getFeed(20, 0, $currentUserId, true);
                         <div class="post-card-actions">
                             <a class="action-reply" href="post.php?id=<?= (int)$modPost['id'] ?>" style="color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.88rem;">View post &rarr;</a>
                             <span class="spacer"></span>
-                            <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" class="inline-form" style="margin: 0;">
+                            <form method="POST" action="post_action.php" class="inline-form js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin: 0;">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="post_id" value="<?= (int)$modPost['id'] ?>">

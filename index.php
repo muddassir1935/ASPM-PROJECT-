@@ -204,7 +204,7 @@ if ($currentUser) {
                                             </button>
                                         <?php endif; ?>
                                         <?php if ($isOwnPost || $canDeleteAny): ?>
-                                            <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="margin:0;">
+                                            <form method="POST" action="post_action.php" class="js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin:0;">
                                                 <?= Csrf::field() ?>
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">

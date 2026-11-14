@@ -241,12 +241,82 @@
         var openModals = document.querySelectorAll('.modal-overlay.open');
         if (openModals.length === 0) { return; }
         openModals.forEach(function (m) { m.classList.remove('open'); });
+        pendingConfirmForm = null;
         if (modalOpener && modalOpener.focus) {
             modalOpener.focus();
             modalOpener = null;
         }
     });
+
+    // In-App Confirmation Modal Controller (replaces native browser confirm())
+    var pendingConfirmForm = null;
+
+    function showConfirmModal(title, message, formToSubmit, confirmBtnText) {
+        var modal = document.getElementById('confirm-dialog-modal');
+        if (!modal) return;
+
+        var titleEl = document.getElementById('confirm-dialog-title');
+        var descEl = document.getElementById('confirm-dialog-desc');
+        var btnEl = document.getElementById('confirm-dialog-submit-btn');
+
+        if (titleEl) titleEl.textContent = title || 'Delete Post';
+        if (descEl) descEl.textContent = message || 'Are you sure you want to delete this post? This action cannot be undone.';
+        if (btnEl) btnEl.textContent = confirmBtnText || 'Delete';
+
+        pendingConfirmForm = formToSubmit || null;
+        modal.classList.add('open');
+
+        if (typeof closeAllPostMenus === 'function') {
+            closeAllPostMenus();
+        }
+
+        if (btnEl) {
+            setTimeout(function() { btnEl.focus(); }, 40);
+        }
+    }
+
+    function closeConfirmModal() {
+        var modal = document.getElementById('confirm-dialog-modal');
+        if (!modal) return;
+        modal.classList.remove('open');
+        pendingConfirmForm = null;
+    }
+
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (!form) return;
+        if (form.classList && form.classList.contains('js-confirm-delete')) {
+            event.preventDefault();
+            var title = form.getAttribute('data-confirm-title') || 'Delete Post';
+            var message = form.getAttribute('data-confirm-message') || 'Are you sure you want to delete this post? This action cannot be undone.';
+            var confirmBtn = form.getAttribute('data-confirm-btn') || 'Delete';
+            showConfirmModal(title, message, form, confirmBtn);
+        }
+    });
+
+    var confirmSubmitBtn = document.getElementById('confirm-dialog-submit-btn');
+    if (confirmSubmitBtn) {
+        confirmSubmitBtn.addEventListener('click', function () {
+            if (pendingConfirmForm) {
+                var form = pendingConfirmForm;
+                closeConfirmModal();
+                HTMLFormElement.prototype.submit.call(form);
+            }
+        });
+    }
 </script>
+
+<!-- In-App Confirmation Modal (Replaces browser confirm popup) -->
+<div id="confirm-dialog-modal" class="modal-overlay confirm-modal-overlay" onclick="if (event.target === this) closeConfirmModal();">
+    <div class="modal-box confirm-dialog-box" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-desc">
+        <h3 id="confirm-dialog-title" class="confirm-dialog-title">Delete Post</h3>
+        <p id="confirm-dialog-desc" class="confirm-dialog-desc">Are you sure you want to delete this post? This action cannot be undone.</p>
+        <div class="confirm-dialog-actions">
+            <button type="button" id="confirm-dialog-submit-btn" class="confirm-btn-danger">Delete</button>
+            <button type="button" class="confirm-btn-cancel" onclick="closeConfirmModal();">Cancel</button>
+        </div>
+    </div>
+</div>
 
 </body>
 </html>

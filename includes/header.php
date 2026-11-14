@@ -3136,6 +3136,119 @@ if (!function_exists('brandMarkSvg')) {
             color: var(--ink);
         }
 
+        /* ---------- In-App Confirmation Dialog (Replaces native browser confirm) ---------- */
+        .confirm-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.70);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        [data-theme="light"] .confirm-modal-overlay {
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .confirm-modal-overlay.open {
+            display: flex;
+        }
+
+        .confirm-dialog-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 340px;
+            padding: 26px 24px;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
+            text-align: left;
+            animation: confirmPop 0.18s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        @keyframes confirmPop {
+            from {
+                opacity: 0;
+                transform: scale(0.94);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .confirm-dialog-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin: 0 0 8px 0;
+            font-family: var(--font-display);
+            letter-spacing: -0.02em;
+        }
+
+        .confirm-dialog-desc {
+            font-size: 0.92rem;
+            line-height: 1.45;
+            color: var(--muted);
+            margin: 0 0 24px 0;
+        }
+
+        .confirm-dialog-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .confirm-btn-danger {
+            width: 100%;
+            height: 44px;
+            background: #F4212E;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 9999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, transform 0.1s ease;
+        }
+
+        .confirm-btn-danger:hover {
+            background: #DC1E29;
+            transform: translateY(-1px);
+        }
+
+        .confirm-btn-danger:active {
+            transform: translateY(0);
+        }
+
+        .confirm-btn-cancel {
+            width: 100%;
+            height: 44px;
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid var(--line);
+            border-radius: 9999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .confirm-btn-cancel:hover {
+            background: var(--wash);
+            border-color: var(--border-strong);
+        }
+
         /* ---------- Public Landing View (The Iconic X / Twitter Standard) ---------- */
         .x-landing-shell {
             max-width: 1480px;

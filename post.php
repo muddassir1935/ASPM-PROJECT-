@@ -107,7 +107,7 @@ $canDelete = $isOwner || Auth::can('post.delete_any');
                         <button type="button" class="btn-text" onclick="toggleDetailEdit()">Edit</button>
                     <?php endif; ?>
                     <?php if ($isOwner || $canDelete): ?>
-                        <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" class="inline-form">
+                        <form method="POST" action="post_action.php" class="inline-form js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete">
                             <?= Csrf::field() ?>
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
@@ -201,7 +201,7 @@ $canDelete = $isOwner || Auth::can('post.delete_any');
                         <?php /* Sprint 5 final fix (L12): replies linkify hashtags like posts do. */ ?>
                         <p class="reply-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($reply['content'])) ?></p>
                         <?php if ($replyCanDelete): ?>
-                            <form method="POST" action="reply_action.php" onsubmit="return confirm('Delete this reply?');" style="margin-top: 4px;">
+                            <form method="POST" action="reply_action.php" class="js-confirm-delete" data-confirm-title="Delete Reply" data-confirm-message="Are you sure you want to delete this reply? This action cannot be undone." data-confirm-btn="Delete" style="margin-top: 4px;">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="reply_id" value="<?= (int)$reply['id'] ?>">
