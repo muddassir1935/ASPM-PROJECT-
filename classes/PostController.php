@@ -163,7 +163,8 @@ class PostController {
     public function getTimelineFeed(int $page = 1, int $limit = 20): array {
         $page = max(1, $page);
         $offset = ($page - 1) * $limit;
-        $posts = $this->postModel->getFeed($limit, $offset);
+        $viewerId = isset($this->currentUser['id']) ? (int)$this->currentUser['id'] : 0;
+        $posts = $this->postModel->getFeed($limit, $offset, $viewerId);
         $total = $this->postModel->countAll();
 
         return [

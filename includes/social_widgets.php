@@ -37,10 +37,6 @@ function renderLeftNav(string $active): void {
     echo '<nav class="col-nav" aria-label="Section">';
     foreach ($links as $key => [$href, $label, $icon, $badge]) {
         $isActive = $key === $active ? ' nav-col-active' : '';
-        // Sprint 5 UI polish (M-9): at <=1080px the label <span> is hidden
-        // (display:none), leaving icon-only links with no accessible name.
-        // aria-label carries the name at every width; aria-current marks
-        // the active page for screen readers.
         echo '<a href="' . htmlspecialchars($href) . '" class="nav-col-link' . $isActive . '"'
             . ' aria-label="' . htmlspecialchars($label) . '"'
             . ($key === $active ? ' aria-current="page"' : '') . '>'
@@ -50,6 +46,27 @@ function renderLeftNav(string $active): void {
         }
         echo '</a>';
     }
+
+    // Logged-in User Identity Pill pinned at bottom
+    if ($viewerId > 0 && isset($GLOBALS['currentUser']) && is_array($GLOBALS['currentUser'])) {
+        $u = $GLOBALS['currentUser'];
+        $uInitial = strtoupper(mb_substr(trim($u['name'] ?? ''), 0, 1, 'UTF-8'));
+        $uRole = class_exists('Authorization') ? Authorization::displayLabel($u['role'] ?? '') : ($u['role'] ?? 'Student');
+        $emailParts = explode('@', $u['email'] ?? '');
+        $uHandle = '@' . ($emailParts[0] ?? 'user');
+
+        echo '<div class="nav-user-dock">';
+        echo '<a href="profile.php?id=' . $viewerId . '" class="nav-user-pill" title="View your profile">';
+        echo '<span class="avatar-sm' . avatarToneClass($viewerId, (string)($u['role'] ?? '')) . '">' . htmlspecialchars($uInitial) . '</span>';
+        echo '<div class="nav-user-details">';
+        echo '<strong class="nav-user-name">' . htmlspecialchars($u['name'] ?? '') . '</strong>';
+        echo '<span class="nav-user-handle">' . htmlspecialchars($uHandle) . ' &middot; ' . htmlspecialchars($uRole) . '</span>';
+        echo '</div>';
+        echo '<svg class="nav-user-dots" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+        echo '</a>';
+        echo '</div>';
+    }
+
     echo '</nav>';
 }
 
@@ -94,19 +111,21 @@ function renderTrendingHashtagsWidget(PDO $db, int $limit = 5): void {
     $trending = $hashtagModel->getTrending($limit);
 
     echo '<div class="widget">';
-    echo '<h4 class="widget-title">Trending Topics</h4>';
+    echo '<h4 class="widget-title">Trends for you</h4>';
     if (empty($trending)) {
         echo '<p class="widget-empty">No trending topics yet.</p>';
     } else {
         foreach ($trending as $item) {
             echo '<div class="trending-row">';
             echo '<a href="explore.php?tag=' . urlencode($item['tag']) . '" class="trending-link">';
+            echo '<span class="trending-sub">Trending on Campus</span>';
             echo '<span class="trending-tag">#' . htmlspecialchars($item['tag']) . '</span>';
             echo '<span class="trending-count">' . (int)$item['post_count'] . ' ' . pluralize((int)$item['post_count'], 'post') . '</span>';
             echo '</a>';
             echo '</div>';
         }
     }
+    echo '<a href="explore.php" class="widget-more">Show more</a>';
     echo '</div>';
 }
 
@@ -140,10 +159,43 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     if ($isAnnouncement) {
         echo '<div class="announce-line">' . $megaSvg . 'Announcement</div>';
     }
+    $isOwner = $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
+    $canDeleteAny = $currentUser && class_exists('Auth') && Auth::can('post.delete_any');
+
     echo '<div class="post-card-head">';
     echo '<a class="post-card-author" href="profile.php?id=' . (int)$post['user_id'] . '">'
         . htmlspecialchars($post['author_name']) . '</a>';
+    $authorEmail = $post['author_email'] ?? '';
+    if ($authorEmail) {
+        $handle = explode('@', $authorEmail)[0];
+        echo '<span class="post-card-handle">@' . htmlspecialchars($handle) . '</span>';
+    }
     echo '<span class="post-card-time">&middot; ' . htmlspecialchars($timeAgo) . '</span>';
+
+    if ($isOwner || $canDeleteAny) {
+        echo '<div class="post-menu-wrap">';
+        echo '<button type="button" class="post-menu-btn" data-post-menu-toggle="' . $postId . '" aria-label="More options">'
+            . '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>'
+            . '</button>';
+        echo '<div id="post-menu-' . $postId . '" class="post-dropdown-menu" style="display:none;">';
+        if ($isOwner) {
+            echo '<button type="button" class="post-dropdown-item" onclick="togglePostEdit(' . $postId . '); closeAllPostMenus();">'
+                . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>'
+                . 'Edit Post</button>';
+        }
+        if ($isOwner || $canDeleteAny) {
+            echo '<form method="POST" action="post_action.php" onsubmit="return confirm(\'Delete this post? This cannot be undone.\');" style="margin:0;">'
+                . Csrf::field()
+                . '<input type="hidden" name="action" value="delete">'
+                . '<input type="hidden" name="post_id" value="' . $postId . '">'
+                . '<button type="submit" class="post-dropdown-item item-danger">'
+                . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
+                . 'Delete Post</button>'
+                . '</form>';
+        }
+        echo '</div>';
+        echo '</div>';
+    }
     echo '</div>';
     echo '<p class="post-card-content">' . $renderedBody . '</p>';
     echo '<div class="post-card-actions">';
@@ -160,24 +212,6 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
         echo '<button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="'
             . $postId . '"' . ($isBookmarked && $removeCardOnUnsave ? ' data-remove-card="1"' : '') . '>'
             . ($isBookmarked ? 'Saved' : 'Save') . '</button>';
-    }
-    // Sprint 5 UI polish (M-7): one owner-action treatment everywhere.
-    // Profile/explore/bookmarks cards had NO owner actions while the feed
-    // had inline Edit/Delete text buttons — now every own-post card has
-    // the same pair (owner: Edit + Delete; admin: Delete). The inline
-    // edit form is the feed's, toggled by the shared togglePostEdit().
-    $isOwner = $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
-    $canDeleteAny = $currentUser && class_exists('Auth') && Auth::can('post.delete_any');
-    if ($isOwner) {
-        echo '<button type="button" class="btn-text" onclick="togglePostEdit(' . $postId . ')">Edit</button>';
-    }
-    if ($isOwner || $canDeleteAny) {
-        echo '<form method="POST" action="post_action.php" onsubmit="return confirm(\'Delete this post? This cannot be undone.\');" class="inline-form">'
-            . Csrf::field()
-            . '<input type="hidden" name="action" value="delete">'
-            . '<input type="hidden" name="post_id" value="' . $postId . '">'
-            . '<button type="submit" class="btn-text btn-text-danger">Delete</button>'
-            . '</form>';
     }
     echo '</div>';
     if ($isOwner) {

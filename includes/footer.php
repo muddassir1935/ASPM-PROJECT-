@@ -13,10 +13,56 @@
         if (meta) { csrfToken = meta.getAttribute('content') || ''; }
     })();
 
-    // Sprint 3: AJAX toggles for follow and bookmark buttons.
-    // Delegated from the document so buttons rendered anywhere on the
-    // page (feed, profile, modals, widgets) all work with one handler.
+    // Global delegated click handler
     document.addEventListener('click', function (event) {
+        // Theme Switcher Toggle (1-click Light / Dark)
+        var themeBtn = event.target.closest('#theme-toggle-btn');
+        if (themeBtn) {
+            event.preventDefault();
+            var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+            var next = cur === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem('cc_theme', next); } catch (e) {}
+            return;
+        }
+
+        // Show/Hide Password Toggle
+        var pwToggle = event.target.closest('[data-toggle-pw]');
+        if (pwToggle) {
+            event.preventDefault();
+            var wrap = pwToggle.closest('.password-input-wrap');
+            if (wrap) {
+                var input = wrap.querySelector('input');
+                if (input) {
+                    var isText = input.type === 'text';
+                    input.type = isText ? 'password' : 'text';
+                    var eyeOpen = pwToggle.querySelector('.eye-open');
+                    var eyeClosed = pwToggle.querySelector('.eye-closed');
+                    if (eyeOpen) eyeOpen.style.display = isText ? 'block' : 'none';
+                    if (eyeClosed) eyeClosed.style.display = isText ? 'none' : 'block';
+                }
+            }
+            return;
+        }
+
+        // Post Card 3-Dots Dropdown Menu Toggle
+        var menuBtn = event.target.closest('[data-post-menu-toggle]');
+        if (menuBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            var pid = menuBtn.getAttribute('data-post-menu-toggle');
+            var pmenu = document.getElementById('post-menu-' + pid);
+            var wasClosed = !pmenu || pmenu.style.display === 'none';
+            closeAllPostMenus();
+            if (pmenu && wasClosed) {
+                pmenu.style.display = 'flex';
+            }
+            return;
+        }
+        if (!event.target.closest('.post-dropdown-menu')) {
+            closeAllPostMenus();
+        }
+
         var followBtn = event.target.closest('[data-follow-toggle]');
         if (followBtn) {
             event.preventDefault();
@@ -129,6 +175,13 @@
         var btn = event.target.closest ? event.target.closest('.btn-follow.following') : null;
         if (btn && !btn.contains(event.relatedTarget)) { btn.textContent = 'Following'; }
     });
+
+    // Post card 3-dots menu dismissal
+    function closeAllPostMenus() {
+        document.querySelectorAll('.post-dropdown-menu').forEach(function (m) {
+            m.style.display = 'none';
+        });
+    }
 
     // Sprint 5 UI polish (M-7): one inline-edit toggle for every post
     // card (feed, profile, explore, bookmarks share it now).

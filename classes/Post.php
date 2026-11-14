@@ -176,7 +176,7 @@ class Post {
                 : ", 0 AS is_liked, 0 AS is_bookmarked";
 
             $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
-                           u.name AS author_name, u.role AS author_role,
+                           u.name AS author_name, u.role AS author_role, u.email AS author_email,
                            (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                            (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
                            {$viewerSubquery}
@@ -365,7 +365,7 @@ class Post {
         // WBS 4.3.4: timeline cache TTL is 5 minutes (300s), not 60s.
         return $cache->remember($cacheKey, 300, function() use ($userId, $limit, $offset) {
             $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
-                           u.name AS author_name, u.role AS author_role,
+                           u.name AS author_name, u.role AS author_role, u.email AS author_email,
                            (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                            (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
                            (SELECT COUNT(*) FROM likes l3 WHERE l3.post_id = p.id AND l3.user_id = :viewer_id) AS is_liked,
