@@ -91,26 +91,36 @@ if (!function_exists('brandMarkSvg')) {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=Public+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Zero-Flicker Theme Initializer (Persists Dark / Light Mode) -->
+    <script>
+        (function() {
+            try {
+                var saved = localStorage.getItem('cc_theme');
+                var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+                var theme = saved ? saved : (prefersDark ? 'dark' : 'light');
+                document.documentElement.setAttribute('data-theme', theme);
+            } catch (e) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+            }
+        })();
+    </script>
     
     <style>
         /* ============================================================
-           CampusConnect design system v2 — Sprint 3 redesign, pass 2
-           Concept: a shipped microblogging product, not a template.
-           The feed IS the interface: flat white surfaces, hairline
-           dividers instead of cards, one accent, product-scale type.
-           Structure comes from 1px rules and whitespace; colour is
-           spent only on actions, links and focus.
-           Polish pass: character lives in the brand moments only —
-           the arc-and-node mark, lively avatar tones, and the ink-to-
-           cobalt signature on the auth panel and profile cover. The
-           feed itself stays quiet.
+           CampusConnect Dual Design System — Production Grade
+           Supports both X/Twitter Deep Dark (Lights Out) and Ultra-Clean
+           Corporate Light themes with multi-shade surface depth.
            ============================================================ */
-        :root {
-            /* Palette — X/Twitter multi-shade depth hierarchy */
+        :root, [data-theme="dark"] {
+            /* Dark Theme Tokens (X/Twitter Lights Out) */
             --bg-base: #000000;
             --bg-surface: #16181C;
             --bg-surface-hover: #1D1F23;
             --bg-input: #202327;
+            --nav-bg: rgba(0, 0, 0, 0.82);
+            --modal-bg: #16181C;
+            --modal-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
 
             --ink: #E7E9EA;
             --ink-soft: #D1D5DB;
@@ -136,6 +146,12 @@ if (!function_exists('brandMarkSvg')) {
             --success-tint: rgba(0, 186, 124, 0.12);
             --success-border: rgba(0, 186, 124, 0.3);
 
+            --btn-follow-bg: #EFF3F4;
+            --btn-follow-color: #0F1419;
+            --btn-follow-border: #EFF3F4;
+            --btn-follow-hover-bg: #D7DBDC;
+            --brand-arc-2: #E7E9EA;
+
             /* Brand signature — deep obsidian-to-cobalt */
             --brand-grad: linear-gradient(150deg, #090B0E 0%, #0F172A 52%, #1D4ED8 138%);
             --brand-dots: radial-gradient(rgba(255, 255, 255, 0.15) 1.2px, transparent 1.9px);
@@ -147,13 +163,60 @@ if (!function_exists('brandMarkSvg')) {
             --cover-violet: linear-gradient(150deg, #130E2E 0%, #3B1B7D 54%, #7C3AED 140%);
             --cover-graphite: linear-gradient(150deg, #050709 0%, #16181C 55%, #38444D 145%);
 
-            /* Type — Public Sans for body/UI, Bricolage Grotesque for
-               display moments (brand, hero, page titles). Inter stays
-               in the fallback stack for machines that have it. */
             --font: 'Public Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             --font-display: 'Bricolage Grotesque', 'Public Sans', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 
             --ease: 140ms ease;
+        }
+
+        /* Light Theme Tokens (Production X/Twitter Corporate Light) */
+        [data-theme="light"] {
+            --bg-base: #FFFFFF;
+            --bg-surface: #F7F9FA;
+            --bg-surface-hover: #EFF3F4;
+            --bg-input: #EFF3F4;
+            --nav-bg: rgba(255, 255, 255, 0.88);
+            --modal-bg: #FFFFFF;
+            --modal-shadow: 0 12px 40px rgba(15, 20, 25, 0.18);
+
+            --ink: #0F1419;
+            --ink-soft: #2E3A42;
+            --muted: #536471;
+            --faint: #8696A3;
+
+            --accent: #1D9BF0;
+            --accent-hover: #1A8CD8;
+            --accent-tint: rgba(29, 155, 240, 0.10);
+            --accent-ring: rgba(29, 155, 240, 0.25);
+
+            --line: #EFF3F4;
+            --border-strong: #CFD9DE;
+            --wash: #F7F9FA;
+            --field-bg: #EFF3F4;
+
+            --danger: #D92D20;
+            --danger-text: #B3261E;
+            --danger-tint: #FDECEA;
+            --danger-border: #F2C4C0;
+
+            --success: #177245;
+            --success-tint: #E9F6EE;
+            --success-border: #BFE3CE;
+
+            --btn-follow-bg: #0F1419;
+            --btn-follow-color: #FFFFFF;
+            --btn-follow-border: #0F1419;
+            --btn-follow-hover-bg: #272C30;
+            --brand-arc-2: #0F1419;
+
+            --brand-grad: linear-gradient(150deg, #0F1419 0%, #1A2358 52%, #1D9BF0 138%);
+            --brand-dots: radial-gradient(rgba(255, 255, 255, 0.13) 1.2px, transparent 1.9px);
+
+            --cover-cobalt: linear-gradient(150deg, #0A1A4A 0%, #172B7A 52%, #1D9BF0 138%);
+            --cover-teal: linear-gradient(150deg, #03211F 0%, #0A5C50 54%, #15935F 140%);
+            --cover-sunset: linear-gradient(150deg, #33203F 0%, #8A4A63 54%, #D97E4A 142%);
+            --cover-violet: linear-gradient(150deg, #181344 0%, #46309C 54%, #7B4BC4 140%);
+            --cover-graphite: linear-gradient(150deg, #090C0F 0%, #2E3A42 55%, #5F7280 145%);
         }
 
         * {
@@ -214,7 +277,7 @@ if (!function_exists('brandMarkSvg')) {
 
         /* ---------- Top bar ---------- */
         .navbar {
-            background: rgba(0, 0, 0, 0.82);
+            background: var(--nav-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--line);
@@ -380,7 +443,7 @@ if (!function_exists('brandMarkSvg')) {
             border-bottom: 1px solid var(--line);
             position: sticky;
             top: 52px;
-            background: rgba(0, 0, 0, 0.82);
+            background: var(--nav-bg);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             z-index: 30;
@@ -497,11 +560,47 @@ if (!function_exists('brandMarkSvg')) {
             background: var(--danger-tint);
         }
 
-        /* Follow toggle (AJAX — X/Twitter High-Contrast White Pill) */
+        /* Theme toggle button (Sun/Moon icon pill) */
+        .btn-theme-toggle {
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--muted);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: color var(--ease), background var(--ease), border-color var(--ease), transform 120ms ease;
+        }
+
+        .btn-theme-toggle:hover {
+            color: var(--ink);
+            background: var(--bg-surface-hover);
+            border-color: var(--border-strong);
+            transform: scale(1.05);
+        }
+
+        .btn-theme-toggle:active {
+            transform: scale(0.95);
+        }
+
+        .btn-theme-toggle svg {
+            width: 19px;
+            height: 19px;
+        }
+
+        [data-theme="dark"] .theme-icon-moon { display: none; }
+        [data-theme="dark"] .theme-icon-sun { display: block; }
+        [data-theme="light"] .theme-icon-sun { display: none; }
+        [data-theme="light"] .theme-icon-moon { display: block; }
+
+        /* Follow toggle (AJAX — Adapts to Light and Dark Modes) */
         .btn-follow {
-            background: #EFF3F4;
-            color: #0F1419;
-            border: 1px solid #EFF3F4;
+            background: var(--btn-follow-bg);
+            color: var(--btn-follow-color);
+            border: 1px solid var(--btn-follow-border);
             padding: 7px 18px;
             min-height: 36px;
             display: inline-flex;
@@ -515,20 +614,20 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .btn-follow:hover:not(:disabled) {
-            background: #D7DBDC;
-            border-color: #D7DBDC;
+            background: var(--btn-follow-hover-bg);
+            border-color: var(--btn-follow-hover-bg);
         }
 
         .btn-follow.following {
             background: transparent;
-            color: #EFF3F4;
-            border: 1px solid #536471;
+            color: var(--ink);
+            border: 1px solid var(--border-strong);
         }
 
         .btn-follow.following:hover:not(:disabled) {
-            background: rgba(244, 33, 46, 0.12);
-            color: #F4212E;
-            border-color: rgba(244, 33, 46, 0.4);
+            background: var(--danger-tint);
+            color: var(--danger-text);
+            border-color: var(--danger-border);
         }
 
         .btn-follow:disabled {
@@ -2455,6 +2554,12 @@ if (!function_exists('brandMarkSvg')) {
         </a>
 
         <ul class="nav-menu">
+            <li>
+                <button type="button" class="btn-theme-toggle" id="theme-toggle-btn" aria-label="Toggle dark/light theme" title="Toggle dark/light theme">
+                    <svg class="theme-icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+                    <svg class="theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+                </button>
+            </li>
             <?php if($currentUser): ?>
                 <?php
                     $unreadNotifCount = 0;

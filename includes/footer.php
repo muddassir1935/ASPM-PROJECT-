@@ -13,10 +13,19 @@
         if (meta) { csrfToken = meta.getAttribute('content') || ''; }
     })();
 
-    // Sprint 3: AJAX toggles for follow and bookmark buttons.
-    // Delegated from the document so buttons rendered anywhere on the
-    // page (feed, profile, modals, widgets) all work with one handler.
+    // Global delegated click handler
     document.addEventListener('click', function (event) {
+        // Theme Switcher Toggle (1-click Light / Dark)
+        var themeBtn = event.target.closest('#theme-toggle-btn');
+        if (themeBtn) {
+            event.preventDefault();
+            var cur = document.documentElement.getAttribute('data-theme') || 'dark';
+            var next = cur === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', next);
+            try { localStorage.setItem('cc_theme', next); } catch (e) {}
+            return;
+        }
+
         var followBtn = event.target.closest('[data-follow-toggle]');
         if (followBtn) {
             event.preventDefault();
