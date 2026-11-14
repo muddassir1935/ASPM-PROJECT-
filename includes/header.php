@@ -3148,6 +3148,77 @@ if (!function_exists('brandMarkSvg')) {
             gap: 4rem;
         }
 
+        /* Option 1: Full-Bleed Campus Hero with Atmospheric Gradient Overlay */
+        .x-landing-backdrop {
+            position: relative;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
+            min-height: calc(100vh - 53px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .x-landing-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center 38%;
+            background-repeat: no-repeat;
+            transform: scale(1.02);
+            filter: brightness(0.92);
+            z-index: 1;
+        }
+
+        .x-landing-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                105deg,
+                rgba(15, 23, 42, 0.90) 0%,
+                rgba(15, 23, 42, 0.74) 48%,
+                rgba(15, 23, 42, 0.92) 100%
+            );
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 2;
+        }
+
+        [data-theme="light"] .x-landing-bg {
+            filter: brightness(1.0) contrast(1.06) saturate(1.10);
+        }
+
+        [data-theme="light"] .x-landing-overlay {
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.05) 35%,
+                rgba(255, 255, 255, 0.35) 58%,
+                rgba(255, 255, 255, 0.65) 80%,
+                rgba(255, 255, 255, 0.72) 100%
+            );
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        .x-landing-inner {
+            position: relative;
+            z-index: 3;
+            max-width: 1480px;
+            width: 100%;
+            margin: 0 auto;
+            min-height: calc(100vh - 53px - 60px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2.5rem 2.5rem;
+            gap: 4rem;
+            box-sizing: border-box;
+        }
+
         .x-landing-left {
             flex: 1.15;
             display: flex;
@@ -3324,20 +3395,64 @@ if (!function_exists('brandMarkSvg')) {
             justify-content: center;
             width: 100%;
             height: 44px;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.95);
             color: var(--accent);
-            border: 1px solid var(--border-strong);
+            border: 1.5px solid var(--accent);
             border-radius: 9999px;
             font-size: 0.95rem;
             font-weight: 700;
             text-decoration: none;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             transition: all var(--ease);
         }
 
         .x-btn-signin:hover {
-            background: var(--accent-tint);
+            background: var(--accent);
+            color: #FFFFFF;
             border-color: var(--accent);
             transform: translateY(-1px);
+            box-shadow: 0 6px 18px var(--accent-ring);
+        }
+
+        [data-theme="dark"] .x-btn-signin {
+            background: rgba(15, 23, 42, 0.85);
+            color: var(--accent);
+            border: 1.5px solid var(--accent);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        [data-theme="dark"] .x-btn-signin:hover {
+            background: var(--accent);
+            color: #0F172A;
+            border-color: var(--accent);
+        }
+
+        [data-theme="light"] .x-hero-headline {
+            color: #0F172A;
+            text-shadow: 0 1px 3px rgba(255, 255, 255, 0.85), 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="light"] .x-hero-subhead {
+            color: #0F172A;
+            text-shadow: 0 1px 3px rgba(255, 255, 255, 0.85), 0 0 16px rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="light"] .x-signin-prompt {
+            color: #0F172A;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+        }
+
+        [data-theme="light"] .x-disclaimer {
+            color: #1E293B;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+        }
+
+        [data-theme="light"] .x-disclaimer a {
+            color: #1D4ED8;
+            font-weight: 700;
         }
 
         .x-trending-strip {
@@ -3396,6 +3511,11 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         @media (max-width: 900px) {
+            .x-landing-backdrop {
+                min-height: auto;
+            }
+
+            .x-landing-inner,
             .x-landing-shell {
                 flex-direction: column;
                 align-items: flex-start;
@@ -3406,13 +3526,15 @@ if (!function_exists('brandMarkSvg')) {
 
             .x-landing-left {
                 justify-content: flex-start;
+                align-items: flex-start;
                 padding: 0;
+                width: 100%;
             }
 
             .x-brand-architect {
-                width: 58px;
-                height: 58px;
-                margin-bottom: 0.5rem;
+                width: 68px;
+                height: 68px;
+                margin-bottom: 0.25rem;
             }
 
             .x-logo-shine-layer {
@@ -3437,6 +3559,16 @@ if (!function_exists('brandMarkSvg')) {
 
             .x-trending-strip {
                 max-width: 100%;
+            }
+
+            [data-theme="light"] .x-landing-overlay {
+                background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0.15) 160px,
+                    rgba(255, 255, 255, 0.65) 320px,
+                    rgba(255, 255, 255, 0.72) 100%
+                );
             }
         }
 

@@ -277,71 +277,64 @@ if ($currentUser) {
     </div>
 
 <?php else: ?>
-    <!-- Public Landing View (The Iconic X / Twitter Standard) -->
-    <div class="x-landing-shell">
-        <!-- Left Column: Giant Interactive Architectural Brand Mark -->
-        <div class="x-landing-left" id="hero-brand-stage">
-            <div class="x-brand-architect is-idle">
-                <!-- Base Architectural Wireframe -->
-                <svg class="x-giant-logo x-logo-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                    <path class="arch-arc-1" d="M12.61 6.42 A6.9 6.9 0 1 0 12.61 17.58" stroke-width="2.7" stroke-linecap="round"/>
-                    <path class="arch-arc-2" d="M11.39 6.42 A6.9 6.9 0 1 1 11.39 17.58" stroke-width="2.7" stroke-linecap="round"/>
-                    <path class="arch-arc-1" d="M10.80 5.48 A6.9 6.9 0 0 1 13.08 6.79" stroke-width="2.7" stroke-linecap="round"/>
-                </svg>
+    <!-- Public Landing View (Option 1: Full-Bleed Campus Hero with Atmospheric Gradient) -->
+    <div class="x-landing-backdrop">
+        <!-- Full-Bleed Background Image -->
+        <div class="x-landing-bg" style="background-image: url('assets/images/campus_fast.jpg');"></div>
+        <!-- Atmospheric Gradient Overlay -->
+        <div class="x-landing-overlay"></div>
 
-                <!-- Specular Cursor-Tracking Glow Layer -->
-                <div class="x-logo-shine-layer">
-                    <svg class="x-giant-logo x-logo-glow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                        <defs>
-                            <linearGradient id="shineGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
-                                <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.95"/>
-                                <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
-                            </linearGradient>
-                            <linearGradient id="shineGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
-                                <stop offset="0%" stop-color="var(--ink)" stop-opacity="0.3"/>
-                                <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.95"/>
-                                <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
-                            </linearGradient>
-                        </defs>
-                        <path class="glow-arc-1" d="M12.61 6.42 A6.9 6.9 0 1 0 12.61 17.58" stroke="url(#shineGrad1)" stroke-width="2.7" stroke-linecap="round"/>
-                        <path class="glow-arc-2" d="M11.39 6.42 A6.9 6.9 0 1 1 11.39 17.58" stroke="url(#shineGrad2)" stroke-width="2.7" stroke-linecap="round"/>
-                        <path class="glow-arc-1" d="M10.80 5.48 A6.9 6.9 0 0 1 13.08 6.79" stroke-width="2.7" stroke-linecap="round"/>
+        <div class="x-landing-inner">
+            <!-- Left Column: Giant Interactive Architectural Brand Mark -->
+            <div class="x-landing-left" id="hero-brand-stage">
+                <div class="x-brand-architect is-idle">
+                    <!-- Base Architectural Wireframe -->
+                    <svg class="x-giant-logo x-logo-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <path class="arch-arc-1" d="M12.61 6.42 A6.9 6.9 0 1 0 12.61 17.58" stroke-width="2.7" stroke-linecap="round"/>
+                        <path class="arch-arc-2" d="M11.39 6.42 A6.9 6.9 0 1 1 11.39 17.58" stroke-width="2.7" stroke-linecap="round"/>
+                        <path class="arch-arc-1" d="M10.80 5.48 A6.9 6.9 0 0 1 13.08 6.79" stroke-width="2.7" stroke-linecap="round"/>
                     </svg>
-                </div>
-            </div>
-        </div>
 
-        <!-- Right Column: Iconic Typography & Action Stream -->
-        <div class="x-landing-right">
-            <h1 class="x-hero-headline">Happening on campus</h1>
-            <h2 class="x-hero-subhead">Join FAST-NUCES today.</h2>
-
-            <div class="x-auth-actions">
-                <a href="signup.php" class="x-btn-signup">Create account</a>
-                <p class="x-disclaimer">
-                    By signing up, you agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>, including campus honor code and student conduct rules.
-                </p>
-
-                <div class="x-signin-section">
-                    <h3 class="x-signin-prompt">Already have an account?</h3>
-                    <a href="login.php" class="x-btn-signin">Sign in</a>
-                </div>
-            </div>
-
-            <?php if (!empty($trendingTags)): ?>
-                <div class="x-trending-strip">
-                    <span class="x-trending-title">Trending on Campus</span>
-                    <div class="x-trending-tags">
-                        <?php foreach ($trendingTags as $tag): ?>
-                            <a href="explore.php?tag=<?= urlencode($tag['tag']) ?>" class="x-tag-link">
-                                <span class="x-tag-hash">#</span><?= htmlspecialchars($tag['tag']) ?>
-                                <span class="x-tag-meta"><?= (int)$tag['post_count'] ?></span>
-                            </a>
-                        <?php endforeach; ?>
+                    <!-- Specular Cursor-Tracking Glow Layer -->
+                    <div class="x-logo-shine-layer">
+                        <svg class="x-giant-logo x-logo-glow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                            <defs>
+                                <linearGradient id="shineGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+                                    <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+                                    <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
+                                </linearGradient>
+                                <linearGradient id="shineGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="var(--ink)" stop-opacity="0.3"/>
+                                    <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+                                    <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
+                                </linearGradient>
+                            </defs>
+                            <path class="glow-arc-1" d="M12.61 6.42 A6.9 6.9 0 1 0 12.61 17.58" stroke="url(#shineGrad1)" stroke-width="2.7" stroke-linecap="round"/>
+                            <path class="glow-arc-2" d="M11.39 6.42 A6.9 6.9 0 1 1 11.39 17.58" stroke="url(#shineGrad2)" stroke-width="2.7" stroke-linecap="round"/>
+                            <path class="glow-arc-1" d="M10.80 5.48 A6.9 6.9 0 0 1 13.08 6.79" stroke-width="2.7" stroke-linecap="round"/>
+                        </svg>
                     </div>
                 </div>
-            <?php endif; ?>
+            </div>
+
+            <!-- Right Column: Iconic Typography & Action Stream -->
+            <div class="x-landing-right">
+                <h1 class="x-hero-headline">Happening on campus</h1>
+                <h2 class="x-hero-subhead">Join FAST-NUCES today.</h2>
+
+                <div class="x-auth-actions">
+                    <a href="signup.php" class="x-btn-signup">Create account</a>
+                    <p class="x-disclaimer">
+                        By signing up, you agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>, including campus honor code and student conduct rules.
+                    </p>
+
+                    <div class="x-signin-section">
+                        <h3 class="x-signin-prompt">Already have an account?</h3>
+                        <a href="login.php" class="x-btn-signin">Sign in</a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
