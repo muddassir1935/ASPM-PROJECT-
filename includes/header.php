@@ -1096,7 +1096,9 @@ if (!function_exists('brandMarkSvg')) {
             gap: 6px;
             position: sticky;
             top: 52px;
+            height: calc(100vh - 52px);
             padding: 12px 14px 20px;
+            box-sizing: border-box;
         }
 
         .nav-col-link {
@@ -1132,7 +1134,7 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .nav-user-dock {
-            margin-top: 24px;
+            margin-top: auto;
             padding-top: 14px;
             border-top: 1px solid var(--line);
             width: 100%;
@@ -3502,6 +3504,7 @@ if (!function_exists('brandMarkSvg')) {
                 grid-template-columns: 1fr;
             }
             .col-nav {
+                height: auto;
                 flex-direction: row;
                 justify-content: space-around;
                 position: sticky;
