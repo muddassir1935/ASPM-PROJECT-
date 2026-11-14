@@ -356,20 +356,39 @@ if (!function_exists('brandMarkSvg')) {
         .nav-menu {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             list-style: none;
             flex-wrap: wrap;
             justify-content: flex-end;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu > li {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-menu .inline-form {
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
         }
 
         .nav-link {
             text-decoration: none;
             color: var(--ink);
             font-weight: 500;
-            font-size: 0.97rem;
-            padding: 8px 14px;
+            font-size: 0.92rem;
+            padding: 0 12px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 999px;
-            transition: background-color var(--ease);
+            transition: background-color var(--ease), color var(--ease);
+            box-sizing: border-box;
+            line-height: 1;
         }
 
         .nav-link:hover {
@@ -378,23 +397,32 @@ if (!function_exists('brandMarkSvg')) {
 
         .nav-link-logout {
             color: var(--muted);
+            background: none;
+            border: none;
+            font: inherit;
+            cursor: pointer;
         }
 
         .nav-link-logout:hover {
-            color: var(--ink);
+            color: var(--danger, #DC2626);
             background-color: var(--wash);
         }
 
         .btn-nav-primary {
             background-color: var(--accent);
             color: #FFFFFF !important;
-            padding: 8px 18px;
+            padding: 0 18px;
+            height: 36px;
             border-radius: 999px;
             font-weight: 700;
             font-size: 0.93rem;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: background-color var(--ease);
+            box-sizing: border-box;
+            line-height: 1;
         }
 
         .btn-nav-primary:hover {
@@ -402,24 +430,32 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .user-tag {
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             font-weight: 600;
             color: var(--ink);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 5px 10px 5px 6px;
+            height: 36px;
+            padding: 0 12px 0 4px;
             border-radius: 999px;
             margin: 0 2px;
+            box-sizing: border-box;
+            line-height: 1;
         }
 
         .user-tag:hover {
             background-color: var(--wash);
         }
 
+        .user-name {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+        }
+
         .user-role {
-            color: var(--muted);
-            font-weight: 400;
+            display: none;
         }
 
         /* ---------- Page frame ---------- */
@@ -4142,7 +4178,7 @@ if (!function_exists('brandMarkSvg')) {
                 <li>
                     <span class="user-tag">
                         <span class="avatar-xs<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
-                        <?= htmlspecialchars($currentUser['name']) ?> <span class="user-role">(<?= htmlspecialchars(class_exists('Authorization') ? Authorization::displayLabel($currentUser['role'] ?? '') : ($currentUser['role'] ?? '')) ?>)</span>
+                        <span class="user-name"><?= htmlspecialchars($currentUser['name']) ?></span>
                     </span>
                 </li>
                 <?php if (class_exists('Auth') && Auth::can('user.manage')): ?>
