@@ -147,12 +147,6 @@ if ($currentUser) {
                 </p>
             </div>
         <?php else: ?>
-                <p class="empty-text">
-                    Your feed shows your posts and posts from people you follow.
-                    Find people to follow on the <a href="explore.php">Explore page</a>.
-                </p>
-            </div>
-        <?php else: ?>
             <?php foreach ($feed['posts'] as $feedPost): ?>
                 <?php
                     $isOwnPost = (int)$feedPost['user_id'] === (int)$currentUser['id'];
