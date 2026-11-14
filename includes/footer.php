@@ -294,16 +294,19 @@
         }
     });
 
-    var confirmSubmitBtn = document.getElementById('confirm-dialog-submit-btn');
-    if (confirmSubmitBtn) {
-        confirmSubmitBtn.addEventListener('click', function () {
-            if (pendingConfirmForm) {
-                var form = pendingConfirmForm;
-                closeConfirmModal();
-                HTMLFormElement.prototype.submit.call(form);
-            }
-        });
-    }
+    // Delegated: the confirm button's markup sits AFTER this script in the
+    // document, so a direct getElementById here would return null and the
+    // Delete button would silently do nothing.
+    document.addEventListener('click', function (event) {
+        var btn = event.target && event.target.closest
+            ? event.target.closest('#confirm-dialog-submit-btn') : null;
+        if (!btn) { return; }
+        if (pendingConfirmForm) {
+            var form = pendingConfirmForm;
+            closeConfirmModal();
+            HTMLFormElement.prototype.submit.call(form);
+        }
+    });
 </script>
 
 <!-- In-App Confirmation Modal (Replaces browser confirm popup) -->
