@@ -47,9 +47,6 @@ function renderLeftNav(string $active): void {
         echo '</a>';
     }
 
-    // Prominent "Post" button in Left Rail
-    echo '<a href="index.php" class="btn-left-post">Post</a>';
-
     // Logged-in User Identity Pill pinned at bottom
     if ($viewerId > 0 && isset($GLOBALS['currentUser']) && is_array($GLOBALS['currentUser'])) {
         $u = $GLOBALS['currentUser'];

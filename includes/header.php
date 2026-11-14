@@ -989,10 +989,9 @@ if (!function_exists('brandMarkSvg')) {
         .col-nav {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 6px;
             position: sticky;
             top: 52px;
-            height: calc(100vh - 52px);
             padding: 12px 14px 20px;
         }
 
@@ -1028,36 +1027,10 @@ if (!function_exists('brandMarkSvg')) {
             color: var(--ink);
         }
 
-        .btn-left-post {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: var(--accent);
-            color: #FFFFFF !important;
-            text-decoration: none;
-            font-size: 1.05rem;
-            font-weight: 800;
-            padding: 13px 20px;
-            border-radius: 9999px;
-            margin-top: 14px;
-            width: 88%;
-            box-shadow: 0 4px 14px rgba(29, 155, 240, 0.3);
-            transition: background-color var(--ease), transform 120ms ease, box-shadow var(--ease);
-        }
-
-        .btn-left-post:hover {
-            background: var(--accent-hover);
-            transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(29, 155, 240, 0.4);
-        }
-
-        .btn-left-post:active {
-            transform: translateY(1px);
-        }
-
         .nav-user-dock {
-            margin-top: auto;
-            padding-top: 1.5rem;
+            margin-top: 24px;
+            padding-top: 14px;
+            border-top: 1px solid var(--line);
             width: 100%;
         }
 
@@ -1119,8 +1092,6 @@ if (!function_exists('brandMarkSvg')) {
             position: sticky;
             top: 52px;
             padding: 12px 0 2rem 24px;
-            max-height: calc(100vh - 52px);
-            overflow-y: auto;
         }
 
         /* Search Pill Container */
@@ -2770,10 +2741,6 @@ if (!function_exists('brandMarkSvg')) {
     </style>
 </head>
 <body>
-
-<?php if ($isDbFallback): ?>
-    <div class="db-fallback-banner" role="alert">Notice: MySQL is unreachable — running on the local SQLite fallback. Accounts and posts saved here will not appear once MySQL is back.</div>
-<?php endif; ?>
 
 <header class="navbar">
     <div class="nav-inner">
