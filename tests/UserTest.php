@@ -3,6 +3,7 @@
  * Unit Testing 
  * Run via CLI: php tests/UserTest.php
  */
+require_once __DIR__ . '/bootstrap.php';
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 
@@ -163,6 +164,85 @@ $hash = $stmt->fetchColumn();
 $isHashedProperly = (strpos($hash, '$argon2i') === 0 || strpos($hash, '$2y$') === 0);
 runTest("Test 12: Cryptographic Password Hash Verification", 
     $isHashedProperly, 
+    true
+);
+
+// ---------------------------------------------------------
+// SECTION 3: PROFILE COVER STYLE TESTS
+// ---------------------------------------------------------
+echo "\n--- PROFILE COVER STYLE TESTS ---\n";
+
+// Test 18: Cover style defaults to 'signature' on a new account and a
+// whitelisted style chosen in Edit Profile persists via updateProfile.
+$stmt = $db->prepare("SELECT id FROM users WHERE email = :email");
+$stmt->execute([':email' => $validEmail]);
+$coverUserId = (int)$stmt->fetchColumn();
+$profileBefore = $coverUserId > 0 ? $user->getById($coverUserId) : false;
+$coverUpdateOk = $profileBefore
+    ? $user->updateProfile($coverUserId, "Ali Khan", $profileBefore['bio'] ?? '', 'teal')
+    : false;
+$profileAfter = $coverUserId > 0 ? $user->getById($coverUserId) : false;
+runTest("Test 18: Cover style defaults to 'signature' and persists via updateProfile",
+    ($profileBefore['cover_style'] ?? null) === 'signature'
+        && $coverUpdateOk === true
+        && ($profileAfter['cover_style'] ?? null) === 'teal',
+    true
+);
+
+// ---------------------------------------------------------
+// SECTION 4: PASSWORD CHANGE & ADMIN RESET (Sprint 5 final pass)
+// ---------------------------------------------------------
+echo "--- PASSWORD MANAGEMENT TESTS ---\n";
+
+$pwUserId = $coverUserId; // the valid user from Test 1 (password: $validPass)
+
+// Test 19: Change password with the correct current password
+$changed = $user->changePassword($pwUserId, $validPass, "NewPass@456!");
+runTest("Test 19: Change password succeeds, old stops working, new works",
+    $changed === true
+        && $user->verifyPassword($validEmail, $validPass) === false
+        && $user->verifyPassword($validEmail, "NewPass@456!") !== false,
+    true
+);
+
+// Test 20: Change password with the wrong current password
+runTest("Test 20: Change password with wrong current password fails",
+    $user->changePassword($pwUserId, "Wrong@Pass1!", "Another@789!"),
+    false
+);
+
+// Test 21: Change password to a weak new password
+runTest("Test 21: Change password to weak new password fails",
+    $user->changePassword($pwUserId, "NewPass@456!", "weak"),
+    false
+);
+
+// Test 22: Change password to the same password
+runTest("Test 22: Change password to same-as-current fails",
+    $user->changePassword($pwUserId, "NewPass@456!", "NewPass@456!"),
+    false
+);
+
+// Test 23: Admin reset (no current password needed)
+$reset = $user->resetPassword($pwUserId, "Reset@789!");
+runTest("Test 23: Admin reset succeeds, previous password stops working",
+    $reset === true
+        && $user->verifyPassword($validEmail, "NewPass@456!") === false
+        && $user->verifyPassword($validEmail, "Reset@789!") !== false,
+    true
+);
+
+// Test 24: Generated temporary passwords always pass the policy
+$tempsOk = true;
+for ($i = 0; $i < 5; $i++) {
+    $temp = User::generateTemporaryPassword();
+    if (strlen($temp) !== 16 || !User::isValidPassword($temp)) {
+        $tempsOk = false;
+        break;
+    }
+}
+runTest("Test 24: Generated temporary passwords are 16 chars and policy-valid",
+    $tempsOk,
     true
 );
 
