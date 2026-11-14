@@ -16,9 +16,13 @@ if ($currentUser) {
 
     $db = Database::getInstance()->getConnection();
     $feedPage = max(1, (int)($_GET['page'] ?? 1));
-    $feedController = new PostController(new Post($db));
-    // Sprint 3: personalized feed — own posts + posts from followed users.
-    $feed = $feedController->getPersonalizedTimelineFeed((int)$currentUser['id'], $feedPage, 10);
+    $currentTab = ($_GET['tab'] ?? 'for-you') === 'following' ? 'following' : 'for-you';
+    $feedController = new PostController(new Post($db), $currentUser);
+    if ($currentTab === 'following') {
+        $feed = $feedController->getPersonalizedTimelineFeed((int)$currentUser['id'], $feedPage, 10);
+    } else {
+        $feed = $feedController->getTimelineFeed($feedPage, 10);
+    }
     $bookmarkModel = new Bookmark($db);
     $bookmarkedIds = array_map('intval', array_column($bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], 500), 'id'));
 }
@@ -30,7 +34,17 @@ if ($currentUser) {
         <div class="layout-3col">
             <?php renderLeftNav('home'); ?>
             <div class="col-main">
-                <h2 class="col-head">Home</h2>
+                <div class="feed-header-sticky">
+                    <div class="feed-top-bar">Home</div>
+                    <div class="feed-tabs">
+                        <a href="index.php?tab=for-you" class="feed-tab <?= $currentTab === 'for-you' ? 'active' : '' ?>">
+                            <span class="feed-tab-label">For you</span>
+                        </a>
+                        <a href="index.php?tab=following" class="feed-tab <?= $currentTab === 'following' ? 'active' : '' ?>">
+                            <span class="feed-tab-label">Following</span>
+                        </a>
+                    </div>
+                </div>
 
         <?php if ($flashMessage): ?>
             <div class="alert <?= $flashType === 'success' ? 'alert-success' : 'alert-error' ?>">
@@ -45,18 +59,28 @@ if ($currentUser) {
                 <?= Csrf::field() ?>
                 <div class="compose-flex">
                     <span class="avatar-md<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
-                    <textarea id="compose-content" class="form-control" name="content" rows="3" maxlength="280" placeholder="Share an update or announcement with the campus..."></textarea>
+                    <textarea id="compose-content" class="form-control" name="content" rows="2" maxlength="280" placeholder="What's happening on campus?!"></textarea>
                 </div>
                 <div class="compose-row">
-                    <span id="compose-counter" class="char-counter">0 / 280</span>
-                    <?php if (Auth::can('announcement.create')): ?>
-                        <label class="char-counter" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; color: var(--ink); font-weight: 600;">
-                            <input type="checkbox" name="is_announcement" value="1" style="accent-color: var(--accent);"> Post as announcement
-                        </label>
-                    <?php endif; ?>
-                    <button type="submit" id="compose-submit" class="btn-primary" disabled>
-                        Post
-                    </button>
+                    <div class="compose-left-tools">
+                        <?php if (Auth::can('announcement.create')): ?>
+                            <label class="announcement-pill">
+                                <input type="checkbox" name="is_announcement" value="1">
+                                <span>📢 Announcement</span>
+                            </label>
+                        <?php endif; ?>
+                    </div>
+                    <div class="compose-right-tools">
+                        <div class="char-count-wrap">
+                            <svg class="char-count-ring" width="24" height="24" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="9" fill="none" stroke="var(--line)" stroke-width="2"></circle>
+                                <circle id="ring-progress" cx="12" cy="12" r="9" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="56.548" stroke-dashoffset="56.548" stroke-linecap="round"></circle>
+                            </svg>
+                            <span id="compose-counter" class="char-counter-text" style="display: none;">280</span>
+                        </div>
+                        <div class="compose-btn-divider"></div>
+                        <button type="submit" id="compose-submit" disabled>Post</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -64,19 +88,46 @@ if ($currentUser) {
             (function () {
                 var textarea = document.getElementById('compose-content');
                 var counter = document.getElementById('compose-counter');
+                var ring = document.getElementById('ring-progress');
                 var submit = document.getElementById('compose-submit');
                 var MAX = 280;
+                var CIRCLE_LEN = 56.548;
+
                 function refreshCounter() {
-                    var len = textarea.value.trim().length;
-                    counter.textContent = len + ' / ' + MAX;
-                    var invalid = len === 0 || len > MAX;
-                    counter.style.color = len > MAX ? '#D92D20' : '#536471';
+                    var len = textarea.value.length;
+                    var remaining = MAX - len;
+                    var trimLen = textarea.value.trim().length;
+                    var invalid = trimLen === 0 || len > MAX;
+
+                    var pct = Math.min(len / MAX, 1);
+                    var offset = CIRCLE_LEN - (pct * CIRCLE_LEN);
+                    ring.style.strokeDashoffset = offset;
+
+                    if (remaining <= 20 && remaining >= 0) {
+                        ring.style.stroke = '#F59E0B';
+                        counter.style.color = '#F59E0B';
+                        counter.textContent = remaining;
+                        counter.style.display = 'inline';
+                    } else if (remaining < 0) {
+                        ring.style.stroke = '#EF4444';
+                        counter.style.color = '#EF4444';
+                        counter.textContent = remaining;
+                        counter.style.display = 'inline';
+                    } else {
+                        ring.style.stroke = 'var(--accent)';
+                        counter.style.color = 'var(--muted)';
+                        counter.textContent = remaining;
+                        counter.style.display = len > 0 ? 'inline' : 'none';
+                    }
+
                     submit.disabled = invalid;
                 }
+
                 function autoGrow() {
                     textarea.style.height = 'auto';
-                    textarea.style.height = Math.max(58, textarea.scrollHeight) + 'px';
+                    textarea.style.height = Math.max(54, textarea.scrollHeight) + 'px';
                 }
+
                 textarea.addEventListener('input', function () {
                     refreshCounter();
                     autoGrow();
@@ -89,6 +140,13 @@ if ($currentUser) {
             <div class="empty-state">
                 <span class="empty-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"/><path d="M4 13h4.5l1.5 2h4l1.5-2H20"/></svg></span>
                 <h4 class="empty-title">No updates yet</h4>
+                <p class="empty-text">
+                    <?= $currentTab === 'following'
+                        ? 'You haven\'t followed anyone yet, or people you follow haven\'t posted. Find people to follow on the <a href="explore.php">Explore page</a>.'
+                        : 'No posts yet on CampusConnect. Be the first to share an update!' ?>
+                </p>
+            </div>
+        <?php else: ?>
                 <p class="empty-text">
                     Your feed shows your posts and posts from people you follow.
                     Find people to follow on the <a href="explore.php">Explore page</a>.
@@ -177,13 +235,13 @@ if ($currentUser) {
             <?php if ($feed['page'] > 1 || $feed['has_more']): ?>
                 <div class="pager">
                     <?php if ($feed['page'] > 1): ?>
-                        <a href="index.php?page=<?= (int)$feed['page'] - 1 ?>">&larr; Previous</a>
+                        <a href="index.php?tab=<?= urlencode($currentTab) ?>&page=<?= (int)$feed['page'] - 1 ?>">&larr; Previous</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>
                     <span class="pager-info">Page <?= (int)$feed['page'] ?></span>
                     <?php if ($feed['has_more']): ?>
-                        <a href="index.php?page=<?= (int)$feed['page'] + 1 ?>">Next &rarr;</a>
+                        <a href="index.php?tab=<?= urlencode($currentTab) ?>&page=<?= (int)$feed['page'] + 1 ?>">Next &rarr;</a>
                     <?php else: ?>
                         <span></span>
                     <?php endif; ?>

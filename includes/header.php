@@ -449,6 +449,73 @@ if (!function_exists('brandMarkSvg')) {
             z-index: 30;
         }
 
+        /* Sticky Feed Tabs Container (X-style) */
+        .feed-header-sticky {
+            position: sticky;
+            top: 52px;
+            background: var(--nav-bg);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--line);
+            z-index: 30;
+        }
+
+        .feed-top-bar {
+            padding: 12px 16px 4px;
+            font-size: 1.25rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+        }
+
+        .feed-tabs {
+            display: flex;
+            width: 100%;
+        }
+
+        .feed-tab {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 48px;
+            position: relative;
+            color: var(--muted);
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: background-color var(--ease), color var(--ease);
+        }
+
+        .feed-tab:hover {
+            background-color: var(--wash);
+            color: var(--ink);
+        }
+
+        .feed-tab.active {
+            color: var(--ink);
+            font-weight: 700;
+        }
+
+        .feed-tab .feed-tab-label {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            height: 100%;
+            padding: 0 4px;
+        }
+
+        .feed-tab.active .feed-tab-label::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--accent);
+            border-radius: 9999px;
+        }
+
         .section-title {
             font-size: 1.08rem;
             font-weight: 700;
@@ -1768,8 +1835,10 @@ if (!function_exists('brandMarkSvg')) {
 
         /* ---------- Compose: inline at the top of the feed ---------- */
         .compose-card {
-            padding: 12px 16px 10px;
+            padding: 14px 16px 12px;
             border-bottom: 1px solid var(--line);
+            background: var(--bg-surface);
+            transition: background-color var(--ease);
         }
 
         .narrow-wrap .compose-card {
@@ -1787,15 +1856,24 @@ if (!function_exists('brandMarkSvg')) {
             border: none;
             box-shadow: none;
             background: transparent;
-            padding: 9px 0 2px;
-            font-size: 1.1rem;
+            padding: 8px 0 4px;
+            font-size: 1.15rem;
+            line-height: 1.45;
+            color: var(--ink);
             resize: none;
             height: 58px;
+            width: 100%;
+        }
+
+        .compose-card textarea.form-control::placeholder {
+            color: var(--muted);
+            font-size: 1.15rem;
         }
 
         .compose-card textarea.form-control:focus {
             border: none;
             box-shadow: none;
+            outline: none;
         }
 
         .compose-row {
@@ -1803,8 +1881,76 @@ if (!function_exists('brandMarkSvg')) {
             justify-content: space-between;
             align-items: center;
             border-top: 1px solid var(--line);
-            margin-top: 8px;
-            padding-top: 9px;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        .compose-left-tools {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .compose-right-tools {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .announcement-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 0.88rem;
+            font-weight: 600;
+            padding: 5px 12px;
+            border-radius: 9999px;
+            border: 1px solid var(--line);
+            background: var(--bg);
+            transition: background var(--ease), color var(--ease), border-color var(--ease);
+            user-select: none;
+        }
+
+        .announcement-pill:hover {
+            background: var(--wash);
+            color: var(--ink);
+            border-color: var(--accent);
+        }
+
+        .announcement-pill input[type="checkbox"] {
+            accent-color: var(--accent);
+            cursor: pointer;
+            margin: 0;
+            width: 14px;
+            height: 14px;
+        }
+
+        .char-count-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .char-count-ring {
+            display: block;
+            transform: rotate(-90deg);
+        }
+
+        .char-counter-text {
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--muted);
+            min-width: 24px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .compose-btn-divider {
+            width: 1px;
+            height: 24px;
+            background: var(--line);
         }
 
         /* ---------- Pager ---------- */
@@ -2394,7 +2540,7 @@ if (!function_exists('brandMarkSvg')) {
                 position: sticky;
                 top: 52px;
                 z-index: 40;
-                background: rgba(0, 0, 0, 0.85);
+                background: var(--nav-bg);
                 backdrop-filter: blur(12px);
                 -webkit-backdrop-filter: blur(12px);
                 border-bottom: 1px solid var(--line);
@@ -2408,7 +2554,7 @@ if (!function_exists('brandMarkSvg')) {
                 border-right: none;
                 min-height: 0;
             }
-            .col-head {
+            .col-head, .feed-header-sticky {
                 top: 99px;
             }
             .narrow-wrap {
