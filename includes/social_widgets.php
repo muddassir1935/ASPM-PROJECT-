@@ -55,15 +55,57 @@ function renderLeftNav(string $active): void {
         $emailParts = explode('@', $u['email'] ?? '');
         $uHandle = '@' . ($emailParts[0] ?? 'user');
 
-        echo '<div class="nav-user-dock">';
-        echo '<a href="profile.php?id=' . $viewerId . '" class="nav-user-pill" title="View your profile">';
+        $isAdmin = class_exists('Auth') && Auth::can('user.manage');
+
+        echo '<div class="nav-user-dock" id="nav-user-dock">';
+        echo '<button type="button" class="nav-user-pill" id="nav-user-pill-btn" aria-haspopup="true" aria-expanded="false" title="Account options for ' . htmlspecialchars($u['name'] ?? '') . '">';
         echo '<span class="avatar-sm' . avatarToneClass($viewerId, (string)($u['role'] ?? '')) . '">' . htmlspecialchars($uInitial) . '</span>';
         echo '<div class="nav-user-details">';
         echo '<strong class="nav-user-name">' . htmlspecialchars($u['name'] ?? '') . '</strong>';
         echo '<span class="nav-user-handle">' . htmlspecialchars($uHandle) . ' &middot; ' . htmlspecialchars($uRole) . '</span>';
         echo '</div>';
         echo '<svg class="nav-user-dots" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></svg>';
+        echo '</button>';
+
+        echo '<div class="nav-user-dropdown" id="nav-user-dropdown" style="display:none;" role="menu" aria-label="Account options">';
+        echo '<div class="nav-user-dropdown-header">';
+        echo '<span class="avatar-md' . avatarToneClass($viewerId, (string)($u['role'] ?? '')) . '">' . htmlspecialchars($uInitial) . '</span>';
+        echo '<div class="nav-user-details">';
+        echo '<strong class="nav-user-name">' . htmlspecialchars($u['name'] ?? '') . '</strong>';
+        echo '<span class="nav-user-handle">' . htmlspecialchars($uHandle) . ' &middot; ' . htmlspecialchars($uRole) . '</span>';
+        echo '</div>';
+        echo '</div>';
+
+        echo '<a href="profile.php?id=' . $viewerId . '" class="nav-user-dropdown-item" role="menuitem">';
+        echo '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/></svg>';
+        echo '<span>View Profile</span>';
         echo '</a>';
+
+        if ($isAdmin) {
+            echo '<a href="admin.php" class="nav-user-dropdown-item" role="menuitem">';
+            echo '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>';
+            echo '<span>Admin Panel</span>';
+            echo '</a>';
+        }
+
+        echo '<a href="bookmarks.php" class="nav-user-dropdown-item" role="menuitem">';
+        echo '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>';
+        echo '<span>Bookmarks</span>';
+        echo '</a>';
+
+        echo '<div class="nav-user-dropdown-divider"></div>';
+
+        echo '<form method="POST" action="logout.php" style="margin:0; width:100%;">';
+        if (class_exists('Csrf')) {
+            echo Csrf::field();
+        }
+        echo '<button type="submit" class="nav-user-dropdown-item item-danger" role="menuitem">';
+        echo '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
+        echo '<span>Log out ' . htmlspecialchars($uHandle) . '</span>';
+        echo '</button>';
+        echo '</form>';
+
+        echo '</div>';
         echo '</div>';
     }
 

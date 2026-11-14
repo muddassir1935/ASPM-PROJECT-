@@ -1136,6 +1136,7 @@ if (!function_exists('brandMarkSvg')) {
             padding-top: 14px;
             border-top: 1px solid var(--line);
             width: 100%;
+            position: relative;
         }
 
         .nav-user-pill {
@@ -1146,11 +1147,17 @@ if (!function_exists('brandMarkSvg')) {
             border-radius: 9999px;
             text-decoration: none;
             color: var(--ink);
-            transition: background-color var(--ease);
+            transition: background-color var(--ease), box-shadow var(--ease);
             width: 100%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
         }
 
-        .nav-user-pill:hover {
+        .nav-user-pill:hover,
+        .nav-user-pill[aria-expanded="true"] {
             background: var(--bg-surface-hover);
         }
 
@@ -1183,6 +1190,107 @@ if (!function_exists('brandMarkSvg')) {
             height: 18px;
             color: var(--muted);
             flex-shrink: 0;
+        }
+
+        /* Nav User Dropdown Menu (X/Twitter style popover above the dock) */
+        .nav-user-dropdown {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            width: 270px;
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+            padding: 8px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            animation: navUserDropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        [data-theme="light"] .nav-user-dropdown {
+            box-shadow: 0 14px 36px rgba(15, 23, 42, 0.15);
+        }
+
+        @keyframes navUserDropdownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .nav-user-dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px 12px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 4px;
+        }
+
+        .nav-user-dropdown-header .nav-user-name {
+            font-size: 0.96rem;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.3;
+        }
+
+        .nav-user-dropdown-header .nav-user-handle {
+            font-size: 0.82rem;
+            color: var(--muted);
+            line-height: 1.2;
+        }
+
+        .nav-user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--ink);
+            font-size: 0.92rem;
+            font-weight: 600;
+            transition: background-color var(--ease), color var(--ease);
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .nav-user-dropdown-item:hover {
+            background: var(--bg-surface-hover);
+            color: var(--accent);
+        }
+
+        .nav-user-dropdown-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .nav-user-dropdown-divider {
+            height: 1px;
+            background: var(--line);
+            margin: 4px 0;
+        }
+
+        .nav-user-dropdown-item.item-danger {
+            color: var(--danger-text);
+        }
+
+        .nav-user-dropdown-item.item-danger:hover {
+            background: var(--danger-tint);
+            color: var(--danger-text);
         }
 
         .col-main {
@@ -3372,6 +3480,21 @@ if (!function_exists('brandMarkSvg')) {
                 width: 26px;
                 height: 26px;
             }
+            .nav-user-details,
+            .nav-user-dots {
+                display: none;
+            }
+            .nav-user-pill {
+                justify-content: center;
+                padding: 8px;
+                width: 44px;
+                height: 44px;
+                margin: 0 auto;
+            }
+            .nav-user-dropdown {
+                left: 0;
+                width: 260px;
+            }
         }
 
         @media (max-width: 720px) {
@@ -3389,6 +3512,28 @@ if (!function_exists('brandMarkSvg')) {
                 -webkit-backdrop-filter: blur(12px);
                 border-bottom: 1px solid var(--line);
                 padding: 4px 8px;
+            }
+            .nav-user-dock {
+                margin-top: 0;
+                padding-top: 0;
+                border-top: none;
+                width: auto;
+            }
+            .nav-user-details,
+            .nav-user-dots {
+                display: none;
+            }
+            .nav-user-pill {
+                padding: 6px;
+                width: auto;
+                height: auto;
+            }
+            .nav-user-dropdown {
+                top: calc(100% + 8px);
+                bottom: auto;
+                right: 8px;
+                left: auto;
+                width: 260px;
             }
             .nav-col-active {
                 color: var(--accent);
