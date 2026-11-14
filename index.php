@@ -25,6 +25,17 @@ if ($currentUser) {
     }
     $bookmarkModel = new Bookmark($db);
     $bookmarkedIds = array_map('intval', array_column($bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], 500), 'id'));
+} else {
+    require_once 'config/Database.php';
+    require_once 'classes/Hashtag.php';
+    $trendingTags = [];
+    try {
+        $publicDb = Database::getInstance()->getConnection();
+        $hashtagModel = new Hashtag($publicDb);
+        $trendingTags = $hashtagModel->getTrending(6);
+    } catch (Throwable $e) {
+        $trendingTags = [];
+    }
 }
 ?>
 
@@ -35,7 +46,6 @@ if ($currentUser) {
             <?php renderLeftNav('home'); ?>
             <div class="col-main">
                 <div class="feed-header-sticky">
-                    <div class="feed-top-bar">Home</div>
                     <div class="feed-tabs">
                         <a href="index.php?tab=for-you" class="feed-tab <?= $currentTab === 'for-you' ? 'active' : '' ?>">
                             <span class="feed-tab-label">For you</span>
@@ -64,22 +74,25 @@ if ($currentUser) {
                 <div class="compose-row">
                     <div class="compose-left-tools">
                         <?php if (Auth::can('announcement.create')): ?>
-                            <label class="announcement-pill">
-                                <input type="checkbox" name="is_announcement" value="1">
-                                <span>📢 Announcement</span>
+                            <label class="announcement-chip">
+                                <input type="checkbox" name="is_announcement" value="1" id="announcement-check">
+                                <span class="chip-content">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"></path><path d="M8 14v4.5"></path></svg>
+                                    <span>Announcement</span>
+                                </span>
                             </label>
                         <?php endif; ?>
                     </div>
                     <div class="compose-right-tools">
-                        <div class="char-count-wrap">
+                        <div class="char-count-wrap" id="char-count-wrap">
                             <svg class="char-count-ring" width="24" height="24" viewBox="0 0 24 24">
                                 <circle cx="12" cy="12" r="9" fill="none" stroke="var(--line)" stroke-width="2"></circle>
                                 <circle id="ring-progress" cx="12" cy="12" r="9" fill="none" stroke="var(--accent)" stroke-width="2" stroke-dasharray="56.548" stroke-dashoffset="56.548" stroke-linecap="round"></circle>
                             </svg>
                             <span id="compose-counter" class="char-counter-text" style="display: none;">280</span>
                         </div>
-                        <div class="compose-btn-divider"></div>
-                        <button type="submit" id="compose-submit" disabled>Post</button>
+                        <div class="compose-btn-divider" id="compose-btn-divider"></div>
+                        <button type="submit" id="compose-submit" class="btn-primary compose-btn" disabled>Post</button>
                     </div>
                 </div>
             </form>
@@ -90,6 +103,8 @@ if ($currentUser) {
                 var counter = document.getElementById('compose-counter');
                 var ring = document.getElementById('ring-progress');
                 var submit = document.getElementById('compose-submit');
+                var countWrap = document.getElementById('char-count-wrap');
+                var divider = document.getElementById('compose-btn-divider');
                 var MAX = 280;
                 var CIRCLE_LEN = 56.548;
 
@@ -98,6 +113,9 @@ if ($currentUser) {
                     var remaining = MAX - len;
                     var trimLen = textarea.value.trim().length;
                     var invalid = trimLen === 0 || len > MAX;
+
+                    if (countWrap) { countWrap.classList.toggle('has-content', len > 0); }
+                    if (divider) { divider.classList.toggle('has-content', len > 0); }
 
                     var pct = Math.min(len / MAX, 1);
                     var offset = CIRCLE_LEN - (pct * CIRCLE_LEN);
@@ -259,52 +277,99 @@ if ($currentUser) {
     </div>
 
 <?php else: ?>
-    <!-- Public Hero View -->
-    <div class="hero">
-        <h1 class="hero-title">
-            Campus Life,<br>Connected.
-        </h1>
+    <!-- Public Landing View (The Iconic X / Twitter Standard) -->
+    <div class="x-landing-shell">
+        <!-- Left Column: Giant Interactive Architectural Brand Mark -->
+        <div class="x-landing-left" id="hero-brand-stage">
+            <div class="x-brand-architect is-idle">
+                <!-- Base Architectural Wireframe -->
+                <svg class="x-giant-logo x-logo-base" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path class="arch-arc-1" d="M12.61 6.42 A6.9 6.9 0 1 0 12.61 17.58" stroke-width="2.7" stroke-linecap="round"/>
+                    <path class="arch-arc-2" d="M11.39 6.42 A6.9 6.9 0 1 1 11.39 17.58" stroke-width="2.7" stroke-linecap="round"/>
+                    <path class="arch-arc-1" d="M10.80 5.48 A6.9 6.9 0 0 1 13.08 6.79" stroke-width="2.7" stroke-linecap="round"/>
+                </svg>
 
-        <p class="hero-sub">
-            Join the ultimate student network. Share updates, discover university events, and stay connected with your campus community.
-        </p>
-
-        <div class="hero-actions">
-            <a href="signup.php" class="btn-hero-primary">
-                Create Your Account
-            </a>
-            <a href="login.php" class="btn-hero-ghost">
-                Log In
-            </a>
+                <!-- Specular Cursor-Tracking Glow Layer -->
+                <div class="x-logo-shine-layer">
+                    <svg class="x-giant-logo x-logo-glow" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                        <defs>
+                            <linearGradient id="shineGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" stop-color="var(--accent)" stop-opacity="0.3"/>
+                                <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+                                <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
+                            </linearGradient>
+                            <linearGradient id="shineGrad2" x1="100%" y1="0%" x2="0%" y2="100%">
+                                <stop offset="0%" stop-color="var(--ink)" stop-opacity="0.3"/>
+                                <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+                                <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.9"/>
+                            </linearGradient>
+                        </defs>
+                        <path class="glow-arc-1" d="M12.61 6.42 A6.9 6.9 0 1 0 12.61 17.58" stroke="url(#shineGrad1)" stroke-width="2.7" stroke-linecap="round"/>
+                        <path class="glow-arc-2" d="M11.39 6.42 A6.9 6.9 0 1 1 11.39 17.58" stroke="url(#shineGrad2)" stroke-width="2.7" stroke-linecap="round"/>
+                        <path class="glow-arc-1" d="M10.80 5.48 A6.9 6.9 0 0 1 13.08 6.79" stroke-width="2.7" stroke-linecap="round"/>
+                    </svg>
+                </div>
+            </div>
         </div>
 
-        <!-- Features Overview Grid -->
-        <div class="features-grid">
-            <div class="feature-card">
-                <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg></span>
-                <h4>Campus Announcements</h4>
-                <p>
-                    Never miss an important update. See announcements from faculty, societies, and administration right in your feed.
+        <!-- Right Column: Iconic Typography & Action Stream -->
+        <div class="x-landing-right">
+            <h1 class="x-hero-headline">Happening on campus</h1>
+            <h2 class="x-hero-subhead">Join FAST-NUCES today.</h2>
+
+            <div class="x-auth-actions">
+                <a href="signup.php" class="x-btn-signup">Create account</a>
+                <p class="x-disclaimer">
+                    By signing up, you agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>, including campus honor code and student conduct rules.
                 </p>
+
+                <div class="x-signin-section">
+                    <h3 class="x-signin-prompt">Already have an account?</h3>
+                    <a href="login.php" class="x-btn-signin">Sign in</a>
+                </div>
             </div>
 
-            <div class="feature-card">
-                <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.6-3 2.8-4.5 5.5-4.5s4.9 1.5 5.5 4.5"/><path d="M16 5.6a3.2 3.2 0 0 1 0 5.8"/><path d="M17.5 15.3c1.7.6 2.7 1.9 3 4.2"/></svg></span>
-                <h4>Connect with Peers</h4>
-                <p>
-                    Find and follow students from your department. Share notes, discuss projects, and build your network.
-                </p>
-            </div>
-
-            <div class="feature-card">
-                <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M10.5 18.5h3"/></svg></span>
-                <h4>Always Accessible</h4>
-                <p>
-                    Experience a fast, responsive design that works perfectly on your laptop, tablet, or smartphone.
-                </p>
-            </div>
+            <?php if (!empty($trendingTags)): ?>
+                <div class="x-trending-strip">
+                    <span class="x-trending-title">Trending on Campus</span>
+                    <div class="x-trending-tags">
+                        <?php foreach ($trendingTags as $tag): ?>
+                            <a href="explore.php?tag=<?= urlencode($tag['tag']) ?>" class="x-tag-link">
+                                <span class="x-tag-hash">#</span><?= htmlspecialchars($tag['tag']) ?>
+                                <span class="x-tag-meta"><?= (int)$tag['post_count'] ?></span>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+            <?php endif; ?>
         </div>
     </div>
+
+    <script>
+        (function() {
+            var stage = document.getElementById('hero-brand-stage');
+            if (!stage) return;
+            var box = stage.querySelector('.x-brand-architect');
+            if (!box) return;
+
+            stage.addEventListener('mousemove', function(e) {
+                var rect = box.getBoundingClientRect();
+                var x = Math.max(0, Math.min(100, ((e.clientX - rect.left) / rect.width) * 100));
+                var y = Math.max(0, Math.min(100, ((e.clientY - rect.top) / rect.height) * 100));
+                box.classList.remove('is-idle');
+                box.style.setProperty('--mx', x + '%');
+                box.style.setProperty('--my', y + '%');
+                box.style.setProperty('--shine-opacity', '1');
+            });
+
+            stage.addEventListener('mouseleave', function() {
+                box.classList.add('is-idle');
+                box.style.setProperty('--shine-opacity', '0.65');
+                box.style.setProperty('--mx', '50%');
+                box.style.setProperty('--my', '50%');
+            });
+        })();
+    </script>
 <?php endif; ?>
 
 <?php require_once 'includes/footer.php'; ?>

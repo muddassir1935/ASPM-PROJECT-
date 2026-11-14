@@ -45,6 +45,9 @@ class User {
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return false;
         }
+        if (!self::isCampusEmail($email)) {
+            return false;
+        }
         if (!self::isValidPassword($password)) {
             return false;
         }
@@ -61,6 +64,19 @@ class User {
         } catch(PDOException $e) {
             return false; // E.g. Duplicate email
         }
+    }
+
+    /**
+     * Verify whether an email address belongs to the official FAST-NUCES domain
+     * (@nu.edu.pk or campus subdomains like @isb.nu.edu.pk, @khi.nu.edu.pk, etc.).
+     */
+    public static function isCampusEmail($email): bool {
+        if (!is_string($email)) {
+            return false;
+        }
+        $clean = trim($email);
+        return filter_var($clean, FILTER_VALIDATE_EMAIL) !== false
+            && preg_match('/^[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+\.)?nu\.edu\.pk$/i', $clean) === 1;
     }
 
     /**

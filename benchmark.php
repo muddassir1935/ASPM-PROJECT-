@@ -115,10 +115,15 @@ $cacheLabel = 'Cached (' . $cacheDriver . ')';
 ?>
 
 <div class="layout-3col">
-    <?php renderLeftNav(''); ?>
+    <?php renderLeftNav('admin'); ?>
 
     <div class="col-main">
-        <h3 class="page-title">Benchmark</h3>
+        <div class="col-head admin-header-flex">
+            <span>Performance Benchmark</span>
+            <a href="admin.php" class="admin-bench-pill" title="Return to Admin Panel">
+                &larr; Back to Admin
+            </a>
+        </div>
 
         <div class="bench-card">
             <p class="bench-meta">
@@ -159,14 +164,14 @@ $cacheLabel = 'Cached (' . $cacheDriver . ')';
             // the 640px viewBox (invisible) and the Cached label across
             // its own value.
             ?>
-            <svg width="100%" height="132" viewBox="0 0 640 132" style="max-width: 640px; height: auto; display: block;" role="img" aria-label="Average latency bar chart: Direct DB <?= sprintf('%.3f ms', $dbAvg) ?>, Cached <?= sprintf('%.3f ms', $cacheAvg) ?>">
-                <text x="0" y="30" font-size="13" font-weight="600" fill="#0F1419"><?= htmlspecialchars($dbLabel) ?></text>
+            <svg width="100%" height="132" viewBox="0 0 640 132" style="max-width: 640px; height: auto; display: block; color: var(--ink);" role="img" aria-label="Average latency bar chart: Direct DB <?= sprintf('%.3f ms', $dbAvg) ?>, Cached <?= sprintf('%.3f ms', $cacheAvg) ?>">
+                <text x="0" y="30" font-size="13" font-weight="600" fill="currentColor"><?= htmlspecialchars($dbLabel) ?></text>
                 <rect x="170" y="14" width="<?= $dbBarW ?>" height="22" fill="#B42318" rx="3"></rect>
-                <text x="<?= 178 + $dbBarW ?>" y="30" font-size="13" fill="#0F1419"><?= sprintf('%.3f ms', $dbAvg) ?></text>
-                <text x="0" y="80" font-size="13" font-weight="600" fill="#0F1419"><?= htmlspecialchars($cacheLabel) ?></text>
+                <text x="<?= 178 + $dbBarW ?>" y="30" font-size="13" fill="currentColor"><?= sprintf('%.3f ms', $dbAvg) ?></text>
+                <text x="0" y="80" font-size="13" font-weight="600" fill="currentColor"><?= htmlspecialchars($cacheLabel) ?></text>
                 <rect x="170" y="64" width="<?= $cacheBarW ?>" height="22" fill="#027A48" rx="3"></rect>
-                <text x="<?= 178 + $cacheBarW ?>" y="80" font-size="13" fill="#0F1419"><?= sprintf('%.3f ms', $cacheAvg) ?></text>
-                <text x="0" y="120" font-size="13" font-weight="700" fill="#0F1419">Speedup: <?= sprintf('%.1f', $speedup) ?>&times;</text>
+                <text x="<?= 178 + $cacheBarW ?>" y="80" font-size="13" fill="currentColor"><?= sprintf('%.3f ms', $cacheAvg) ?></text>
+                <text x="0" y="120" font-size="13" font-weight="700" fill="currentColor">Speedup: <?= sprintf('%.1f', $speedup) ?>&times;</text>
             </svg>
             <p class="bench-note" style="padding-left: 0;">
                 Averages over <?= $iterations ?> iterations of the timeline feed query (limit 20).

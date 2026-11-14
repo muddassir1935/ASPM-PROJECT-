@@ -26,6 +26,25 @@
             return;
         }
 
+        // Show/Hide Password Toggle
+        var pwToggle = event.target.closest('[data-toggle-pw]');
+        if (pwToggle) {
+            event.preventDefault();
+            var wrap = pwToggle.closest('.password-input-wrap');
+            if (wrap) {
+                var input = wrap.querySelector('input');
+                if (input) {
+                    var isText = input.type === 'text';
+                    input.type = isText ? 'password' : 'text';
+                    var eyeOpen = pwToggle.querySelector('.eye-open');
+                    var eyeClosed = pwToggle.querySelector('.eye-closed');
+                    if (eyeOpen) eyeOpen.style.display = isText ? 'block' : 'none';
+                    if (eyeClosed) eyeClosed.style.display = isText ? 'none' : 'block';
+                }
+            }
+            return;
+        }
+
         // Post Card 3-Dots Dropdown Menu Toggle
         var menuBtn = event.target.closest('[data-post-menu-toggle]');
         if (menuBtn) {

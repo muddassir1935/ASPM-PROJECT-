@@ -76,18 +76,44 @@ $viewerFollowingIds = $currentUser
     <?php renderLeftNav('explore'); ?>
 
     <div class="col-main">
-        <h3 class="page-title">Explore</h3>
-
-        <form method="GET" action="explore.php" class="search-card search-row">
-            <input class="form-control" type="text" name="q" placeholder="Search people, posts, or #tags..." value="<?= htmlspecialchars($query !== '' ? $query : ($tagFilter !== '' ? '#' . $tagFilter : '')) ?>" aria-label="Search people, posts, or #tags">
-            <button type="submit" class="btn-primary">Search</button>
-        </form>
+        <div class="explore-header-wrap">
+            <form method="GET" action="explore.php" class="explore-search-bar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-ic" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="search" name="q" class="explore-search-input" placeholder="Search CampusConnect, #tags, or people…" value="<?= htmlspecialchars($query !== '' ? $query : ($tagFilter !== '' ? '#' . $tagFilter : '')) ?>" aria-label="Search people, posts, or #tags" autocomplete="off">
+                <?php if ($query !== '' || $tagFilter !== ''): ?>
+                    <a href="explore.php" class="explore-search-clear" title="Clear search" aria-label="Clear search">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </a>
+                <?php endif; ?>
+                <button type="submit" class="explore-search-btn">Search</button>
+            </form>
+        </div>
 
         <?php if ($tagFilter !== ''): ?>
+            <div class="explore-filter-banner">
+                <div class="explore-filter-badge">
+                    <span>Active Tag:</span>
+                    <strong>#<?= htmlspecialchars($tagFilter) ?></strong>
+                </div>
+                <a href="explore.php" class="explore-filter-clear">Clear filter &times;</a>
+            </div>
             <h4 class="section-title">
                 Posts tagged with #<?= htmlspecialchars($tagFilter) ?>
             </h4>
         <?php elseif ($query !== ''): ?>
+            <div class="explore-filter-banner">
+                <div class="explore-filter-badge">
+                    <span>Search:</span>
+                    <strong>"<?= htmlspecialchars($query) ?>"</strong>
+                </div>
+                <a href="explore.php" class="explore-filter-clear">Clear search &times;</a>
+            </div>
             <h4 class="section-title">
                 People matching "<?= htmlspecialchars($query) ?>"
             </h4>
