@@ -29,7 +29,10 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: login.php?registered=1");
                 exit;
             } else {
-                $error = "Registration failed. This email is already registered.";
+                // Sprint 5 final fix (M6): register() fails for bad input
+                // AND for a duplicate email — claiming "already registered"
+                // for every failure was both wrong and enumerable.
+                $error = "Registration failed. Please check your details and try again.";
             }
         }
     }

@@ -37,7 +37,13 @@ function renderLeftNav(string $active): void {
     echo '<nav class="col-nav" aria-label="Section">';
     foreach ($links as $key => [$href, $label, $icon, $badge]) {
         $isActive = $key === $active ? ' nav-col-active' : '';
-        echo '<a href="' . htmlspecialchars($href) . '" class="nav-col-link' . $isActive . '">'
+        // Sprint 5 UI polish (M-9): at <=1080px the label <span> is hidden
+        // (display:none), leaving icon-only links with no accessible name.
+        // aria-label carries the name at every width; aria-current marks
+        // the active page for screen readers.
+        echo '<a href="' . htmlspecialchars($href) . '" class="nav-col-link' . $isActive . '"'
+            . ' aria-label="' . htmlspecialchars($label) . '"'
+            . ($key === $active ? ' aria-current="page"' : '') . '>'
             . $icon . '<span>' . htmlspecialchars($label) . '</span>';
         if ($key === 'notifications') {
             echo '<span class="nav-badge" data-notif-badge style="' . ($badge > 0 ? '' : 'display:none;') . '">' . ($badge > 99 ? '99+' : (int)$badge) . '</span>';
@@ -67,7 +73,7 @@ function renderWhoToFollowWidget(PDO $db, int $userId): void {
             echo '<a href="profile.php?id=' . (int)$user['id'] . '" class="user-row-link">';
             echo '<span class="avatar-sm' . avatarToneClass((int)$user['id'], (string)($user['role'] ?? '')) . '">' . htmlspecialchars($initial) . '</span>';
             echo '<span class="user-row-text"><strong>' . htmlspecialchars($user['name']) . '</strong>'
-                . '<span>' . (int)$user['follower_count'] . ' followers</span></span>';
+                . '<span>' . (int)$user['follower_count'] . ' ' . pluralize((int)$user['follower_count'], 'follower') . '</span></span>';
             echo '</a>';
             echo '<button type="button" class="btn-follow" data-follow-toggle data-user-id="'
                 . (int)$user['id'] . '">Follow</button>';
@@ -96,7 +102,7 @@ function renderTrendingHashtagsWidget(PDO $db, int $limit = 5): void {
             echo '<div class="trending-row">';
             echo '<a href="explore.php?tag=' . urlencode($item['tag']) . '" class="trending-link">';
             echo '<span class="trending-tag">#' . htmlspecialchars($item['tag']) . '</span>';
-            echo '<span class="trending-count">' . (int)$item['post_count'] . ' post' . ((int)$item['post_count'] === 1 ? '' : 's') . '</span>';
+            echo '<span class="trending-count">' . (int)$item['post_count'] . ' ' . pluralize((int)$item['post_count'], 'post') . '</span>';
             echo '</a>';
             echo '</div>';
         }
@@ -155,7 +161,37 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
             . $postId . '"' . ($isBookmarked && $removeCardOnUnsave ? ' data-remove-card="1"' : '') . '>'
             . ($isBookmarked ? 'Saved' : 'Save') . '</button>';
     }
+    // Sprint 5 UI polish (M-7): one owner-action treatment everywhere.
+    // Profile/explore/bookmarks cards had NO owner actions while the feed
+    // had inline Edit/Delete text buttons — now every own-post card has
+    // the same pair (owner: Edit + Delete; admin: Delete). The inline
+    // edit form is the feed's, toggled by the shared togglePostEdit().
+    $isOwner = $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
+    $canDeleteAny = $currentUser && class_exists('Auth') && Auth::can('post.delete_any');
+    if ($isOwner) {
+        echo '<button type="button" class="btn-text" onclick="togglePostEdit(' . $postId . ')">Edit</button>';
+    }
+    if ($isOwner || $canDeleteAny) {
+        echo '<form method="POST" action="post_action.php" onsubmit="return confirm(\'Delete this post? This cannot be undone.\');" class="inline-form">'
+            . Csrf::field()
+            . '<input type="hidden" name="action" value="delete">'
+            . '<input type="hidden" name="post_id" value="' . $postId . '">'
+            . '<button type="submit" class="btn-text btn-text-danger">Delete</button>'
+            . '</form>';
+    }
     echo '</div>';
+    if ($isOwner) {
+        echo '<form id="post-edit-' . $postId . '" method="POST" action="post_action.php" class="edit-form" style="display: none;">'
+            . Csrf::field()
+            . '<input type="hidden" name="action" value="update">'
+            . '<input type="hidden" name="post_id" value="' . $postId . '">'
+            . '<textarea name="content" class="form-control" rows="3" maxlength="280" required>' . htmlspecialchars($post['content']) . '</textarea>'
+            . '<div class="edit-form-actions">'
+            . '<button type="submit" class="btn-primary">Save Changes</button>'
+            . '<button type="button" class="btn-cancel" onclick="togglePostEdit(' . $postId . ')">Cancel</button>'
+            . '</div>'
+            . '</form>';
+    }
     echo '</div>';
     echo '</div>';
 }

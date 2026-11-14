@@ -110,6 +110,10 @@ $replyId2 = $replyModel->create($samId, $bobPost, "Second reply here");
 $replies = $replyModel->getByPostId($bobPost);
 assertTest("Replies listed oldest first",
     count($replies) === 2 && (int)$replies[0]['id'] === (int)$replyId && (int)$replies[1]['id'] === (int)$replyId2);
+assertTest("Replies carry relative time_ago, not a raw timestamp",
+    isset($replies[0]['time_ago']) && $replies[0]['time_ago'] !== ''
+    && preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $replies[0]['time_ago']) !== 1
+    && preg_match('/^(just now|\d+[smhd] ago|[A-Z][a-z]{2} \d{1,2}, \d{4})$/', $replies[0]['time_ago']) === 1);
 assertTest("Reply count is 2", $replyModel->countByPost($bobPost) === 2);
 assertTest("Non-author cannot delete a reply",
     $replyModel->delete($replyId, $samId, false) === false);

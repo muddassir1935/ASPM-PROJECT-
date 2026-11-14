@@ -5,6 +5,13 @@ require_once 'classes/Auth.php';
 require_once 'classes/Csrf.php';
 require_once 'classes/LoginRateLimiter.php';
 
+// Sprint 5 final fix (N-10): a logged-in user has no business on the login
+// form — send them to the feed instead of showing a second login.
+if (Auth::isLoggedIn()) {
+    header("Location: index.php");
+    exit;
+}
+
 $error = "";
 $success = "";
 

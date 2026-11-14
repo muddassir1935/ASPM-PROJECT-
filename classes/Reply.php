@@ -9,6 +9,7 @@
  * their parent post on the post detail page.
  */
 require_once __DIR__ . '/Cache.php';
+require_once __DIR__ . '/Post.php';
 
 class Reply {
     private PDO $db;
@@ -128,7 +129,14 @@ class Reply {
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Sprint 5 UI polish (N-7): replies rendered an absolute time
+        // ("Nov 12, 2:16 PM") while posts use relative time — stamp the
+        // same time_ago so list contexts agree.
+        foreach ($rows as &$row) {
+            $row['time_ago'] = Post::formatTimeAgo($row['created_at']);
+        }
+        return $rows;
     }
 
     /**

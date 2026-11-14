@@ -7,6 +7,7 @@
  * Soft-deleted posts are never returned in like feeds.
  */
 require_once __DIR__ . '/Cache.php';
+require_once __DIR__ . '/Post.php';
 
 class Like {
     private PDO $db;
@@ -202,11 +203,12 @@ class Like {
         }
         $effectiveViewer = $viewerId > 0 ? $viewerId : $userId;
 
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
+        $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
                        u.name AS author_name, u.role AS author_role,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
-                       (SELECT COUNT(*) FROM likes lv WHERE lv.post_id = p.id AND lv.user_id = :viewer_id) AS is_liked
+                       (SELECT COUNT(*) FROM likes lv WHERE lv.post_id = p.id AND lv.user_id = :viewer_id) AS is_liked,
+                       (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked
                 FROM likes l
                 JOIN posts p ON l.post_id = p.id
                 JOIN users u ON p.user_id = u.id
@@ -217,11 +219,19 @@ class Like {
         $stmt = $this->db->prepare($sql);
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':viewer_id', $effectiveViewer, PDO::PARAM_INT);
+        $stmt->bindValue(':viewer_id2', $effectiveViewer, PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
 
-        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Sprint 5 UI polish (M-4): the Likes tab rendered raw DB
+        // timestamps because this query skipped the time_ago step every
+        // other post query does. Stamp it here, like Post does.
+        foreach ($rows as &$row) {
+            $row['time_ago'] = Post::formatTimeAgo($row['created_at']);
+        }
+        return $rows;
     }
 
     /**

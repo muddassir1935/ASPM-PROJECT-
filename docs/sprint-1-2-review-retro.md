@@ -1,9 +1,11 @@
-# Sprint 1–2 Review and Retro Notes
+# Sprint Review and Retro Notes (Sprints 1–5)
 
-> Honesty note: no separate standup/meeting minutes were kept during Sprints
-> 1–2, so none are invented here. This record is reconstructed from the git
-> history, the two merged pull requests, and the approved sprint plan, and is
+> Honesty note: no separate standup/meeting minutes were kept during the
+> sprints, so none are invented here. This record is reconstructed from the
+> git history, the merged pull requests, and the approved sprint plan, and is
 > dated by the evidence, not backdated. Dates below are commit/merge dates.
+> Per the Sprint 2 decision, Sprint 3+ reviews are appended to this same
+> file (the filename keeps the original Sprint 1–2 name for stable links).
 
 ## Sprint 1 review — Auth (WBS 1.0)
 
@@ -203,20 +205,45 @@
   - **Hashtags & Discovery (WBS 4.2):** `hashtags` and `post_hashtags` schemas, automatic extraction and indexing upon create/update in `Hashtag` class, clickable `#tag` link rendering in posts, tag filter exploration (`explore.php?tag=...`), and "Trending Topics" right sidebar widget.
   - **Performance Caching & Benchmark (WBS 4.3):** `Cache` Singleton supporting Redis with zero-downtime memory fallback, intelligent `feed_` prefix cache invalidation on post/like mutation, and `benchmark.php` benchmark suite.
   - **Sprint 3 Polish Items Closed:** Compose box auto-grow on multi-line text and filled bookmark icon SVG when saved.
-  - **Automated Tests:** Comprehensive `tests/Sprint4Test.php` suite (36 tests) and regression validation across all 5 project suites (140/141 tests passed — 1 pre-existing flaky test).
-- **Verified 9 Nov 2026:** 140/141 tests pass locally (1 pre-existing flaky test); cache benchmark shows 532× measured memory-read speedup over direct database queries.
+  - **Automated Tests:** Comprehensive `tests/Sprint4Test.php` suite and
+    regression validation across all project suites (see verification note
+    below — the count moved during the verification pass).
+- **Verified 9 Nov 2026:** Faiz merged Sprint 4 himself (`d7f1938`)
+  reporting 140/141 (1 pre-existing flaky test). An independent
+  verification pass the same day found **3 real bugs** — including a
+  critical one: the hashtag renderer linkified `#039` inside the `&#039;`
+  HTML entity, breaking every post containing an apostrophe — plus a
+  profile Likes-tab viewer-state bug and a bookmarks like-count bug. The
+  fixes (PR #8, main `d1e4400`) also added `TinyRedisClient` (pure-PHP
+  RESP client, so the demo needs only a Redis server, not the phpredis
+  extension), the feed-cache TTL/invalidation fixes, the N+1 audit, and
+  regression tests. **Suite after the verification pass: 153/153 green.**
+  Cache benchmark: 532× measured memory-read speedup over direct database
+  queries (Sprint 4 verification, memory fallback backend).
 
 ## Sprint 4 retro notes
 
 - **What went well:**
   - Single feature branch discipline maintained (`feature/sprint-4-core`), preventing branch explosion.
   - Docs (`sprint-4-srs-increment.md`, WBS mapping, UML/ERD updates) written concurrently with code in the same branch, fixing the retro gap from Sprints 2 & 3.
-  - 100% test coverage achieved across all sprints with zero regressions.
+  - The verification pass earned its keep: a merge the author believed green
+    (140/141) actually shipped a critical rendering bug. "Verified" now
+    means an independent run of the full suite + a live walkthrough, not
+    the author's own count.
+- **What went badly / what to change:**
+  - **Claimed numbers were not the real numbers.** The 140/141 figure was
+    quoted in docs before anyone re-ran the suite; the true post-fix count
+    was 153/153. Fix: docs quote only numbers from a run somebody
+    re-performed and can point at (this file now does).
+  - **The flaky test was never chased to root cause** (it was the known
+    SocialTest-on-crowded-DB flake from Sprint 3). It disappeared with the
+    Sprint 5 test-database isolation work instead of being fixed directly.
+    Lesson: a flaky test is a bug report, not background noise.
 - **Sprint 4 Close Checklist:**
   - [x] Likes system functional and tested (WBS 4.1)
   - [x] Hashtags and trending topics functional and tested (WBS 4.2)
   - [x] Redis caching layer with seamless memory fallback and benchmark (WBS 4.3)
-  - [x] 140/141 unit tests green (1 pre-existing flaky test)
+  - [x] 153/153 unit tests green after the verification pass (PR #8, `d1e4400`)
   - [x] Documentation, SRS increment, WBS mapping, and UML/ERD synchronized
   - [ ] User runs `db/schema.sql` on XAMPP MySQL before demoing (XAMPP not set up yet — fresh setup is schema.sql only)
   - [x] Push to remote and merge `feature/sprint-4-core` into `main` after user consent (Merged `d7f1938`)
@@ -225,34 +252,123 @@
 
 ## Sprint 5 review — Final Delivery, Hardening, Polish & Academic Release (WBS 5.0)
 
-- **Delivered (13–15 Nov 2026):**
-  - **In-App Activity Notifications (WBS 5.1):** `notifications` table, `Notification` model, unread notification counter badge in the navigation header, and a dedicated notifications activity feed (`notifications.php`).
-  - **Role-Based Access Control & Society Management (WBS 5.2):** Tiered roles (`student`, `society_admin`, `system_admin`) and central permission map built on `feature/sprint-5-rbac` (`748f65d`); official society announcements with verified badging and system administrative content moderation panel in progress (due 15 Nov).
-  - **Security Hardening (WBS 5.3):** 30-minute session idle expiry built (RBAC core); anti-CSRF token verification across all forms and brute-force login rate limiting in progress on `feature/sprint-5-rbac` (due 15 Nov); full parameter binding audit done.
-  - **Responsive Polish & Micro-interactions (WBS 5.4):** Viewport optimization down to 360px mobile viewports and tablets, overflow bug resolutions, tactile physical button press feedback (`transform: scale(0.97)`), like pop animation, and fluid SVG benchmark dashboards.
-  - **Seed Dataset & 5-Minute Deployment (WBS 5.5):** Comprehensive `db/seed.sql` pre-loading verified university accounts, posts, and society channels, coupled with `docs/DEPLOYMENT.md` for turnkey XAMPP evaluation.
-  - **Academic Documentation & Release Deliverables (WBS 5.6 & 5.7):**
-    - `docs/sprint-5-srs-increment.md` (SRS finalization)
-    - `docs/USER_MANUAL.md` (End-user manual)
-    - `docs/ADMIN_MANUAL.md` (Operations & administration manual)
-    - `docs/CONTRIBUTION.md` (Verifiable Git audit)
-    - `docs/MEETINGS.md` (Real team meeting minutes)
-    - Final Academic Presentation (`AIR_Presentation.pptx`) and Technical Report (`AIR_Report.pdf`)
+- **Delivered (12–14 Nov 2026; release tag 15 Nov):**
+  - **In-App Activity Notifications (WBS 5.1, Faiz):** `notifications`
+    table, `Notification` model, unread badge in the header, dedicated
+    center (`notifications.php`), triggers on follow/like/reply. PR #9,
+    merged 13 Nov (main `8f516cf`); 4 review fixes applied on Faiz's
+    branch first (missing table in `schema.sql`, auth order, `create()`
+    error handling, `rowCount()` truth). Suite at merge: 181/181.
+  - **Role-Based Access Control & Society Management (WBS 5.2,
+    Muddassir & Muse):** roles `student` / `society_admin` /
+    `system_admin`, central `Authorization` permission map, admin panel
+    with role assignment (`admin.php`), society announcements
+    (`posts.is_announcement`), 30-min idle timeout, session revocation.
+    PR #11, merged 13 Nov (main `2c92121`). Suite at merge: 274/274
+    (incl. 91 `RbacTest`).
+  - **Security Hardening (WBS 5.3, Muddassir & Muse):** CSRF tokens on
+    all state-changing forms + AJAX, login rate-limit (5 attempts / 15
+    min), `.htaccess` blocking, visible MySQL→SQLite fallback banner,
+    test-DB isolation + demo re-seed, hidden public emails + name-only
+    search, hardened session cookies + security headers. Same PR #11.
+    The full security audit (12 Nov) found 0 Critical, 7 High, 12 Medium
+    — all 7 High fixed in this sprint.
+  - **Responsive Polish & Micro-interactions (WBS 5.4, Qaim + polish
+    pass):** Qaim's PR #10 (merged 13 Nov, main `58e1ece`) fixed the
+    mobile Explore clipping and 5px feed scroll and added button-press
+    + heart-pop micro-interactions. The 14 Nov UI polish pass
+    (`feature/sprint-5-ui-polish`) then closed all 20 must-fix items
+    from the 12 Nov UI/UX audit: post-detail 3-column shell, relative
+    timestamps, pluralization, unified owner actions, Escape closes
+    modals, rebuilt benchmark page, Explore pagination, 44px touch
+    targets, aria-labels, auth watermark, empty-state alignment,
+    who-to-follow truncation, and the approved Bricolage Grotesque +
+    Public Sans fonts. Suite: 286/286; live walkthroughs 39/39 +
+    14/14. Password management added the same day on the same branch
+    (change own password + admin reset with a one-time temporary
+    password), live-verified 13/13.
+  - **Seed Dataset & 5-Minute Deployment (WBS 5.5, Faiz):** `db/seed.sql`
+    (7 users / 8 posts / 10 follows / 6 replies / 11 likes) +
+    `docs/DEPLOYMENT.md` quick start. Demo DB re-seeded clean on 13 Nov
+    (was 293 users / 256 posts of test junk).
+  - **Academic Documentation & Release Deliverables (WBS 5.6 & 5.7,
+    Qaim + team):** `docs/sprint-5-srs-increment.md`, `USER_MANUAL.md`,
+    `ADMIN_MANUAL.md`, `CONTRIBUTION.md`, `MEETINGS.md`,
+    `docs/DEMO_SCRIPT.md`, this retro file. Deck + report
+    (`AIR_Presentation.pptx`, `AIR_Report.pdf`) regenerate from merged
+    main on Sat evening (after the polish merge) so the numbers are
+    final; the working-software zip regenerates from merged main on
+    15 Nov via `scripts/package_release.py`.
+- **Verified 14 Nov 2026:** full suite **286/286** on the polish branch;
+  live walkthroughs green (39/39 polish + 14/14 cut-items + final-fix
+  checks); demo DB pristine (7 users / 8 posts / 6 replies / 11 likes /
+  10 follows). A final gap sweep on 14 Nov (audits + sprint plan + docs
+  re-checked line by line) found and fixed 13 more items before the
+  merge — a real N+1 in the profile modals, missing register validation,
+  double-submit duplicates, missing transactions, the benchmark page
+  being both public and `.htaccess`-blocked, and stale "in progress"
+  claims across five docs.
+- **Scope note:** Sprint 5 was re-scoped on 12 Nov for fairness — the
+  user had built nearly everything alone (26 commits vs 4 vs 0 at the
+  time), so notifications + docs/deliverables went to Faiz and Qaim as
+  their own marked work, while Muddassir + Muse did RBAC + audit fixes
+  and verified/validated the teammates' PRs instead of redoing them.
+  Final commit counts are recomputed after the polish merge (the report
+  generator's literals are updated in the same regen step).
 
 ## Sprint 5 retro notes
 
 - **What went well:**
-  - **Equitable Work Distribution**: Splitting Sprint 5 into three clear work streams (Faiz on Notifications/Seed, Qaim on Responsive Polish/Docs/Academic Deliverables, Muddassir on RBAC/Security/Release) gave teammates concrete ownership and verifiable Git commits under their own identities.
-  - **Zero Regressions**: 153/153 automated tests consistently passed throughout the frontend polish and documentation updates.
-  - **Mobile Accessibility**: Real device verification confirmed fluid navigation at 360px with no horizontal scroll or layout clipping.
-  - **Comprehensive Operational Documentation**: Delivered turnkey manuals for students, society representatives, and system administrators.
+  - **Equitable work distribution, actually enforced.** The 12 Nov split
+    gave Faiz and Qaim real ownership with commits under their own names
+    (Faiz: notifications + seed + deployment guide; Qaim: responsive
+    polish + docs + deck/report). Both PRs were reviewed and fixed on
+    their own branches, not rewritten by someone else.
+  - **Verification as a habit, not a phase.** Every merge in Sprint 5 was
+    preceded by an independent suite run + live walkthrough, and the
+    habit paid off three times: PR #9's missing table, PR #10's ten
+    blocking doc errors, and the final-day sweep's 13 gaps were all
+    caught before they reached main.
+  - **Audits before the last weekend.** Running the security + UI audits
+    on 12 Nov (not 14 Nov) left real time to fix what they found —
+    including the RBAC work the user himself raised (roles were only a
+    display label; `society` was never checked; signup always made a
+    student).
 - **What went badly / lessons learned:**
-  - **Early Contribution Asymmetry**: Sprints 1–3 were delivered with insufficient commit distribution. Sprint 5 required a deliberate restructuring to ensure all team members contributed commits for academic credit. Lesson: enforce team pair-programming and distributed pull requests from Sprint 1 in future projects.
-  - **Database Migration Granularity**: Multiple sequential migration scripts were created across Sprints 3, 4, and 5. For the final release, a consolidated `db/schema.sql` and `db/seed.sql` provided the cleanest onboarding path.
+  - **Docs lagged code for the fourth sprint in a row.** The Sprint 5
+    docs were written while RBAC was still on its branch, so they
+    described merged work as "in progress" — and the deck/report numbers
+    went stale twice (after PR #10, then again after PR #11). The fix
+    applied on 14 Nov: docs describe only merged main, and generated
+    deliverables regenerate last, from merged main. Lesson: a doc that
+    describes a branch is a draft, not a deliverable.
+  - **A notification is not proof of delivery.** On 13 Nov the team
+    believed a GitHub email meant the post-RBAC deck/report regen was
+    done; checking branches, open PRs and main showed it was the earlier
+    pre-RBAC binary step. Lesson: verify remote state, not inboxes.
+  - **Early contribution asymmetry.** Sprints 1–3 were delivered with
+    insufficient commit distribution. Sprint 5 required a deliberate
+    restructuring to ensure all team members contributed commits for
+    academic credit. Lesson: enforce team pair-programming and
+    distributed pull requests from Sprint 1 in future projects.
+  - **Toolchain fragility, finally solved properly.** PHP and OpenMPI
+    installs kept dying on VM replacements until the toolchains were
+    moved into the persistent workspace (`~/workspace/tools/`) with
+    wrappers and cached `.deb`s — a written rule cannot protect what
+    the infrastructure wipes; the fix has to live where the wipe cannot
+    reach.
 - **Sprint 5 Close Checklist:**
-  - [x] Responsive mobile polish (360px & tablet) implemented and verified
-  - [x] Complete documentation suite written and committed
-  - [x] SRS increment, WBS mapping, and contribution matrix synchronized
-  - [x] All 181 unit tests passing (181/181, incl. 28 NotificationTest after the PR #9 merge)
+  - [x] Notifications merged (PR #9, `8f516cf`)
+  - [x] Docs + responsive polish merged (PR #10, `58e1ece`)
+  - [x] RBAC + security top-5 merged (PR #11, `2c92121`)
+  - [x] Security audit 0 Critical; all 7 High fixed
+  - [x] UI audit: all 20 must-fix closed (polish branch)
+  - [x] Full suite 286/286 + live walkthroughs green (14 Nov)
+  - [x] Demo DB re-seeded clean (7 users / 8 posts)
+  - [x] Demo script written (`docs/DEMO_SCRIPT.md`)
   - [x] GroupCode confirmed by user: Section `BCS-7A`, Group Code `AIR`
-  - [x] Final deliverables generated: `AIR_Presentation.pptx`, `AIR_Report.pdf`, `AIR_WorkingSoftware.zip`
+  - [ ] UI polish branch merged to main (pending user push approval, 14 Nov)
+  - [ ] Deck + report regen from merged main (Sat evening, after the polish merge)
+  - [ ] Working-software zip from merged main (15 Nov)
+  - [ ] Release tag (15 Nov, needs the user's explicit approval)
+  - [ ] XAMPP/MySQL setup + `.htaccess` check on the user's machine (first-time setup)

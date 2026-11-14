@@ -205,6 +205,25 @@ $viewerRow = null;
 foreach ($viewerView as $row) { if ((int)$row['id'] === $postId1) { $viewerRow = $row; break; } }
 assertTest("Liked posts show is_liked=0 for a viewer who has not liked", $viewerRow !== null && (int)$viewerRow['is_liked'] === 0);
 
+// Sprint 5 UI polish (M-4): liked + tagged rows carry a relative
+// time_ago, never a raw DB timestamp (the Likes tab and hashtag filter
+// rendered "2026-11-12 14:16:50" before this fix).
+$timeAgoPattern = '/^(just now|\d+[smhd] ago|[A-Z][a-z]{2} \d{1,2}, \d{4})$/';
+$rawTsPattern = '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/';
+assertTest("getLikedPosts rows carry relative time_ago",
+    $ownerRow !== null && isset($ownerRow['time_ago'])
+    && preg_match($rawTsPattern, $ownerRow['time_ago']) !== 1
+    && preg_match($timeAgoPattern, $ownerRow['time_ago']) === 1);
+$taggedRows = $hashtagModel->getPostsByTag($tagA);
+assertTest("getPostsByTag rows carry relative time_ago",
+    count($taggedRows) >= 1 && isset($taggedRows[0]['time_ago'])
+    && preg_match($rawTsPattern, $taggedRows[0]['time_ago']) !== 1
+    && preg_match($timeAgoPattern, $taggedRows[0]['time_ago']) === 1);
+assertTest("getLikedPosts rows carry is_announcement flag",
+    $ownerRow !== null && array_key_exists('is_announcement', $ownerRow));
+assertTest("getPostsByTag rows carry is_announcement flag",
+    count($taggedRows) >= 1 && array_key_exists('is_announcement', $taggedRows[0]));
+
 // Bookmarked posts carry real like data for the bookmarks page.
 $bookmarkModel = new Bookmark($db);
 $bookmarkModel->add($liamId, $postId1);

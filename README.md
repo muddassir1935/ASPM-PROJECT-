@@ -14,10 +14,14 @@ A centralized University Microblogging & Announcement Hub built using PHP (OOP) 
 3. Serve via XAMPP/Apache (PHP 8+).
 
 ## Documentation
-- `docs/sprint-2-srs-increment.md` — Sprint 2 requirements, as built.
-- `docs/uml-class-diagram-erd.md` — Mermaid class diagram + ERD (Sprints 1–2).
+- `docs/sprint-2-srs-increment.md`, `docs/sprint-3-srs-increment.md`, `docs/sprint-4-srs-increment.md`, `docs/sprint-5-srs-increment.md` — per-sprint requirements, as built.
+- `docs/uml-class-diagram-erd.md` — Mermaid class diagram + ERD (Sprints 1–5).
 - `docs/wbs-mapping.md` — WBS Tweet/Post naming map and coverage table.
-- `docs/sprint-1-2-review-retro.md` — Sprint 1–2 review and retro notes.
+- `docs/sprint-1-2-review-retro.md`, `docs/sprint-3-review-retro.md`, `docs/sprint-4-review-retro.md`, `docs/sprint-5-review-retro.md` — per-sprint review and retro notes.
+- `docs/USER_MANUAL.md`, `docs/ADMIN_MANUAL.md` — end-user and admin guides.
+- `docs/DEPLOYMENT.md` — 5-minute XAMPP quick start + seed accounts.
+- `docs/DEMO_SCRIPT.md` — step-by-step live demo script for the review.
+- `docs/CONTRIBUTION.md`, `docs/MEETINGS.md` — contribution register and meeting log.
 
-Run the test suites with plain PHP (SQLite fallback, no server needed):
-`php tests/UserTest.php` and `php tests/PostTest.php`.
+Run the full test suite with plain PHP (SQLite fallback, no server needed):
+`php tests/run_all.php` (286 tests). Individual suites live in `tests/` (e.g. `php tests/UserTest.php`).

@@ -119,6 +119,25 @@ class Follow {
         return (int)$stmt->fetchColumn() > 0;
     }
 
+    /**
+     * IDs of every user $userId follows, as a flat int list.
+     * Sprint 5 final fix (security M3): profile modals and Explore called
+     * isFollowing() once per row (N+1 — up to 200 queries). Callers fetch
+     * this set once and check membership with in_array/isset instead.
+     *
+     * @return int[]
+     */
+    public function getFollowingIds(int $userId): array {
+        if ($userId <= 0) {
+            return [];
+        }
+        $sql = "SELECT followed_id FROM follows WHERE follower_id = :user_id";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
     public function countFollowers(int $userId): int {
         $sql = "SELECT COUNT(*) FROM follows WHERE followed_id = :user_id";
         $stmt = $this->db->prepare($sql);

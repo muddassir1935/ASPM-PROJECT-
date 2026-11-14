@@ -12,7 +12,8 @@ This manual provides authoritative operational documentation for **Society Admin
 3. [System Administration (`system_admin`)](#3-system-administration-system_admin)
    - [Global Content Moderation](#31-global-content-moderation)
    - [User Role Governance](#32-user-role-governance)
-   - [Database Session & Security Management](#33-database-session--security-management)
+   - [Password Reset (forgot password)](#33-password-reset-forgot-password)
+   - [Database Session & Security Management](#34-database-session--security-management)
 4. [Performance Monitoring & Caching Operations](#4-performance-monitoring--caching-operations)
    - [Interpreting the Benchmark Dashboard](#41-interpreting-the-benchmark-dashboard)
    - [Redis vs. Memory Fallback Diagnostics](#42-redis-vs-memory-fallback-diagnostics)
@@ -28,7 +29,7 @@ This manual provides authoritative operational documentation for **Society Admin
 
 CampusConnect implements an Agile Role-Based Access Control (RBAC) model configured in the database via the `users.role` enum/varchar column:
 
-> **RBAC status (13 Nov 2026):** the role model, central permission map and 30-minute idle timeout are built on the `feature/sprint-5-rbac` branch (commit `748f65d`) and land in main with that branch (due 15 Nov). The admin panel, society-announcement toggle, CSRF tokens and login rate-limit are still in progress on the same branch. On main today the roles are still `student` / `society` / `admin`, and only admin delete of others' posts/replies is enforced.
+> **RBAC status (13 Nov 2026):** merged in PR #11 (main `2c92121`). The role model (`student` / `society_admin` / `system_admin`), central permission map, admin panel, society-announcement toggle, CSRF tokens, login rate-limit and 30-minute idle timeout are all live on main. The old role values `student` / `society` / `admin` no longer exist.
 
 | Privilege / Action | Student (`student`) | Society Admin (`society_admin`) | System Admin (`system_admin`) |
 |---|:---:|:---:|:---:|
@@ -39,9 +40,9 @@ CampusConnect implements an Agile Role-Based Access Control (RBAC) model configu
 | Soft-Delete Any User's Post (Moderation) | **Denied** | **Denied** | **Granted** |
 | Soft-Delete Any User's Reply | **Denied** | **Denied** | **Granted** |
 | View Admin Panel & User Role Editor | **Denied** | **Denied** | **Granted** |
-| View Benchmark Dashboard (`benchmark.php`) | Granted | Granted | Granted |
+| View Benchmark Dashboard (`benchmark.php`) | **Denied** (403) | **Denied** (403) | **Granted** |
 
-*Note: the Admin Panel & User Role Editor and the Society Announcement toggle land with the `feature/sprint-5-rbac` branch (due 15 Nov); they are not in main yet.*
+*Note: the Admin Panel & User Role Editor and the Society Announcement toggle merged in PR #11 (main `2c92121`, 13 Nov 2026). The benchmark page is admin-only since the final pass on 14 Nov 2026 (logged-out visitors are sent to login, non-admins get 403).*
 
 All authorization decisions execute server-side within the domain classes (`PostController`, `Post`, `Reply`, `User`, `Auth`) using strict PDO queries. Front-end hidden buttons are never treated as security boundaries.
 
@@ -72,29 +73,40 @@ System Administrators hold supreme technical and moderation authority across the
 
 ### 3.1 Global Content Moderation
 CampusConnect operates a zero-tolerance policy for academic dishonesty, harassment, or Terms of Service violations:
-- **Soft-Delete Any Post**: System admins can see a red **Delete Post** button on the post detail page (`post.php?id=X`). Clicking it sets `deleted_at = CURRENT_TIMESTAMP`, instantly hiding the post from all public and user feeds. (Feed cards have no admin delete button — moderation happens from the detail page.)
+- **Soft-Delete Any Post**: System admins see a red **Delete** button on every post — feed cards, profile/explore/bookmark cards, and the post detail page (`post.php?id=X`). Clicking it sets `deleted_at = CURRENT_TIMESTAMP`, instantly hiding the post from all public and user feeds. The Admin Panel (`admin.php`) also lists recent posts for moderation.
 - **Soft-Delete Any Reply**: Admin accounts possess full privilege to moderate abusive replies on thread detail pages.
 - **Audit Trails**: Soft-deleted records remain intact in the database for legal and academic disciplinary review. Soft-deleted content is never purged by normal application flows.
 
 ### 3.2 User Role Governance
-To upgrade a student to a Society Admin or System Admin (there is no admin console yet — roles are changed by direct SQL):
+To upgrade a student to a Society Admin or System Admin, use the Admin Panel
+(`admin.php`, Users section): find the user, pick the new role from the
+dropdown and click **Update role**. The change takes effect immediately —
+the user's sessions are revoked, so a demotion signs them out at once. You
+cannot change your own role from the panel, and the last system admin cannot
+be demoted.
 
-> **Applies only after the RBAC migration.** The role values `society_admin` / `system_admin` exist only on the `feature/sprint-5-rbac` branch. On main today the role column is `ENUM('student','admin','society')` — use `'society'` / `'admin'` there instead.
+Direct SQL still works as a fallback (e.g. when locked out of the panel):
 
 ```sql
--- Upgrading a verified society account (after the RBAC migration):
-UPDATE users 
-SET role = 'society_admin' 
+-- Upgrading a verified society account:
+UPDATE users
+SET role = 'society_admin'
 WHERE email = 'computing.society@campus.edu.pk';
 
--- Appointing a platform administrator (after the RBAC migration):
-UPDATE users 
-SET role = 'system_admin' 
+-- Appointing a platform administrator:
+UPDATE users
+SET role = 'system_admin'
 WHERE email = 'lead.admin@campus.edu.pk';
 ```
-*Note: on main today a role change takes effect on the user's next login (the session role is not refreshed). After the RBAC merge, the role is refreshed on the next request.*
+*Note: the role column is `ENUM('student','society_admin','system_admin')` since the RBAC merge (PR #11). The old values `'society'` / `'admin'` no longer exist. A role change made by SQL takes effect on the user's next request (the session role is refreshed from the database on every request).*
 
-### 3.3 Database Session & Security Management
+> **Scope note:** `society_admin` is a global role, not tied to one society — there is no `societies` table and no per-society ownership. Any society admin can post announcements. Per-society scoping is a documented limitation (see `docs/sprint-5-srs-increment.md` §5), not a configuration option.
+
+### 3.3 Password Reset (forgot password)
+
+A user who forgets their password cannot recover it themselves — the app sends no email, so there is no mailed reset link. Instead, reset it from the Admin Panel (`admin.php`, Users section): click **Reset password** on the user's row and confirm. A 16-character temporary password is generated and shown to you **exactly once** — copy it and share it with the user directly (WhatsApp, in person); it will not be shown again, and only its Argon2id hash is stored. The user's old password stops working immediately and their sessions are signed out. The user should then change the temporary password from their own profile (Edit Profile → Change password). You cannot reset your own password from the panel — use Change password on your own profile.
+
+### 3.4 Database Session & Security Management
 - Sessions are maintained in the `sessions` table by `DbSessionHandler`.
 - Anti-Fixation & Anti-Hijacking: Sessions are regenerated upon every authentication state change.
 - Automated Garbage Collection: Expired sessions are periodically pruned during `session_start()`. To run a manual purge:
@@ -149,9 +161,9 @@ To populate realistic university test fixtures for accreditation demonstrations 
 mysql -u root -p campusconnect < db/seed.sql
 ```
 This loads the verified demo accounts from `db/seed.sql` (all with password `StrongPass123!`):
-- `admin@nu.edu.pk` — Campus Administrator (System Admin, role `admin`)
-- `society@nu.edu.pk` — ACM NUCES Chapter (Society, role `society`)
-- `ieee@nu.edu.pk` — IEEE Student Branch (Society, role `society`)
+- `admin@nu.edu.pk` — Campus Administrator (System Admin, role `system_admin`)
+- `society@nu.edu.pk` — ACM NUCES Chapter (Society, role `society_admin`)
+- `ieee@nu.edu.pk` — IEEE Student Branch (Society, role `society_admin`)
 - `student@nu.edu.pk` — Ali Ahmed (Student)
 - `zainab@nu.edu.pk` — Zainab Malik (Student)
 - `bilal@nu.edu.pk` — Bilal Khan (Student)

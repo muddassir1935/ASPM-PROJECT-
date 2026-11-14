@@ -18,8 +18,9 @@ Options -Indexes
     RewriteRule ^(config|classes|db|docs|tests|scripts)/ - [F,L]
     # Sensitive file types anywhere (SQLite DB, SQL dumps, markdown)
     RewriteRule \.(sqlite|sqlite3|db|sql|md)$ - [F,L]
-    # benchmark.php is a diagnostic page, not part of the app surface
-    RewriteRule ^benchmark\.php$ - [F,L]
+    # NOTE: benchmark.php is deliberately NOT blocked here anymore — its
+    # web view is a real (admin-only) page now, gated in the file itself
+    # (Sprint 5 final fix, audit item 9).
 </IfModule>
 
 <FilesMatch "\.(sqlite|sqlite3|db|sql|md)$">
@@ -31,16 +32,6 @@ Options -Indexes
         Deny from all
     </IfModule>
 </FilesMatch>
-
-<Files "benchmark.php">
-    <IfModule mod_authz_core.c>
-        Require all denied
-    </IfModule>
-    <IfModule !mod_authz_core.c>
-        Order allow,deny
-        Deny from all
-    </IfModule>
-</Files>
 
 # Never leak stack traces / file paths to the browser (audit M1).
 # Errors still go to the PHP error log. mod_php only; php-fpm setups

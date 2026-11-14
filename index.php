@@ -98,6 +98,10 @@ if ($currentUser) {
             <?php foreach ($feed['posts'] as $feedPost): ?>
                 <?php
                     $isOwnPost = (int)$feedPost['user_id'] === (int)$currentUser['id'];
+                    // Sprint 5 UI polish (M-7): same owner rule as every
+                    // other post card — owner gets Edit + Delete, an
+                    // admin gets Delete on anyone's post.
+                    $canDeleteAny = Auth::can('post.delete_any');
                     $authorInitial = strtoupper(mb_substr(trim($feedPost['author_name']), 0, 1, 'UTF-8'));
                 ?>
                 <?php $feedIsAnnouncement = !empty($feedPost['is_announcement']); ?>
@@ -120,7 +124,9 @@ if ($currentUser) {
                             <span class="spacer"></span>
                             <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$feedPost['id'] ?>"><?= in_array((int)$feedPost['id'], $bookmarkedIds, true) ? 'Saved' : 'Save' ?></button>
                             <?php if ($isOwnPost): ?>
-                                <button type="button" class="btn-text" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)">Edit</button>
+                                <button type="button" class="btn-text" onclick="togglePostEdit(<?= (int)$feedPost['id'] ?>)">Edit</button>
+                            <?php endif; ?>
+                            <?php if ($isOwnPost || $canDeleteAny): ?>
                                 <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" class="inline-form">
                                     <?= Csrf::field() ?>
                                     <input type="hidden" name="action" value="delete">
@@ -131,14 +137,14 @@ if ($currentUser) {
                         </div>
 
                         <?php if ($isOwnPost): ?>
-                            <form id="feed-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" class="edit-form" style="display: none;">
+                            <form id="post-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" class="edit-form" style="display: none;">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                 <textarea name="content" class="form-control" rows="3" maxlength="280" required><?= htmlspecialchars($feedPost['content']) ?></textarea>
                                 <div class="edit-form-actions">
                                     <button type="submit" class="btn-primary">Save Changes</button>
-                                    <button type="button" class="btn-cancel" onclick="toggleFeedEdit(<?= (int)$feedPost['id'] ?>)">Cancel</button>
+                                    <button type="button" class="btn-cancel" onclick="togglePostEdit(<?= (int)$feedPost['id'] ?>)">Cancel</button>
                                 </div>
                             </form>
                         <?php endif; ?>
@@ -162,14 +168,6 @@ if ($currentUser) {
                 </div>
             <?php endif; ?>
 
-            <script>
-                function toggleFeedEdit(postId) {
-                    var form = document.getElementById('feed-edit-' + postId);
-                    if (form) {
-                        form.style.display = (form.style.display === 'none') ? 'block' : 'none';
-                    }
-                }
-            </script>
         <?php endif; ?>
             </div>
 
@@ -178,7 +176,7 @@ if ($currentUser) {
                     <h4 class="widget-title">Search CampusConnect</h4>
                     <form method="GET" action="explore.php" class="search-row">
                         <input class="form-control" type="text" name="q" placeholder="Search people or posts..." aria-label="Search people or posts">
-                        <button type="submit" class="btn-primary">Go</button>
+                        <button type="submit" class="btn-primary">Search</button>
                     </form>
                 </div>
                 <?php renderTrendingHashtagsWidget($db); ?>
@@ -195,7 +193,7 @@ if ($currentUser) {
         </h1>
 
         <p class="hero-sub">
-            Join the ultimate student network. Share updates, discover university events, and stay connected with your campus community in real-time.
+            Join the ultimate student network. Share updates, discover university events, and stay connected with your campus community.
         </p>
 
         <div class="hero-actions">
@@ -211,9 +209,9 @@ if ($currentUser) {
         <div class="features-grid">
             <div class="feature-card">
                 <span class="feature-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10.5v3h2.5L18 19V5L6.5 10.5H4Z"/><path d="M8 14v4.5"/></svg></span>
-                <h4>Real-time Announcements</h4>
+                <h4>Campus Announcements</h4>
                 <p>
-                    Never miss an important update. Get instant announcements from faculty, societies, and administration.
+                    Never miss an important update. See announcements from faculty, societies, and administration right in your feed.
                 </p>
             </div>
 

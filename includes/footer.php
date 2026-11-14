@@ -105,13 +105,68 @@
         }
     });
 
-    // Sprint 3: follower / following modal toggle (profile page).
-    function toggleModal(modalId) {
-        var modal = document.getElementById(modalId);
-        if (modal) {
-            modal.classList.toggle('open');
+    // Sprint 5 final fix (security M5): double-clicking Post/Reply submitted
+    // the form twice and created duplicates (AJAX toggles disable
+    // themselves; plain forms did not). Disable the submit button on first
+    // submit — the page navigates away, so no re-enable path is needed.
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (form.id !== 'compose-form' && form.id !== 'reply-form') { return; }
+        var btn = form.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = true; }
+    });
+
+    // Sprint 5 UI polish (M-15): a "Following" button states a fact, so on
+    // hover it flips to the action it performs — "Unfollow" — matching the
+    // red hover tint from CSS. The click handler above still owns the label
+    // after a toggle; hover only swaps it while the pointer is over the
+    // button. relatedTarget guards against flicker on child boundaries.
+    document.addEventListener('mouseover', function (event) {
+        var btn = event.target.closest ? event.target.closest('.btn-follow.following') : null;
+        if (btn && !btn.contains(event.relatedTarget)) { btn.textContent = 'Unfollow'; }
+    });
+    document.addEventListener('mouseout', function (event) {
+        var btn = event.target.closest ? event.target.closest('.btn-follow.following') : null;
+        if (btn && !btn.contains(event.relatedTarget)) { btn.textContent = 'Following'; }
+    });
+
+    // Sprint 5 UI polish (M-7): one inline-edit toggle for every post
+    // card (feed, profile, explore, bookmarks share it now).
+    function togglePostEdit(postId) {
+        var form = document.getElementById('post-edit-' + postId);
+        if (form) {
+            form.style.display = (form.style.display === 'none') ? 'block' : 'none';
         }
     }
+
+    // Sprint 3: follower / following modal toggle (profile page).
+    // Sprint 5 UI polish (M-8): Escape closes any open modal and
+    // returns focus to the element that opened it (verified live twice
+    // that the followers modal stayed open after Escape before this).
+    var modalOpener = null;
+    function toggleModal(modalId) {
+        var modal = document.getElementById(modalId);
+        if (!modal) { return; }
+        var willOpen = !modal.classList.contains('open');
+        if (willOpen) {
+            modalOpener = document.activeElement;
+        }
+        modal.classList.toggle('open');
+        if (!willOpen && modalOpener && modalOpener.focus) {
+            modalOpener.focus();
+            modalOpener = null;
+        }
+    }
+    document.addEventListener('keydown', function (event) {
+        if (event.key !== 'Escape') { return; }
+        var openModals = document.querySelectorAll('.modal-overlay.open');
+        if (openModals.length === 0) { return; }
+        openModals.forEach(function (m) { m.classList.remove('open'); });
+        if (modalOpener && modalOpener.focus) {
+            modalOpener.focus();
+            modalOpener = null;
+        }
+    });
 </script>
 
 </body>
