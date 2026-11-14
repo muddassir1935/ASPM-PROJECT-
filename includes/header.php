@@ -298,7 +298,7 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .nav-inner {
-            max-width: 1265px;
+            max-width: 1480px;
             margin: 0 auto;
             padding: 7px 16px;
             min-height: 52px;
@@ -356,20 +356,39 @@ if (!function_exists('brandMarkSvg')) {
         .nav-menu {
             display: flex;
             align-items: center;
-            gap: 4px;
+            gap: 6px;
             list-style: none;
             flex-wrap: wrap;
             justify-content: flex-end;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav-menu > li {
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .nav-menu .inline-form {
+            display: inline-flex;
+            align-items: center;
+            margin: 0;
         }
 
         .nav-link {
             text-decoration: none;
             color: var(--ink);
             font-weight: 500;
-            font-size: 0.97rem;
-            padding: 8px 14px;
+            font-size: 0.92rem;
+            padding: 0 12px;
+            height: 36px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 999px;
-            transition: background-color var(--ease);
+            transition: background-color var(--ease), color var(--ease);
+            box-sizing: border-box;
+            line-height: 1;
         }
 
         .nav-link:hover {
@@ -378,23 +397,32 @@ if (!function_exists('brandMarkSvg')) {
 
         .nav-link-logout {
             color: var(--muted);
+            background: none;
+            border: none;
+            font: inherit;
+            cursor: pointer;
         }
 
         .nav-link-logout:hover {
-            color: var(--ink);
+            color: var(--danger, #DC2626);
             background-color: var(--wash);
         }
 
         .btn-nav-primary {
             background-color: var(--accent);
             color: #FFFFFF !important;
-            padding: 8px 18px;
+            padding: 0 18px;
+            height: 36px;
             border-radius: 999px;
             font-weight: 700;
             font-size: 0.93rem;
             text-decoration: none;
-            display: inline-block;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
             transition: background-color var(--ease);
+            box-sizing: border-box;
+            line-height: 1;
         }
 
         .btn-nav-primary:hover {
@@ -402,36 +430,44 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .user-tag {
-            font-size: 0.9rem;
+            font-size: 0.92rem;
             font-weight: 600;
             color: var(--ink);
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
-            padding: 5px 10px 5px 6px;
+            height: 36px;
+            padding: 0 12px 0 4px;
             border-radius: 999px;
             margin: 0 2px;
+            box-sizing: border-box;
+            line-height: 1;
         }
 
         .user-tag:hover {
             background-color: var(--wash);
         }
 
+        .user-name {
+            display: inline-flex;
+            align-items: center;
+            line-height: 1;
+        }
+
         .user-role {
-            color: var(--muted);
-            font-weight: 400;
+            display: none;
         }
 
         /* ---------- Page frame ---------- */
         .page-content {
             flex: 1;
-            max-width: 1265px;
+            max-width: 1480px;
             width: 100%;
             margin: 0 auto;
         }
 
         .narrow-wrap {
-            max-width: 600px;
+            max-width: 760px;
             margin: 0 auto;
             border-left: 1px solid var(--line);
             border-right: 1px solid var(--line);
@@ -1085,7 +1121,7 @@ if (!function_exists('brandMarkSvg')) {
         /* ---------- 3-column layout: rails split by hairlines ---------- */
         .layout-3col {
             display: grid;
-            grid-template-columns: 260px minmax(0, 600px) minmax(0, 350px);
+            grid-template-columns: 260px minmax(0, 1fr) 350px;
             justify-content: center;
             align-items: start;
         }
@@ -1096,7 +1132,9 @@ if (!function_exists('brandMarkSvg')) {
             gap: 6px;
             position: sticky;
             top: 52px;
+            height: calc(100vh - 52px);
             padding: 12px 14px 20px;
+            box-sizing: border-box;
         }
 
         .nav-col-link {
@@ -1132,10 +1170,11 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .nav-user-dock {
-            margin-top: 24px;
+            margin-top: auto;
             padding-top: 14px;
             border-top: 1px solid var(--line);
             width: 100%;
+            position: relative;
         }
 
         .nav-user-pill {
@@ -1146,11 +1185,17 @@ if (!function_exists('brandMarkSvg')) {
             border-radius: 9999px;
             text-decoration: none;
             color: var(--ink);
-            transition: background-color var(--ease);
+            transition: background-color var(--ease), box-shadow var(--ease);
             width: 100%;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
         }
 
-        .nav-user-pill:hover {
+        .nav-user-pill:hover,
+        .nav-user-pill[aria-expanded="true"] {
             background: var(--bg-surface-hover);
         }
 
@@ -1183,6 +1228,107 @@ if (!function_exists('brandMarkSvg')) {
             height: 18px;
             color: var(--muted);
             flex-shrink: 0;
+        }
+
+        /* Nav User Dropdown Menu (X/Twitter style popover above the dock) */
+        .nav-user-dropdown {
+            position: absolute;
+            bottom: calc(100% + 10px);
+            left: 0;
+            width: 270px;
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+            padding: 8px;
+            z-index: 100;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            animation: navUserDropdownFadeIn 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        [data-theme="light"] .nav-user-dropdown {
+            box-shadow: 0 14px 36px rgba(15, 23, 42, 0.15);
+        }
+
+        @keyframes navUserDropdownFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(6px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .nav-user-dropdown-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px 12px;
+            border-bottom: 1px solid var(--line);
+            margin-bottom: 4px;
+        }
+
+        .nav-user-dropdown-header .nav-user-name {
+            font-size: 0.96rem;
+            font-weight: 700;
+            color: var(--ink);
+            line-height: 1.3;
+        }
+
+        .nav-user-dropdown-header .nav-user-handle {
+            font-size: 0.82rem;
+            color: var(--muted);
+            line-height: 1.2;
+        }
+
+        .nav-user-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: var(--ink);
+            font-size: 0.92rem;
+            font-weight: 600;
+            transition: background-color var(--ease), color var(--ease);
+            background: transparent;
+            border: none;
+            width: 100%;
+            text-align: left;
+            cursor: pointer;
+            font-family: inherit;
+            box-sizing: border-box;
+        }
+
+        .nav-user-dropdown-item:hover {
+            background: var(--bg-surface-hover);
+            color: var(--accent);
+        }
+
+        .nav-user-dropdown-item svg {
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+
+        .nav-user-dropdown-divider {
+            height: 1px;
+            background: var(--line);
+            margin: 4px 0;
+        }
+
+        .nav-user-dropdown-item.item-danger {
+            color: var(--danger-text);
+        }
+
+        .nav-user-dropdown-item.item-danger:hover {
+            background: var(--danger-tint);
+            color: var(--danger-text);
         }
 
         .col-main {
@@ -3026,9 +3172,122 @@ if (!function_exists('brandMarkSvg')) {
             color: var(--ink);
         }
 
+        /* ---------- In-App Confirmation Dialog (Replaces native browser confirm) ---------- */
+        .confirm-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.70);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        [data-theme="light"] .confirm-modal-overlay {
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .confirm-modal-overlay.open {
+            display: flex;
+        }
+
+        .confirm-dialog-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 340px;
+            padding: 26px 24px;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
+            text-align: left;
+            animation: confirmPop 0.18s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        @keyframes confirmPop {
+            from {
+                opacity: 0;
+                transform: scale(0.94);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .confirm-dialog-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin: 0 0 8px 0;
+            font-family: var(--font-display);
+            letter-spacing: -0.02em;
+        }
+
+        .confirm-dialog-desc {
+            font-size: 0.92rem;
+            line-height: 1.45;
+            color: var(--muted);
+            margin: 0 0 24px 0;
+        }
+
+        .confirm-dialog-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .confirm-btn-danger {
+            width: 100%;
+            height: 44px;
+            background: #F4212E;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 9999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, transform 0.1s ease;
+        }
+
+        .confirm-btn-danger:hover {
+            background: #DC1E29;
+            transform: translateY(-1px);
+        }
+
+        .confirm-btn-danger:active {
+            transform: translateY(0);
+        }
+
+        .confirm-btn-cancel {
+            width: 100%;
+            height: 44px;
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid var(--line);
+            border-radius: 9999px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .confirm-btn-cancel:hover {
+            background: var(--wash);
+            border-color: var(--border-strong);
+        }
+
         /* ---------- Public Landing View (The Iconic X / Twitter Standard) ---------- */
         .x-landing-shell {
-            max-width: 1280px;
+            max-width: 1480px;
             margin: 0 auto;
             min-height: calc(100vh - 53px - 60px);
             display: flex;
@@ -3036,6 +3295,77 @@ if (!function_exists('brandMarkSvg')) {
             justify-content: space-between;
             padding: 2rem 2.5rem;
             gap: 4rem;
+        }
+
+        /* Option 1: Full-Bleed Campus Hero with Atmospheric Gradient Overlay */
+        .x-landing-backdrop {
+            position: relative;
+            width: 100vw;
+            margin-left: calc(-50vw + 50%);
+            margin-right: calc(-50vw + 50%);
+            min-height: calc(100vh - 53px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-sizing: border-box;
+        }
+
+        .x-landing-bg {
+            position: absolute;
+            inset: 0;
+            background-size: cover;
+            background-position: center 38%;
+            background-repeat: no-repeat;
+            transform: scale(1.02);
+            filter: brightness(0.92);
+            z-index: 1;
+        }
+
+        .x-landing-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                105deg,
+                rgba(15, 23, 42, 0.90) 0%,
+                rgba(15, 23, 42, 0.74) 48%,
+                rgba(15, 23, 42, 0.92) 100%
+            );
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            z-index: 2;
+        }
+
+        [data-theme="light"] .x-landing-bg {
+            filter: brightness(1.0) contrast(1.06) saturate(1.10);
+        }
+
+        [data-theme="light"] .x-landing-overlay {
+            background: linear-gradient(
+                90deg,
+                rgba(255, 255, 255, 0) 0%,
+                rgba(255, 255, 255, 0.05) 35%,
+                rgba(255, 255, 255, 0.35) 58%,
+                rgba(255, 255, 255, 0.65) 80%,
+                rgba(255, 255, 255, 0.72) 100%
+            );
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+        }
+
+        .x-landing-inner {
+            position: relative;
+            z-index: 3;
+            max-width: 1480px;
+            width: 100%;
+            margin: 0 auto;
+            min-height: calc(100vh - 53px - 60px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 2.5rem 2.5rem;
+            gap: 4rem;
+            box-sizing: border-box;
         }
 
         .x-landing-left {
@@ -3214,20 +3544,64 @@ if (!function_exists('brandMarkSvg')) {
             justify-content: center;
             width: 100%;
             height: 44px;
-            background: transparent;
+            background: rgba(255, 255, 255, 0.95);
             color: var(--accent);
-            border: 1px solid var(--border-strong);
+            border: 1.5px solid var(--accent);
             border-radius: 9999px;
             font-size: 0.95rem;
             font-weight: 700;
             text-decoration: none;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             transition: all var(--ease);
         }
 
         .x-btn-signin:hover {
-            background: var(--accent-tint);
+            background: var(--accent);
+            color: #FFFFFF;
             border-color: var(--accent);
             transform: translateY(-1px);
+            box-shadow: 0 6px 18px var(--accent-ring);
+        }
+
+        [data-theme="dark"] .x-btn-signin {
+            background: rgba(15, 23, 42, 0.85);
+            color: var(--accent);
+            border: 1.5px solid var(--accent);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+        }
+
+        [data-theme="dark"] .x-btn-signin:hover {
+            background: var(--accent);
+            color: #0F172A;
+            border-color: var(--accent);
+        }
+
+        [data-theme="light"] .x-hero-headline {
+            color: #0F172A;
+            text-shadow: 0 1px 3px rgba(255, 255, 255, 0.85), 0 0 20px rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="light"] .x-hero-subhead {
+            color: #0F172A;
+            text-shadow: 0 1px 3px rgba(255, 255, 255, 0.85), 0 0 16px rgba(255, 255, 255, 0.8);
+        }
+
+        [data-theme="light"] .x-signin-prompt {
+            color: #0F172A;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+        }
+
+        [data-theme="light"] .x-disclaimer {
+            color: #1E293B;
+            font-weight: 500;
+            text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+        }
+
+        [data-theme="light"] .x-disclaimer a {
+            color: #1D4ED8;
+            font-weight: 700;
         }
 
         .x-trending-strip {
@@ -3286,6 +3660,11 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         @media (max-width: 900px) {
+            .x-landing-backdrop {
+                min-height: auto;
+            }
+
+            .x-landing-inner,
             .x-landing-shell {
                 flex-direction: column;
                 align-items: flex-start;
@@ -3296,13 +3675,15 @@ if (!function_exists('brandMarkSvg')) {
 
             .x-landing-left {
                 justify-content: flex-start;
+                align-items: flex-start;
                 padding: 0;
+                width: 100%;
             }
 
             .x-brand-architect {
-                width: 58px;
-                height: 58px;
-                margin-bottom: 0.5rem;
+                width: 68px;
+                height: 68px;
+                margin-bottom: 0.25rem;
             }
 
             .x-logo-shine-layer {
@@ -3328,6 +3709,16 @@ if (!function_exists('brandMarkSvg')) {
             .x-trending-strip {
                 max-width: 100%;
             }
+
+            [data-theme="light"] .x-landing-overlay {
+                background: linear-gradient(
+                    180deg,
+                    rgba(255, 255, 255, 0) 0%,
+                    rgba(255, 255, 255, 0.15) 160px,
+                    rgba(255, 255, 255, 0.65) 320px,
+                    rgba(255, 255, 255, 0.72) 100%
+                );
+            }
         }
 
         /* ---------- Footer ---------- */
@@ -3348,11 +3739,11 @@ if (!function_exists('brandMarkSvg')) {
 
         /* ---------- Responsive ---------- */
         /* Sprint 5 UI polish (M-19): with the right rail hidden the
-           main column grows to fill the freed space (600px -> 680px)
+           main column grows to fill the freed space
            instead of leaving dead white space beside the feed. */
         @media (max-width: 1080px) {
             .layout-3col {
-                grid-template-columns: 76px minmax(0, 680px);
+                grid-template-columns: 76px minmax(0, 1fr);
             }
             .col-side {
                 display: none;
@@ -3372,6 +3763,21 @@ if (!function_exists('brandMarkSvg')) {
                 width: 26px;
                 height: 26px;
             }
+            .nav-user-details,
+            .nav-user-dots {
+                display: none;
+            }
+            .nav-user-pill {
+                justify-content: center;
+                padding: 8px;
+                width: 44px;
+                height: 44px;
+                margin: 0 auto;
+            }
+            .nav-user-dropdown {
+                left: 0;
+                width: 260px;
+            }
         }
 
         @media (max-width: 720px) {
@@ -3379,6 +3785,7 @@ if (!function_exists('brandMarkSvg')) {
                 grid-template-columns: 1fr;
             }
             .col-nav {
+                height: auto;
                 flex-direction: row;
                 justify-content: space-around;
                 position: sticky;
@@ -3389,6 +3796,28 @@ if (!function_exists('brandMarkSvg')) {
                 -webkit-backdrop-filter: blur(12px);
                 border-bottom: 1px solid var(--line);
                 padding: 4px 8px;
+            }
+            .nav-user-dock {
+                margin-top: 0;
+                padding-top: 0;
+                border-top: none;
+                width: auto;
+            }
+            .nav-user-details,
+            .nav-user-dots {
+                display: none;
+            }
+            .nav-user-pill {
+                padding: 6px;
+                width: auto;
+                height: auto;
+            }
+            .nav-user-dropdown {
+                top: calc(100% + 8px);
+                bottom: auto;
+                right: 8px;
+                left: auto;
+                width: 260px;
             }
             .nav-col-active {
                 color: var(--accent);
@@ -3749,7 +4178,7 @@ if (!function_exists('brandMarkSvg')) {
                 <li>
                     <span class="user-tag">
                         <span class="avatar-xs<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
-                        <?= htmlspecialchars($currentUser['name']) ?> <span class="user-role">(<?= htmlspecialchars(class_exists('Authorization') ? Authorization::displayLabel($currentUser['role'] ?? '') : ($currentUser['role'] ?? '')) ?>)</span>
+                        <span class="user-name"><?= htmlspecialchars($currentUser['name']) ?></span>
                     </span>
                 </li>
                 <?php if (class_exists('Auth') && Auth::can('user.manage')): ?>
