@@ -113,7 +113,40 @@ if ($currentUser) {
                         <?php endif; ?>
                         <div class="post-card-head">
                             <a class="post-card-author" href="profile.php?id=<?= (int)$feedPost['user_id'] ?>"><?= htmlspecialchars($feedPost['author_name']) ?></a>
+                            <?php
+                                $feedEmail = $feedPost['author_email'] ?? '';
+                                if ($feedEmail) {
+                                    $feedHandle = explode('@', $feedEmail)[0];
+                                    echo '<span class="post-card-handle">@' . htmlspecialchars($feedHandle) . '</span>';
+                                }
+                            ?>
                             <span class="post-card-time">&middot; <?= htmlspecialchars($feedPost['time_ago']) ?></span>
+                            <?php if ($isOwnPost || $canDeleteAny): ?>
+                                <div class="post-menu-wrap">
+                                    <button type="button" class="post-menu-btn" data-post-menu-toggle="<?= (int)$feedPost['id'] ?>" aria-label="More options">
+                                        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+                                    </button>
+                                    <div id="post-menu-<?= (int)$feedPost['id'] ?>" class="post-dropdown-menu" style="display:none;">
+                                        <?php if ($isOwnPost): ?>
+                                            <button type="button" class="post-dropdown-item" onclick="togglePostEdit(<?= (int)$feedPost['id'] ?>); closeAllPostMenus();">
+                                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                                                Edit Post
+                                            </button>
+                                        <?php endif; ?>
+                                        <?php if ($isOwnPost || $canDeleteAny): ?>
+                                            <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" style="margin:0;">
+                                                <?= Csrf::field() ?>
+                                                <input type="hidden" name="action" value="delete">
+                                                <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
+                                                <button type="submit" class="post-dropdown-item item-danger">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                                    Delete Post
+                                                </button>
+                                            </form>
+                                        <?php endif; ?>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <p class="post-card-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($feedPost['content'])) ?></p>
@@ -123,17 +156,6 @@ if ($currentUser) {
                             <button type="button" class="action-like <?= !empty($feedPost['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$feedPost['id'] ?>" aria-label="Like post"><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($feedPost['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($feedPost['like_count'] ?? 0) ?></span></button>
                             <span class="spacer"></span>
                             <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$feedPost['id'] ?>"><?= in_array((int)$feedPost['id'], $bookmarkedIds, true) ? 'Saved' : 'Save' ?></button>
-                            <?php if ($isOwnPost): ?>
-                                <button type="button" class="btn-text" onclick="togglePostEdit(<?= (int)$feedPost['id'] ?>)">Edit</button>
-                            <?php endif; ?>
-                            <?php if ($isOwnPost || $canDeleteAny): ?>
-                                <form method="POST" action="post_action.php" onsubmit="return confirm('Delete this post? This cannot be undone.');" class="inline-form">
-                                    <?= Csrf::field() ?>
-                                    <input type="hidden" name="action" value="delete">
-                                    <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
-                                    <button type="submit" class="btn-text btn-text-danger">Delete</button>
-                                </form>
-                            <?php endif; ?>
                         </div>
 
                         <?php if ($isOwnPost): ?>
@@ -172,11 +194,10 @@ if ($currentUser) {
             </div>
 
             <div class="col-side">
-                <div class="widget">
-                    <h4 class="widget-title">Search CampusConnect</h4>
-                    <form method="GET" action="explore.php" class="search-row">
-                        <input class="form-control" type="text" name="q" placeholder="Search people or posts..." aria-label="Search people or posts">
-                        <button type="submit" class="btn-primary">Search</button>
+                <div class="search-pill-wrap">
+                    <svg class="search-pill-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+                    <form method="GET" action="explore.php" style="flex: 1; margin: 0;">
+                        <input class="search-pill-input" type="text" name="q" placeholder="Search CampusConnect..." aria-label="Search people or posts">
                     </form>
                 </div>
                 <?php renderTrendingHashtagsWidget($db); ?>

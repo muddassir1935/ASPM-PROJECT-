@@ -26,6 +26,24 @@
             return;
         }
 
+        // Post Card 3-Dots Dropdown Menu Toggle
+        var menuBtn = event.target.closest('[data-post-menu-toggle]');
+        if (menuBtn) {
+            event.preventDefault();
+            event.stopPropagation();
+            var pid = menuBtn.getAttribute('data-post-menu-toggle');
+            var pmenu = document.getElementById('post-menu-' + pid);
+            var wasClosed = !pmenu || pmenu.style.display === 'none';
+            closeAllPostMenus();
+            if (pmenu && wasClosed) {
+                pmenu.style.display = 'flex';
+            }
+            return;
+        }
+        if (!event.target.closest('.post-dropdown-menu')) {
+            closeAllPostMenus();
+        }
+
         var followBtn = event.target.closest('[data-follow-toggle]');
         if (followBtn) {
             event.preventDefault();
@@ -138,6 +156,13 @@
         var btn = event.target.closest ? event.target.closest('.btn-follow.following') : null;
         if (btn && !btn.contains(event.relatedTarget)) { btn.textContent = 'Following'; }
     });
+
+    // Post card 3-dots menu dismissal
+    function closeAllPostMenus() {
+        document.querySelectorAll('.post-dropdown-menu').forEach(function (m) {
+            m.style.display = 'none';
+        });
+    }
 
     // Sprint 5 UI polish (M-7): one inline-edit toggle for every post
     // card (feed, profile, explore, bookmarks share it now).

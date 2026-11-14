@@ -989,40 +989,123 @@ if (!function_exists('brandMarkSvg')) {
         .col-nav {
             display: flex;
             flex-direction: column;
-            gap: 2px;
+            gap: 4px;
             position: sticky;
             top: 52px;
-            padding: 10px 14px;
+            height: calc(100vh - 52px);
+            padding: 12px 14px 20px;
         }
 
         .nav-col-link {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            gap: 18px;
+            gap: 16px;
             text-decoration: none;
             color: var(--ink);
-            font-weight: 400;
+            font-weight: 500;
             font-size: 1.2rem;
-            padding: 11px 14px;
-            border-radius: 999px;
-            transition: background-color var(--ease);
+            padding: 11px 18px 11px 14px;
+            border-radius: 9999px;
+            transition: background-color var(--ease), color var(--ease);
             align-self: flex-start;
         }
 
         .nav-col-link svg {
-            width: 25px;
-            height: 25px;
+            width: 26px;
+            height: 26px;
             flex-shrink: 0;
-            stroke-width: 1.95;
+            stroke-width: 2;
         }
 
         .nav-col-link:hover {
-            background-color: var(--wash);
+            background-color: var(--bg-surface-hover);
+            color: var(--ink);
         }
 
-        /* Active page is weight, not a filled box */
+        /* Active page */
         .nav-col-active {
             font-weight: 800;
+            color: var(--ink);
+        }
+
+        .btn-left-post {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--accent);
+            color: #FFFFFF !important;
+            text-decoration: none;
+            font-size: 1.05rem;
+            font-weight: 800;
+            padding: 13px 20px;
+            border-radius: 9999px;
+            margin-top: 14px;
+            width: 88%;
+            box-shadow: 0 4px 14px rgba(29, 155, 240, 0.3);
+            transition: background-color var(--ease), transform 120ms ease, box-shadow var(--ease);
+        }
+
+        .btn-left-post:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(29, 155, 240, 0.4);
+        }
+
+        .btn-left-post:active {
+            transform: translateY(1px);
+        }
+
+        .nav-user-dock {
+            margin-top: auto;
+            padding-top: 1.5rem;
+            width: 100%;
+        }
+
+        .nav-user-pill {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 9999px;
+            text-decoration: none;
+            color: var(--ink);
+            transition: background-color var(--ease);
+            width: 100%;
+        }
+
+        .nav-user-pill:hover {
+            background: var(--bg-surface-hover);
+        }
+
+        .nav-user-details {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .nav-user-name {
+            font-size: 0.92rem;
+            font-weight: 700;
+            color: var(--ink);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-user-handle {
+            font-size: 0.8rem;
+            color: var(--muted);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .nav-user-dots {
+            width: 18px;
+            height: 18px;
+            color: var(--muted);
+            flex-shrink: 0;
         }
 
         .col-main {
@@ -1035,47 +1118,98 @@ if (!function_exists('brandMarkSvg')) {
         .col-side {
             position: sticky;
             top: 52px;
-            padding: 8px 0 2rem 28px;
+            padding: 12px 0 2rem 24px;
             max-height: calc(100vh - 52px);
             overflow-y: auto;
         }
 
-        /* ---------- Right-rail widgets: borderless sections ---------- */
+        /* Search Pill Container */
+        .search-pill-wrap {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 9999px;
+            padding: 10px 18px;
+            margin-bottom: 16px;
+            transition: background-color var(--ease), border-color var(--ease), box-shadow var(--ease);
+        }
+
+        .search-pill-wrap:focus-within {
+            background: var(--bg-base);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+
+        .search-pill-icon {
+            width: 18px;
+            height: 18px;
+            color: var(--muted);
+            flex-shrink: 0;
+        }
+
+        .search-pill-wrap:focus-within .search-pill-icon {
+            color: var(--accent);
+        }
+
+        .search-pill-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--ink);
+            font-size: 0.95rem;
+            width: 100%;
+        }
+
+        .search-pill-input::placeholder {
+            color: var(--muted);
+        }
+
+        /* ---------- Right-rail widgets: elevated cards ---------- */
         .widget {
-            padding: 14px 0 10px;
-            border-top: 1px solid var(--line);
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            overflow: hidden;
         }
 
         .col-side .widget:first-child {
-            border-top: none;
-            padding-top: 6px;
+            padding-top: 14px;
         }
 
         .widget-title {
-            font-size: 1.02rem;
-            font-weight: 700;
-            padding: 0 16px;
+            font-size: 1.15rem;
+            font-weight: 800;
+            letter-spacing: -0.01em;
+            color: var(--ink);
+            padding: 0 0 8px 0;
             margin-bottom: 4px;
         }
 
         .widget-empty {
             font-size: 0.88rem;
             color: var(--muted);
-            padding: 6px 16px 4px;
+            padding: 4px 0 8px;
         }
 
         .widget-more {
-            display: inline-block;
-            margin: 6px 16px 2px;
+            display: block;
+            margin: 8px -16px -14px;
+            padding: 12px 16px;
             color: var(--accent);
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
             font-size: 0.9rem;
+            border-top: 1px solid var(--line);
+            transition: background var(--ease);
         }
 
         .widget-more:hover {
-            text-decoration: underline;
-            text-underline-offset: 3px;
+            background: var(--bg-surface-hover);
+            text-decoration: none;
         }
 
         .widget .search-row {
@@ -1088,14 +1222,13 @@ if (!function_exists('brandMarkSvg')) {
             align-items: center;
             justify-content: space-between;
             gap: 10px;
-            padding: 9px 8px;
-            margin: 0 8px;
-            border-radius: 12px;
+            padding: 10px 16px;
+            margin: 0 -16px;
             transition: background-color var(--ease);
         }
 
         .user-row:hover {
-            background-color: var(--wash);
+            background-color: var(--bg-surface-hover);
         }
 
         .modal-box .user-row, .list-card .user-row {
@@ -1214,9 +1347,10 @@ if (!function_exists('brandMarkSvg')) {
 
         .post-card-head {
             display: flex;
-            align-items: baseline;
-            gap: 5px;
+            align-items: center;
+            gap: 6px;
             min-width: 0;
+            position: relative;
         }
 
         .post-card-author {
@@ -1234,11 +1368,100 @@ if (!function_exists('brandMarkSvg')) {
             text-underline-offset: 2px;
         }
 
+        .post-card-handle {
+            color: var(--muted);
+            font-size: 0.88rem;
+            font-weight: 400;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .post-card-time {
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             color: var(--muted);
             white-space: nowrap;
             font-variant-numeric: tabular-nums;
+        }
+
+        .post-menu-wrap {
+            margin-left: auto;
+            position: relative;
+        }
+
+        .post-menu-btn {
+            background: transparent;
+            border: none;
+            color: var(--muted);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: color var(--ease), background-color var(--ease);
+        }
+
+        .post-menu-btn:hover {
+            color: var(--accent);
+            background-color: var(--accent-tint);
+        }
+
+        .post-menu-btn svg {
+            width: 17px;
+            height: 17px;
+        }
+
+        .post-dropdown-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            z-index: 60;
+            min-width: 160px;
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            box-shadow: var(--modal-shadow);
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .post-dropdown-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: none;
+            background: transparent;
+            color: var(--ink);
+            font-size: 0.88rem;
+            font-weight: 600;
+            text-align: left;
+            cursor: pointer;
+            transition: background-color var(--ease);
+        }
+
+        .post-dropdown-item:hover {
+            background: var(--bg-surface-hover);
+        }
+
+        .post-dropdown-item svg {
+            width: 15px;
+            height: 15px;
+            flex-shrink: 0;
+        }
+
+        .post-dropdown-item.item-danger {
+            color: var(--danger-text);
+        }
+
+        .post-dropdown-item.item-danger:hover {
+            background: var(--danger-tint);
         }
 
         .post-card-content {
@@ -1371,31 +1594,39 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .trending-row {
-            margin-bottom: 8px;
+            margin: 0 -16px;
         }
 
         .trending-link {
             display: flex;
             flex-direction: column;
             text-decoration: none;
-            padding: 6px 8px;
-            border-radius: var(--radius-sm);
+            padding: 9px 16px;
             transition: background var(--ease);
         }
 
         .trending-link:hover {
-            background: var(--surface-hover);
+            background: var(--bg-surface-hover);
+        }
+
+        .trending-sub {
+            font-size: 0.76rem;
+            font-weight: 500;
+            color: var(--muted);
+            letter-spacing: 0.01em;
+            margin-bottom: 2px;
         }
 
         .trending-tag {
-            font-size: 0.92rem;
-            font-weight: 600;
-            color: var(--text);
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--ink);
         }
 
         .trending-count {
-            font-size: 0.78rem;
+            font-size: 0.8rem;
             color: var(--muted);
+            margin-top: 2px;
         }
 
         /* Sprint 5: Notifications Center & Header Bell (WBS 5.x) */
