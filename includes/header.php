@@ -106,41 +106,46 @@ if (!function_exists('brandMarkSvg')) {
            feed itself stays quiet.
            ============================================================ */
         :root {
-            /* Palette — one accent, everything else is ink and grey */
-            --ink: #0F1419;
-            --ink-soft: #2E3A42;
-            --muted: #536471;
-            --faint: #8696A3;
-            --accent: #2B3FE0;
-            --accent-hover: #2233B8;
-            --accent-tint: #ECEEFE;
-            --accent-ring: rgba(43, 63, 224, 0.16);
-            --line: #E7E9EE;
-            --border-strong: #CFD9DE;
-            --wash: #F7F9FA;
-            --field-bg: #EFF3F4;
-            --danger: #D92D20;
-            --danger-text: #B3261E;
-            --danger-tint: #FDECEA;
-            --danger-border: #F2C4C0;
-            --success: #177245;
-            --success-tint: #E9F6EE;
-            --success-border: #BFE3CE;
+            /* Palette — X/Twitter multi-shade depth hierarchy */
+            --bg-base: #000000;
+            --bg-surface: #16181C;
+            --bg-surface-hover: #1D1F23;
+            --bg-input: #202327;
 
-            /* Brand signature — ink-to-cobalt duotone with a faint node
-               grid (echoes the logo mark). Used in exactly two places:
-               the auth brand panel and the profile cover. Nowhere else. */
-            --brand-grad: linear-gradient(150deg, #0F1419 0%, #1A2358 52%, #2B3FE0 138%);
-            --brand-dots: radial-gradient(rgba(255, 255, 255, 0.13) 1.2px, transparent 1.9px);
+            --ink: #E7E9EA;
+            --ink-soft: #D1D5DB;
+            --muted: #71767B;
+            --faint: #536471;
 
-            /* Cover style variants (profile cover picker) — the same
-               duotone language as the signature, in other colour
-               stories. Users pick one in Edit Profile. */
-            --cover-cobalt: linear-gradient(150deg, #0A1A4A 0%, #172B7A 52%, #2B3FE0 138%);
-            --cover-teal: linear-gradient(150deg, #03211F 0%, #0A5C50 54%, #15935F 140%);
-            --cover-sunset: linear-gradient(150deg, #33203F 0%, #8A4A63 54%, #D97E4A 142%);
-            --cover-violet: linear-gradient(150deg, #181344 0%, #46309C 54%, #7B4BC4 140%);
-            --cover-graphite: linear-gradient(150deg, #090C0F 0%, #2E3A42 55%, #5F7280 145%);
+            --accent: #1D9BF0;
+            --accent-hover: #1A8CD8;
+            --accent-tint: rgba(29, 155, 240, 0.12);
+            --accent-ring: rgba(29, 155, 240, 0.35);
+
+            --line: #2F3336;
+            --border-strong: #38444D;
+            --wash: #16181C;
+            --field-bg: #202327;
+
+            --danger: #F4212E;
+            --danger-text: #F4212E;
+            --danger-tint: rgba(244, 33, 46, 0.12);
+            --danger-border: rgba(244, 33, 46, 0.3);
+
+            --success: #00BA7C;
+            --success-tint: rgba(0, 186, 124, 0.12);
+            --success-border: rgba(0, 186, 124, 0.3);
+
+            /* Brand signature — deep obsidian-to-cobalt */
+            --brand-grad: linear-gradient(150deg, #090B0E 0%, #0F172A 52%, #1D4ED8 138%);
+            --brand-dots: radial-gradient(rgba(255, 255, 255, 0.15) 1.2px, transparent 1.9px);
+
+            /* Cover style variants (profile cover picker) — high-contrast dark tones */
+            --cover-cobalt: linear-gradient(150deg, #081229 0%, #0F275A 52%, #1D9BF0 138%);
+            --cover-teal: linear-gradient(150deg, #031D1B 0%, #064E3B 54%, #059669 140%);
+            --cover-sunset: linear-gradient(150deg, #2A1726 0%, #701A4E 54%, #EA580C 142%);
+            --cover-violet: linear-gradient(150deg, #130E2E 0%, #3B1B7D 54%, #7C3AED 140%);
+            --cover-graphite: linear-gradient(150deg, #050709 0%, #16181C 55%, #38444D 145%);
 
             /* Type — Public Sans for body/UI, Bricolage Grotesque for
                display moments (brand, hero, page titles). Inter stays
@@ -159,7 +164,7 @@ if (!function_exists('brandMarkSvg')) {
 
         body {
             font-family: var(--font);
-            background-color: #FFFFFF;
+            background-color: var(--bg-base);
             color: var(--ink);
             min-height: 100vh;
             display: flex;
@@ -209,7 +214,7 @@ if (!function_exists('brandMarkSvg')) {
 
         /* ---------- Top bar ---------- */
         .navbar {
-            background: rgba(255, 255, 255, 0.92);
+            background: rgba(0, 0, 0, 0.82);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border-bottom: 1px solid var(--line);
@@ -375,7 +380,7 @@ if (!function_exists('brandMarkSvg')) {
             border-bottom: 1px solid var(--line);
             position: sticky;
             top: 52px;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(0, 0, 0, 0.82);
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             z-index: 30;
@@ -417,52 +422,54 @@ if (!function_exists('brandMarkSvg')) {
             border-color: var(--accent-hover);
         }
 
-        /* Disabled reads as a solid muted blue-grey, not a washed-out
-           tint of the accent (opacity over white turned it lavender). */
+        /* Disabled reads as a sleek translucent accent pill */
         .btn-primary:disabled {
-            background: #98A2C4;
-            border-color: #98A2C4;
-            color: #FFFFFF;
+            background: rgba(29, 155, 240, 0.45);
+            border-color: transparent;
+            color: rgba(255, 255, 255, 0.6);
             cursor: not-allowed;
         }
 
         .btn-outline {
-            background: #FFFFFF;
+            background: transparent;
             color: var(--ink);
             border: 1px solid var(--border-strong);
             padding: 6px 18px;
             border-radius: 999px;
             font-weight: 700;
             font-size: 0.9rem;
-            transition: background-color var(--ease);
+            transition: background-color var(--ease), border-color var(--ease);
         }
 
         .btn-outline:hover {
-            background: var(--wash);
+            background: rgba(231, 233, 234, 0.08);
+            border-color: #536471;
         }
 
         .btn-cancel {
-            background: #FFFFFF;
+            background: transparent;
             color: var(--ink);
             border: 1px solid var(--border-strong);
             padding: 7px 18px;
             border-radius: 999px;
             font-weight: 700;
             font-size: 0.9rem;
+            transition: background-color var(--ease);
         }
 
         .btn-cancel:hover {
-            background: var(--wash);
+            background: rgba(231, 233, 234, 0.08);
         }
 
         .btn-danger-outline {
-            background: #FFFFFF;
+            background: transparent;
             color: var(--danger-text);
             border: 1px solid var(--danger-border);
             padding: 6px 16px;
             border-radius: 999px;
             font-weight: 700;
             font-size: 0.87rem;
+            transition: background-color var(--ease);
         }
 
         .btn-danger-outline:hover {
@@ -490,41 +497,38 @@ if (!function_exists('brandMarkSvg')) {
             background: var(--danger-tint);
         }
 
-        /* Follow toggle (AJAX — classes + data hooks are API) */
-        /* Sprint 5 UI polish (M-13): was 78x28px, below the 44px touch
-           target. min-height 36px (audit minimum) keeps the pill slim in
-           user rows while giving fingers a real target. */
+        /* Follow toggle (AJAX — X/Twitter High-Contrast White Pill) */
         .btn-follow {
-            background: var(--accent);
-            color: #FFFFFF;
-            border: 1px solid var(--accent);
-            padding: 8px 16px;
+            background: #EFF3F4;
+            color: #0F1419;
+            border: 1px solid #EFF3F4;
+            padding: 7px 18px;
             min-height: 36px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
             border-radius: 999px;
             font-weight: 700;
-            font-size: 0.87rem;
+            font-size: 0.88rem;
             flex-shrink: 0;
-            transition: background-color var(--ease), color var(--ease), border-color var(--ease);
+            transition: background-color var(--ease), color var(--ease), border-color var(--ease), transform 120ms ease;
         }
 
         .btn-follow:hover:not(:disabled) {
-            background: var(--accent-hover);
-            border-color: var(--accent-hover);
+            background: #D7DBDC;
+            border-color: #D7DBDC;
         }
 
         .btn-follow.following {
-            background: #FFFFFF;
-            color: var(--ink);
-            border-color: var(--border-strong);
+            background: transparent;
+            color: #EFF3F4;
+            border: 1px solid #536471;
         }
 
         .btn-follow.following:hover:not(:disabled) {
-            background: var(--danger-tint);
-            color: var(--danger-text);
-            border-color: var(--danger-border);
+            background: rgba(244, 33, 46, 0.12);
+            color: #F4212E;
+            border-color: rgba(244, 33, 46, 0.4);
         }
 
         .btn-follow:disabled {
@@ -604,13 +608,14 @@ if (!function_exists('brandMarkSvg')) {
             font-size: 0.97rem;
             border: 1px solid var(--border-strong);
             border-radius: 8px;
-            background-color: #FFFFFF;
+            background-color: var(--bg-input);
             color: var(--ink);
             transition: border-color var(--ease), box-shadow var(--ease);
             outline: none;
         }
 
         .form-control:focus {
+            background-color: var(--bg-base);
             border-color: var(--accent);
             box-shadow: 0 0 0 3px var(--accent-ring);
         }
@@ -640,15 +645,16 @@ if (!function_exists('brandMarkSvg')) {
         .search-row .form-control {
             border-radius: 999px;
             background-color: var(--field-bg);
-            border-color: transparent;
+            border: 1px solid transparent;
+            color: var(--ink);
             padding: 9px 16px;
             font-size: 0.93rem;
         }
 
         .search-row .form-control:focus {
-            background-color: #FFFFFF;
+            background-color: var(--bg-base);
             border-color: var(--accent);
-            box-shadow: 0 0 0 3px var(--accent-ring);
+            box-shadow: 0 0 0 2px var(--accent-ring);
         }
 
         /* ---------- Alerts / flash ---------- */
@@ -779,7 +785,7 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .auth-card {
-            background: #FFFFFF;
+            background: var(--bg-surface);
             border: 1px solid var(--line);
             padding: 2.2rem 2.2rem 2rem;
             display: flex;
@@ -1887,14 +1893,15 @@ if (!function_exists('brandMarkSvg')) {
         }
 
         .modal-box {
-            background: #FFFFFF;
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
             border-radius: 16px;
             width: 100%;
             max-width: 440px;
             max-height: 72vh;
             overflow-y: auto;
             padding: 1.15rem 1.25rem 1.3rem;
-            box-shadow: 0 12px 40px rgba(15, 20, 25, 0.28);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
         }
 
         .modal-head {
@@ -2034,7 +2041,7 @@ if (!function_exists('brandMarkSvg')) {
 
         /* ---------- Footer ---------- */
         .site-footer {
-            background: #FFFFFF;
+            background: var(--bg-base);
             border-top: 1px solid var(--line);
             color: var(--muted);
             padding: 1.25rem 2rem;
@@ -2086,7 +2093,7 @@ if (!function_exists('brandMarkSvg')) {
                 position: sticky;
                 top: 52px;
                 z-index: 40;
-                background: rgba(255, 255, 255, 0.92);
+                background: rgba(0, 0, 0, 0.85);
                 backdrop-filter: blur(12px);
                 -webkit-backdrop-filter: blur(12px);
                 border-bottom: 1px solid var(--line);
