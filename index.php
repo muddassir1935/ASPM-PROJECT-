@@ -191,7 +191,23 @@ if ($currentUser) {
                                 }
                             ?>
                             <span class="post-card-time">&middot; <?= htmlspecialchars($feedPost['time_ago']) ?></span>
-                            <?php if ($isOwnPost || $canDeleteAny): ?>
+                            <?php
+                                $feedCanReport = $currentUser && !$isOwnPost && class_exists('Auth') && Auth::can('report.create');
+                                $feedIsReported = false;
+                                if ($feedCanReport) {
+                                    static $indexReportedCache = null;
+                                    if ($indexReportedCache === null) {
+                                        $indexReportedCache = [];
+                                        try {
+                                            if (class_exists('Report')) {
+                                                $indexReportedCache = (new Report($db))->getReportedPostIds((int)$currentUser['id']);
+                                            }
+                                        } catch (Throwable $e) {}
+                                    }
+                                    $feedIsReported = in_array((int)$feedPost['id'], $indexReportedCache, true);
+                                }
+                            ?>
+                            <?php if ($isOwnPost || $canDeleteAny || $feedCanReport): ?>
                                 <div class="post-menu-wrap">
                                     <button type="button" class="post-menu-btn" data-post-menu-toggle="<?= (int)$feedPost['id'] ?>" aria-label="More options">
                                         <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
@@ -213,6 +229,19 @@ if ($currentUser) {
                                                     Delete Post
                                                 </button>
                                             </form>
+                                        <?php endif; ?>
+                                        <?php if ($feedCanReport): ?>
+                                            <?php if ($feedIsReported): ?>
+                                                <button type="button" class="post-dropdown-item" disabled style="opacity: 0.6; cursor: default;">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                                                    Reported
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="button" class="post-dropdown-item" onclick="openReportModal(<?= (int)$feedPost['id'] ?>); closeAllPostMenus();">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                                                    Report Post
+                                                </button>
+                                            <?php endif; ?>
                                         <?php endif; ?>
                                     </div>
                                 </div>

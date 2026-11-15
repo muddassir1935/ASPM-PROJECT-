@@ -282,6 +282,40 @@
         pendingConfirmForm = null;
     }
 
+    // In-App Report Modal Controller
+    function openReportModal(postId) {
+        var modal = document.getElementById('report-post-modal');
+        if (!modal) return;
+        var postInput = document.getElementById('report-post-id-input');
+        if (postInput) postInput.value = postId;
+        var returnInput = document.getElementById('report-return-input');
+        if (returnInput) {
+            var path = window.location.pathname.split('/').pop() || 'index.php';
+            returnInput.value = path + window.location.search;
+        }
+        var detailInput = document.getElementById('report-detail-input');
+        var counter = document.getElementById('report-char-counter');
+        if (detailInput) detailInput.value = '';
+        if (counter) counter.textContent = '0';
+        modal.classList.add('open');
+        if (typeof closeAllPostMenus === 'function') {
+            closeAllPostMenus();
+        }
+    }
+
+    function closeReportModal() {
+        var modal = document.getElementById('report-post-modal');
+        if (!modal) return;
+        modal.classList.remove('open');
+    }
+
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.id === 'report-detail-input') {
+            var counter = document.getElementById('report-char-counter');
+            if (counter) counter.textContent = e.target.value.length;
+        }
+    });
+
     document.addEventListener('submit', function (event) {
         var form = event.target;
         if (!form) return;
@@ -318,6 +352,79 @@
             <button type="button" id="confirm-dialog-submit-btn" class="confirm-btn-danger">Delete</button>
             <button type="button" class="confirm-btn-cancel" onclick="closeConfirmModal();">Cancel</button>
         </div>
+    </div>
+</div>
+
+<!-- Report Post Modal (Sprint 5) -->
+<div id="report-post-modal" class="modal-overlay report-modal-overlay" onclick="if (event.target === this) closeReportModal();">
+    <div class="modal-box report-dialog-box" role="dialog" aria-modal="true" aria-labelledby="report-modal-title">
+        <div class="report-modal-head">
+            <h3 id="report-modal-title" class="report-modal-title">Report Post</h3>
+            <button type="button" class="modal-close" onclick="closeReportModal();" aria-label="Close dialog">&times;</button>
+        </div>
+        <p class="report-modal-subtitle">Help us understand the issue. What violates campus policies in this post?</p>
+        
+        <form id="report-post-form" method="POST" action="report_action.php">
+            <?php if (class_exists('Csrf')) { echo Csrf::field(); } ?>
+            <input type="hidden" name="post_id" id="report-post-id-input" value="0">
+            <input type="hidden" name="return" id="report-return-input" value="index.php">
+
+            <div class="report-reasons-list">
+                <label class="report-reason-option">
+                    <input type="radio" name="reason" value="spam" required checked>
+                    <div class="report-reason-text">
+                        <strong>Spam</strong>
+                        <span>Malicious links, fake engagement, or commercial ads</span>
+                    </div>
+                </label>
+                <label class="report-reason-option">
+                    <input type="radio" name="reason" value="harassment" required>
+                    <div class="report-reason-text">
+                        <strong>Harassment or hate speech</strong>
+                        <span>Targeted bullying, threats, or discrimination</span>
+                    </div>
+                </label>
+                <label class="report-reason-option">
+                    <input type="radio" name="reason" value="misinformation" required>
+                    <div class="report-reason-text">
+                        <strong>Misinformation</strong>
+                        <span>False campus announcements or deceptive claims</span>
+                    </div>
+                </label>
+                <label class="report-reason-option">
+                    <input type="radio" name="reason" value="inappropriate" required>
+                    <div class="report-reason-text">
+                        <strong>Sexually explicit or inappropriate content</strong>
+                        <span>NSFW material, vulgarity, or graphic imagery</span>
+                    </div>
+                </label>
+                <label class="report-reason-option">
+                    <input type="radio" name="reason" value="violence" required>
+                    <div class="report-reason-text">
+                        <strong>Violence or threats</strong>
+                        <span>Physical danger, violent threats, or self-harm</span>
+                    </div>
+                </label>
+                <label class="report-reason-option">
+                    <input type="radio" name="reason" value="other" required>
+                    <div class="report-reason-text">
+                        <strong>Other</strong>
+                        <span>Other policy violations (please explain below)</span>
+                    </div>
+                </label>
+            </div>
+
+            <div class="report-detail-group">
+                <label for="report-detail-input" class="report-detail-label">Additional details (optional, max 500 characters):</label>
+                <textarea id="report-detail-input" name="detail" class="report-detail-textarea" rows="3" maxlength="500" placeholder="Provide extra details for the campus moderators..."></textarea>
+                <div class="report-char-count"><span id="report-char-counter">0</span> / 500</div>
+            </div>
+
+            <div class="report-modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeReportModal();">Cancel</button>
+                <button type="submit" class="report-submit-btn">Submit Report</button>
+            </div>
+        </form>
     </div>
 </div>
 

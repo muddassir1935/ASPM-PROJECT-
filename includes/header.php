@@ -3285,6 +3285,192 @@ if (!function_exists('brandMarkSvg')) {
             border-color: var(--border-strong);
         }
 
+        /* ---------- Report Post Modal ---------- */
+        .report-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.70);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        [data-theme="light"] .report-modal-overlay {
+            background: rgba(15, 23, 42, 0.45);
+        }
+
+        .report-modal-overlay.open {
+            display: flex;
+        }
+
+        .report-dialog-box {
+            background: var(--bg-surface);
+            border: 1px solid var(--line);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 460px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 24px;
+            box-shadow: 0 24px 50px rgba(0, 0, 0, 0.5);
+            text-align: left;
+            animation: confirmPop 0.18s cubic-bezier(0.2, 0, 0, 1);
+        }
+
+        .report-modal-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+
+        .report-modal-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--ink);
+            margin: 0;
+            letter-spacing: -0.02em;
+        }
+
+        .report-modal-subtitle {
+            font-size: 0.90rem;
+            line-height: 1.45;
+            color: var(--muted);
+            margin: 0 0 16px 0;
+        }
+
+        .report-reasons-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .report-reason-option {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 10px 14px;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+
+        .report-reason-option:hover {
+            background: var(--wash);
+            border-color: var(--accent);
+        }
+
+        .report-reason-option input[type="radio"] {
+            margin-top: 3px;
+            accent-color: var(--accent);
+            cursor: pointer;
+        }
+
+        .report-reason-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .report-reason-text strong {
+            font-size: 0.92rem;
+            color: var(--ink);
+            font-weight: 600;
+        }
+
+        .report-reason-text span {
+            font-size: 0.80rem;
+            color: var(--muted);
+            line-height: 1.35;
+        }
+
+        .report-detail-group {
+            margin-bottom: 20px;
+        }
+
+        .report-detail-label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--ink);
+            margin-bottom: 6px;
+        }
+
+        .report-detail-textarea {
+            width: 100%;
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            color: var(--ink);
+            padding: 10px 12px;
+            font-size: 0.90rem;
+            resize: vertical;
+            min-height: 64px;
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        .report-detail-textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .report-char-count {
+            text-align: right;
+            font-size: 0.78rem;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .report-modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .report-modal-actions .btn-cancel {
+            background: transparent;
+            color: var(--ink);
+            border: 1px solid var(--line);
+            border-radius: 9999px;
+            padding: 8px 18px;
+            font-weight: 700;
+            font-size: 0.90rem;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .report-modal-actions .btn-cancel:hover {
+            background: var(--wash);
+        }
+
+        .report-modal-actions .report-submit-btn {
+            background: #F4212E;
+            color: #FFFFFF;
+            border: none;
+            border-radius: 9999px;
+            padding: 8px 20px;
+            font-weight: 700;
+            font-size: 0.90rem;
+            cursor: pointer;
+            transition: background 0.15s ease, transform 0.1s ease;
+        }
+
+        .report-modal-actions .report-submit-btn:hover {
+            background: #DC1E29;
+            transform: translateY(-1px);
+        }
+
+        .report-modal-actions .report-submit-btn:active {
+            transform: translateY(0);
+        }
+
         /* ---------- Public Landing View (The Iconic X / Twitter Standard) ---------- */
         .x-landing-shell {
             max-width: 1480px;

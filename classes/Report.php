@@ -108,6 +108,22 @@ class Report {
     }
 
     /**
+     * Retrieve all post IDs reported by a user (for bulk badge / button states).
+     *
+     * @param int $reporterId
+     * @return int[]
+     */
+    public function getReportedPostIds(int $reporterId): array {
+        if ($reporterId <= 0) {
+            return [];
+        }
+
+        $stmt = $this->db->prepare("SELECT post_id FROM reports WHERE reporter_id = :reporter_id");
+        $stmt->execute([':reporter_id' => $reporterId]);
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+    }
+
+    /**
      * Create a new report against a post.
      * Enforces:
      * - valid parameters and reason whitelist
