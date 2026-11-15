@@ -50,7 +50,7 @@ $_SESSION['flash_message'] = $result['message'];
 // Safe return redirection
 $return = trim((string)($_POST['return'] ?? 'index'));
 
-if ($return !== 'index' && ctype_digit($return) && (int)$return > 0) {
+if ($return !== 'index' && preg_match('/^\d+$/', $return) && (int)$return > 0) {
     header('Location: post.php?id=' . (int)$return);
 } elseif (preg_match('#^(index|explore|bookmarks|notifications|admin)\.php(\?.*)?$#', $return, $m)) {
     header('Location: ' . $return);

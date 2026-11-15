@@ -71,7 +71,7 @@ $return = $_POST['return'] ?? 'index';
 if ($action === 'delete') {
     // A deleted post no longer has a detail page; always go back to the feed.
     header('Location: index.php');
-} elseif ($return !== 'index' && ctype_digit((string)$return) && (int)$return > 0) {
+} elseif ($return !== 'index' && preg_match('/^\d+$/', (string)$return) && (int)$return > 0) {
     header('Location: post.php?id=' . (int)$return);
 } else {
     header('Location: index.php');
