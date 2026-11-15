@@ -25,6 +25,7 @@ This user manual walks you through all features available to standard student us
    - [Liking Posts](#43-liking-posts)
    - [Replying to Posts](#44-replying-to-posts)
    - [Bookmarking Posts for Later](#45-bookmarking-posts-for-later)
+   - [Reporting Violating Posts](#46-reporting-violating-posts)
 5. [Notifications](#5-notifications)
    - [Unread Notification Badge](#51-unread-notification-badge)
    - [Viewing and Clearing Notifications](#52-viewing-and-clearing-notifications)
@@ -141,6 +142,22 @@ On desktop viewports, CampusConnect presents an intuitive 3-column architecture:
 - Click the **Save** button (ribbon icon) on any post card to bookmark it for later review.
 - Access all your saved posts at any time by selecting **Bookmarks** from the left navigation rail.
 - Bookmarks are strictly private; other users cannot see what you have saved.
+
+### 4.6 Reporting Violating Posts
+To maintain a safe, welcoming, and constructive campus environment, all campus members can report posts that breach university guidelines:
+1. Locate the post card in your timeline feed, Explore page, or open its detail page (`post.php`).
+2. Click the three-dots (**···**) options menu on the post card (or the **Report** button in the post detail action bar).
+   - *Note:* You cannot report your own posts.
+3. Choose the appropriate reason category from the fixed whitelist:
+   - **Spam**: Malicious links, fake engagement, bots, or commercial ads.
+   - **Harassment or hate speech**: Targeted bullying, discrimination, intimidation, or defamation.
+   - **Misinformation**: False academic announcements, fake schedules, or deceptive claims.
+   - **Sexually explicit or inappropriate content**: Graphic imagery, NSFW material, or vulgarity.
+   - **Violence or threats**: Physical danger, violent threats, or self-harm incitement.
+   - **Other**: Other policy violations (describe below).
+4. *(Optional)* Add additional context in the detail box (up to 500 characters) to assist the moderation team.
+5. Click **Submit Report**.
+6. Once submitted, the menu item reflects a persistent **Reported** status. Each user may only report a given post once (`UNIQUE` constraint); duplicate submissions are automatically blocked.
 
 ---
 
