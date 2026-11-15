@@ -153,6 +153,23 @@ class Database {
                     PRIMARY KEY (email, ip)
                 );
 
+                -- Sprint 5: Post Reporting & Admin Moderation Queue
+                CREATE TABLE IF NOT EXISTS reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    reporter_id INTEGER NOT NULL,
+                    post_id INTEGER NOT NULL,
+                    reason TEXT NOT NULL,
+                    detail TEXT DEFAULT NULL,
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    reviewed_at DATETIME DEFAULT NULL,
+                    reviewed_by INTEGER DEFAULT NULL,
+                    UNIQUE (reporter_id, post_id),
+                    FOREIGN KEY (reporter_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+                    FOREIGN KEY (reviewed_by) REFERENCES users(id) ON DELETE SET NULL
+                );
+
                 CREATE INDEX IF NOT EXISTS idx_posts_user_id ON posts(user_id);
                 CREATE INDEX IF NOT EXISTS idx_posts_created_at ON posts(created_at DESC);
                 CREATE INDEX IF NOT EXISTS idx_follows_followed_id ON follows(followed_id);
@@ -166,6 +183,8 @@ class Database {
                 CREATE INDEX IF NOT EXISTS idx_post_hashtags_tag ON post_hashtags(hashtag_id);
                 CREATE INDEX IF NOT EXISTS idx_notifications_user_read ON notifications(user_id, is_read);
                 CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON notifications(user_id, created_at DESC);
+                CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+                CREATE INDEX IF NOT EXISTS idx_reports_post ON reports(post_id);
             ");
 
             // Migrations for SQLite files created before Sprint 3:

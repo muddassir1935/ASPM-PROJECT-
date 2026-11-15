@@ -43,7 +43,7 @@ try {
     echo "Driver: {$driver}\n";
 
     // --- 1. Wipe (children first, so foreign keys never complain) ---
-    foreach (['post_hashtags', 'notifications', 'likes', 'bookmarks', 'replies', 'follows', 'hashtags', 'sessions', 'login_attempts', 'posts', 'users'] as $table) {
+    foreach (['reports', 'post_hashtags', 'notifications', 'likes', 'bookmarks', 'replies', 'follows', 'hashtags', 'sessions', 'login_attempts', 'posts', 'users'] as $table) {
         $db->exec("DELETE FROM {$table}");
     }
     echo "Wiped all tables.\n";
