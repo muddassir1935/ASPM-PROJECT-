@@ -44,6 +44,15 @@ class PostController {
             ];
         }
 
+        // Audit C7: the RBAC matrix is enforced, not just declared.
+        if (!$this->can('post.create')) {
+            return [
+                'success' => false,
+                'message' => 'You do not have permission to post.',
+                'post_id' => null
+            ];
+        }
+
         $validation = $this->postModel->validateContent($content);
         if (!$validation['valid']) {
             return [
@@ -93,6 +102,13 @@ class PostController {
             ];
         }
 
+        if (!$this->can('post.edit_own')) {
+            return [
+                'success' => false,
+                'message' => 'You do not have permission to edit posts.'
+            ];
+        }
+
         $validation = $this->postModel->validateContent($newContent);
         if (!$validation['valid']) {
             return [
@@ -136,9 +152,17 @@ class PostController {
             ];
         }
 
-        $role = $this->currentUser['role'] ?? 'student';
-        $canDeleteAny = Authorization::can($role, 'post.delete_any');
-        $deleted = $this->postModel->delete($postId, (int)$this->currentUser['id'], $canDeleteAny);
+        // Audit C7: own deletes need post.delete_own; deleting someone
+        // else's post needs post.delete_any, plus announcement.delete_any
+        // when that post is an announcement.
+        $existing = $this->postModel->getById($postId);
+        $isAnnouncement = $existing && !empty($existing['is_announcement']);
+        $canDeleteOwn = $this->can('post.delete_own');
+        $canDeleteAny = $this->can('post.delete_any')
+            && (!$isAnnouncement || $this->can('announcement.delete_any'));
+        $deleted = $existing
+            ? $this->postModel->delete($postId, (int)$this->currentUser['id'], $canDeleteAny, $canDeleteOwn)
+            : false;
 
         if ($deleted) {
             return [
@@ -153,26 +177,22 @@ class PostController {
         ];
     }
 
+    /** Does the current user's role hold $permission? */
+    private function can(string $permission): bool {
+        return Authorization::can($this->currentUser['role'] ?? 'student', $permission);
+    }
+
     /**
      * Retrieve paginated timeline feed.
-     * 
+     *
      * @param int $page 1-indexed page number
      * @param int $limit Posts per page
      * @return array
      */
     public function getTimelineFeed(int $page = 1, int $limit = 20): array {
-        $page = max(1, $page);
-        $offset = ($page - 1) * $limit;
         $viewerId = isset($this->currentUser['id']) ? (int)$this->currentUser['id'] : 0;
-        $posts = $this->postModel->getFeed($limit, $offset, $viewerId);
-        $total = $this->postModel->countAll();
-
-        return [
-            'posts' => $posts,
-            'total' => $total,
-            'page' => $page,
-            'has_more' => ($offset + count($posts)) < $total
-        ];
+        return $this->paginate($page, $limit, $this->postModel->countAll(),
+            fn(int $l, int $o) => $this->postModel->getFeed($l, $o, $viewerId));
     }
 
     /**
@@ -184,21 +204,12 @@ class PostController {
      * @return array
      */
     public function getUserFeed(int $userId, int $page = 1, int $limit = 20): array {
-        $page = max(1, $page);
-        $offset = ($page - 1) * $limit;
         // Sprint 5 (M4): pass the viewer through so is_liked /
         // is_bookmarked are correct on profile lists — without it every
         // heart on a profile showed empty even for liked posts.
         $viewerId = isset($this->currentUser['id']) ? (int)$this->currentUser['id'] : 0;
-        $posts = $this->postModel->getByUserId($userId, $limit, $offset, $viewerId);
-        $total = $this->postModel->countByUser($userId);
-
-        return [
-            'posts' => $posts,
-            'total' => $total,
-            'page' => $page,
-            'has_more' => ($offset + count($posts)) < $total
-        ];
+        return $this->paginate($page, $limit, $this->postModel->countByUser($userId),
+            fn(int $l, int $o) => $this->postModel->getByUserId($userId, $l, $o, $viewerId));
     }
 
     /**
@@ -206,10 +217,22 @@ class PostController {
      * posts plus posts from users they follow.
      */
     public function getPersonalizedTimelineFeed(int $userId, int $page = 1, int $limit = 20): array {
-        $page = max(1, $page);
+        return $this->paginate($page, $limit, $this->postModel->countPersonalized($userId),
+            fn(int $l, int $o) => $this->postModel->getPersonalizedFeed($userId, $l, $o));
+    }
+
+    /**
+     * Shared pagination (audit F1). The requested page is clamped to the
+     * last page that has posts, so ?page=999 shows the final page with a
+     * working "Previous" link instead of a misleading "No posts yet" empty
+     * state with no way back.
+     */
+    private function paginate(int $page, int $limit, int $total, callable $fetch): array {
+        $limit = max(1, $limit);
+        $lastPage = max(1, (int)ceil($total / $limit));
+        $page = min(max(1, $page), $lastPage);
         $offset = ($page - 1) * $limit;
-        $posts = $this->postModel->getPersonalizedFeed($userId, $limit, $offset);
-        $total = $this->postModel->countPersonalized($userId);
+        $posts = $fetch($limit, $offset);
 
         return [
             'posts' => $posts,

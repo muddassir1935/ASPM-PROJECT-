@@ -8,6 +8,7 @@
  * pair is unique so a follow is idempotent.
  */
 require_once __DIR__ . '/Cache.php';
+require_once __DIR__ . '/Post.php';
 
 class Follow {
     private PDO $db;
@@ -38,9 +39,9 @@ class Follow {
         try {
             $ok = $stmt->execute();
             if ($ok) {
-                // The follower's personalized feed membership changes:
-                // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
-                Cache::getInstance()->deleteByPrefix('feed_');
+                // Only the FOLLOWER's personalized feed membership changes
+                // (audit C9: no longer wipes every user's cached feeds).
+                Cache::getInstance()->deleteByPrefix(Post::personalizedCachePrefix($followerId));
 
                 // Sprint 5 (WBS 5.x): Notify followed user
                 try {
@@ -81,7 +82,7 @@ class Follow {
         try {
             $ok = $stmt->execute();
             if ($ok) {
-                Cache::getInstance()->deleteByPrefix('feed_');
+                Cache::getInstance()->deleteByPrefix(Post::personalizedCachePrefix($followerId));
             }
             return $ok;
         } catch (PDOException $e) {

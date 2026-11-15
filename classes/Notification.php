@@ -7,12 +7,32 @@
  * Supports real-time unread counts, pagination, and bulk/individual read marking.
  * Enforces suppression of self-action notifications.
  */
+require_once __DIR__ . '/Post.php';
+
 class Notification {
     private PDO $db;
 
     public const TYPE_FOLLOW = 'follow';
     public const TYPE_REPLY  = 'reply';
     public const TYPE_LIKE   = 'like';
+
+    /**
+     * Types that are toggles (audit C10): like -> unlike -> like, or
+     * follow -> unfollow -> follow, used to create a new notification on
+     * every toggle, so anyone could flood a user's bell. For these types
+     * an existing notification for the same (recipient, actor, type,
+     * reference) suppresses the new one. Replies are never deduplicated:
+     * every reply is new content.
+     */
+    private const DEDUPE_TYPES = [self::TYPE_LIKE, self::TYPE_FOLLOW];
+
+    /**
+     * Audit C20: like/reply notifications point at a post. Once that post
+     * is soft-deleted the notification linked to a "post not found" page
+     * and still counted in the unread badge — hide those everywhere.
+     */
+    private const VISIBLE_SQL = "NOT (n.type IN ('like', 'reply') AND EXISTS (
+            SELECT 1 FROM posts dp WHERE dp.id = n.reference_id AND dp.deleted_at IS NOT NULL))";
 
     public function __construct(PDO $dbConnection) {
         $this->db = $dbConnection;
@@ -41,6 +61,12 @@ class Notification {
 
         $cleanType = mb_substr(trim($type), 0, 32, 'UTF-8');
         $cleanMessage = mb_substr(trim($message), 0, 255, 'UTF-8');
+
+        if ($actorId !== null && $referenceId !== null
+            && in_array($cleanType, self::DEDUPE_TYPES, true)
+            && $this->exists($userId, (int)$actorId, $cleanType, (int)$referenceId)) {
+            return false; // already notified about this exact action
+        }
 
         $sql = "INSERT INTO notifications (user_id, actor_id, type, reference_id, message, is_read, created_at)
                 VALUES (:user_id, :actor_id, :type, :reference_id, :message, 0, CURRENT_TIMESTAMP)";
@@ -71,6 +97,21 @@ class Notification {
         }
     }
 
+    /** Is there already a notification for this exact (recipient, actor, type, reference)? */
+    private function exists(int $userId, int $actorId, string $type, int $referenceId): bool {
+        $stmt = $this->db->prepare(
+            "SELECT 1 FROM notifications
+             WHERE user_id = :user_id AND actor_id = :actor_id AND type = :type AND reference_id = :reference_id
+             LIMIT 1"
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':actor_id', $actorId, PDO::PARAM_INT);
+        $stmt->bindValue(':type', $type, PDO::PARAM_STR);
+        $stmt->bindValue(':reference_id', $referenceId, PDO::PARAM_INT);
+        $stmt->execute();
+        return (bool)$stmt->fetchColumn();
+    }
+
     /**
      * Get count of unread notifications for a user.
      */
@@ -79,7 +120,8 @@ class Notification {
             return 0;
         }
 
-        $sql = "SELECT COUNT(*) FROM notifications WHERE user_id = :user_id AND is_read = 0";
+        $sql = "SELECT COUNT(*) FROM notifications n
+                WHERE n.user_id = :user_id AND n.is_read = 0 AND " . self::VISIBLE_SQL;
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
@@ -99,7 +141,7 @@ class Notification {
                        u.name AS actor_name, u.role AS actor_role
                 FROM notifications n
                 LEFT JOIN users u ON n.actor_id = u.id
-                WHERE n.user_id = :user_id AND n.is_read = 0
+                WHERE n.user_id = :user_id AND n.is_read = 0 AND " . self::VISIBLE_SQL . "
                 ORDER BY n.created_at DESC, n.id DESC
                 LIMIT :limit";
 
@@ -127,7 +169,7 @@ class Notification {
                        u.name AS actor_name, u.role AS actor_role
                 FROM notifications n
                 LEFT JOIN users u ON n.actor_id = u.id
-                WHERE n.user_id = :user_id
+                WHERE n.user_id = :user_id AND " . self::VISIBLE_SQL . "
                 ORDER BY n.created_at DESC, n.id DESC
                 LIMIT :limit OFFSET :offset";
 
@@ -142,6 +184,17 @@ class Notification {
             $row['time_ago'] = $this->formatTimeAgo($row['created_at']);
         }
         return $rows;
+    }
+
+    /** Total notifications (read and unread) for a user — for pagination (audit C15). */
+    public function countAll(int $userId): int {
+        if ($userId <= 0) {
+            return 0;
+        }
+        $stmt = $this->db->prepare("SELECT COUNT(*) FROM notifications n WHERE n.user_id = :user_id AND " . self::VISIBLE_SQL);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return (int)$stmt->fetchColumn();
     }
 
     /**
@@ -194,31 +247,11 @@ class Notification {
     }
 
     /**
-     * Relative human-readable time string helper.
+     * Relative human-readable time string helper. Delegates to
+     * Post::formatTimeAgo so notifications and posts share one
+     * implementation (audit C18) with the same UTC handling (audit C2).
      */
     public function formatTimeAgo(string $datetime): string {
-        $timestamp = strtotime($datetime);
-        if (!$timestamp) {
-            return 'recently';
-        }
-
-        $diff = time() - $timestamp;
-
-        if ($diff < 5) {
-            return 'just now';
-        }
-        if ($diff < 60) {
-            return $diff . 's ago';
-        }
-        if ($diff < 3600) {
-            return floor($diff / 60) . 'm ago';
-        }
-        if ($diff < 86400) {
-            return floor($diff / 3600) . 'h ago';
-        }
-        if ($diff < 604800) {
-            return floor($diff / 86400) . 'd ago';
-        }
-        return date('M j, Y', $timestamp);
+        return Post::formatTimeAgo($datetime);
     }
 }

@@ -43,11 +43,7 @@ class Bookmark {
 
         try {
             $ok = $stmt->execute();
-            if ($ok) {
-                // is_bookmarked is rendered inside cached feed rows:
-                // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
-                Cache::getInstance()->deleteByPrefix('feed_');
-            }
+            // No feed-cache flush (audit C9): is_bookmarked is attached live.
             return $ok;
         } catch (PDOException $e) {
             error_log("Bookmark error: " . $e->getMessage());
@@ -70,11 +66,7 @@ class Bookmark {
         $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
 
         try {
-            $ok = $stmt->execute();
-            if ($ok) {
-                Cache::getInstance()->deleteByPrefix('feed_');
-            }
-            return $ok;
+            return $stmt->execute();
         } catch (PDOException $e) {
             error_log("Bookmark remove error: " . $e->getMessage());
             return false;
@@ -114,11 +106,15 @@ class Bookmark {
      * Soft-deleted posts are excluded even if still bookmarked.
      */
     public function getBookmarkedPosts(int $userId, int $limit = 50, int $offset = 0): array {
-        $sql = "SELECT p.id, p.user_id, p.content, p.created_at, p.updated_at,
-                       u.name AS author_name, u.role AS author_role,
+        // Audit F6: select is_announcement and author_email like the feed
+        // queries, so bookmarked announcements keep their badge and cards
+        // show the author's handle. is_bookmarked is 1 by definition here.
+        $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
+                       u.name AS author_name, u.role AS author_role, u.email AS author_email,
                        (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
                        (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
-                       (SELECT COUNT(*) FROM likes lv WHERE lv.post_id = p.id AND lv.user_id = :viewer_id) AS is_liked
+                       (SELECT COUNT(*) FROM likes lv WHERE lv.post_id = p.id AND lv.user_id = :viewer_id) AS is_liked,
+                       1 AS is_bookmarked
                 FROM bookmarks b
                 JOIN posts p ON p.id = b.post_id
                 JOIN users u ON p.user_id = u.id
@@ -132,6 +128,28 @@ class Bookmark {
         $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * IDs of every visible post the user has saved (audit C14). Pages used
+     * to load up to 500 full bookmarked posts — with like/reply sub-queries
+     * — just to build this list, and anything past 500 showed "Save" on an
+     * already-saved post. One narrow query, no cap.
+     *
+     * @return int[]
+     */
+    public function getBookmarkedIds(int $userId): array {
+        if ($userId <= 0) {
+            return [];
+        }
+        $stmt = $this->db->prepare(
+            "SELECT b.post_id FROM bookmarks b
+             JOIN posts p ON p.id = b.post_id
+             WHERE b.user_id = :user_id AND p.deleted_at IS NULL"
+        );
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        return array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
     }
 
     public function countByUser(int $userId): int {

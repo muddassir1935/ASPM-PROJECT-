@@ -118,19 +118,35 @@ class Hashtag {
 
     /**
      * Get top trending hashtags ordered by post usage (non-deleted posts only).
+     *
+     * Audit C22: "trending" used to count every post ever, so a tag that was
+     * busy months ago stayed on top forever. Tags are now ranked by use in
+     * the last $windowDays days; when nothing was tagged in that window
+     * (a quiet campus, or an old demo database) it falls back to all-time
+     * counts so the widget is never empty for no reason.
      */
-    public function getTrending(int $limit = 5): array {
+    public function getTrending(int $limit = 5, int $windowDays = 7): array {
+        // DB timestamps are UTC (audit C2), so the cutoff is computed in UTC.
+        $cutoff = gmdate('Y-m-d H:i:s', time() - max(1, $windowDays) * 86400);
+        $recent = $this->queryTrending($limit, $cutoff);
+        return !empty($recent) ? $recent : $this->queryTrending($limit, null);
+    }
+
+    private function queryTrending(int $limit, ?string $since): array {
         $sql = "SELECT h.id, h.tag, COUNT(ph.post_id) AS post_count
                 FROM hashtags h
                 JOIN post_hashtags ph ON h.id = ph.hashtag_id
                 JOIN posts p ON ph.post_id = p.id
-                WHERE p.deleted_at IS NULL
+                WHERE p.deleted_at IS NULL" . ($since !== null ? " AND p.created_at >= :since" : "") . "
                 GROUP BY h.id, h.tag
-                HAVING post_count > 0
+                HAVING COUNT(ph.post_id) > 0
                 ORDER BY post_count DESC, h.id DESC
                 LIMIT :limit";
 
         $stmt = $this->db->prepare($sql);
+        if ($since !== null) {
+            $stmt->bindValue(':since', $since, PDO::PARAM_STR);
+        }
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 

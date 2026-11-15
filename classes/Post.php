@@ -158,54 +158,91 @@ class Post {
 
     /**
      * Get the dynamic home feed timeline (Newest posts first).
-     * 
+     *
+     * Caching (audit C9): only the slow-changing part of each row (post
+     * text, author, timestamps) is cached — and that part is identical for
+     * every viewer, so ONE cache entry per page now serves all users.
+     * Like/reply counts and the viewer's is_liked / is_bookmarked are
+     * attached live by attachLiveState() with a single query for the page,
+     * so likes, bookmarks and replies no longer have to wipe every cached
+     * feed, and they can never show stale numbers. time_ago is computed
+     * after the cache read, so "just now" does not freeze for 5 minutes.
+     *
      * @param int $limit Max posts to return
      * @param int $offset Offset for pagination
      * @param int $viewerId Optional viewer user ID
+     * @param bool $bypassCache Skip the cache (admin moderation view)
      * @return array List of posts with author details
      */
     public function getFeed(int $limit = 50, int $offset = 0, int $viewerId = 0, bool $bypassCache = false): array {
-        // Sprint 4 (WBS 4.3.4): the viewer-agnostic global timeline is cached
-        // for 5 minutes under the feed_ prefix; create/update/delete/like
-        // invalidate it. Viewer-specific rows (is_liked / is_bookmarked) are
-        // never shared across users, so calls with a viewer bypass the cache.
-        $runQuery = function() use ($limit, $offset, $viewerId) {
-            $viewerSubquery = $viewerId > 0
-                ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked,
-                   (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked"
-                : ", 0 AS is_liked, 0 AS is_bookmarked";
-
+        $runQuery = function() use ($limit, $offset) {
             $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
-                           u.name AS author_name, u.role AS author_role, u.email AS author_email,
-                           (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
-                           (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count
-                           {$viewerSubquery}
+                           u.name AS author_name, u.role AS author_role, u.email AS author_email
                     FROM posts p
                     JOIN users u ON p.user_id = u.id
                     WHERE p.deleted_at IS NULL
                     ORDER BY p.created_at DESC, p.id DESC
                     LIMIT :limit OFFSET :offset";
-
             $stmt = $this->db->prepare($sql);
-            if ($viewerId > 0) {
-                $stmt->bindValue(':viewer_id', $viewerId, PDO::PARAM_INT);
-                $stmt->bindValue(':viewer_id2', $viewerId, PDO::PARAM_INT);
-            }
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
-
-            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($posts as &$post) {
-                $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
-            }
-            return $posts;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         };
 
-        if ($viewerId === 0 && !$bypassCache) {
-            return Cache::getInstance()->remember("feed_global_{$limit}_{$offset}", 300, $runQuery);
+        $rows = $bypassCache
+            ? $runQuery()
+            : Cache::getInstance()->remember("feed_global_{$limit}_{$offset}", 300, $runQuery);
+        return $this->attachLiveState($rows, $viewerId);
+    }
+
+    /**
+     * Attach the fast-changing, viewer-specific fields to a page of post
+     * rows with ONE query (audit C9): reply_count, like_count, and — for a
+     * signed-in viewer — is_liked / is_bookmarked. Also stamps time_ago.
+     * Row order is preserved.
+     */
+    private function attachLiveState(array $rows, int $viewerId): array {
+        if (empty($rows)) {
+            return [];
         }
-        return $runQuery();
+        $ids = array_map(static fn($r) => (int)$r['id'], $rows);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $params = [];
+        $viewerCols = ", 0 AS is_liked, 0 AS is_bookmarked";
+        if ($viewerId > 0) {
+            $viewerCols = ", (SELECT COUNT(*) FROM likes lv WHERE lv.post_id = p.id AND lv.user_id = ?) AS is_liked,
+                            (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = ?) AS is_bookmarked";
+            $params[] = $viewerId;
+            $params[] = $viewerId;
+        }
+        $sql = "SELECT p.id,
+                       (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
+                       (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id) AS like_count
+                       {$viewerCols}
+                FROM posts p
+                WHERE p.id IN ({$placeholders})";
+        $stmt = $this->db->prepare($sql);
+        $i = 1;
+        foreach (array_merge($params, $ids) as $value) {
+            $stmt->bindValue($i++, $value, PDO::PARAM_INT);
+        }
+        $stmt->execute();
+        $live = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $live[(int)$row['id']] = $row;
+        }
+
+        foreach ($rows as &$row) {
+            $state = $live[(int)$row['id']] ?? [];
+            $row['reply_count'] = (int)($state['reply_count'] ?? 0);
+            $row['like_count'] = (int)($state['like_count'] ?? 0);
+            $row['is_liked'] = (int)($state['is_liked'] ?? 0);
+            $row['is_bookmarked'] = (int)($state['is_bookmarked'] ?? 0);
+            $row['time_ago'] = self::formatTimeAgo($row['created_at']);
+        }
+        unset($row);
+        return $rows;
     }
 
     /**
@@ -324,9 +361,11 @@ class Post {
      * @param bool $canDeleteAny Whether the caller holds the
      *        'post.delete_any' permission (RBAC, Sprint 5 — the caller
      *        decides via Authorization, this method only enforces)
+     * @param bool $canDeleteOwn Whether the caller holds 'post.delete_own'
+     *        (audit C7; defaults to true for backward compatibility)
      * @return bool
      */
-    public function delete(int $postId, int $userId, bool $canDeleteAny = false): bool {
+    public function delete(int $postId, int $userId, bool $canDeleteAny = false, bool $canDeleteOwn = true): bool {
         if ($postId <= 0 || $userId <= 0) {
             return false;
         }
@@ -338,7 +377,7 @@ class Post {
 
         $isAuthor = ((int)$existing['user_id'] === $userId);
 
-        if (!$isAuthor && !$canDeleteAny) {
+        if (!($isAuthor && $canDeleteOwn) && !$canDeleteAny) {
             return false; // Unauthorized
         }
 
@@ -356,20 +395,17 @@ class Post {
     /**
      * Personalized home feed (Sprint 3, WBS 3.2): the viewer's own posts
      * plus posts from users they follow, newest first.
-     * Sprint 4: Joined with like counts and viewer like/bookmark status.
+     * Audit C9: the cached part is the post/author rows only (key
+     * feed_personalized_{user}_...); counts and like/bookmark state are
+     * attached live, so only post changes and the user's own follows
+     * need to invalidate it.
      */
     public function getPersonalizedFeed(int $userId, int $limit = 50, int $offset = 0): array {
-        $cacheKey = "feed_personalized_{$userId}_{$limit}_{$offset}";
-        $cache = Cache::getInstance();
+        $cacheKey = self::personalizedCachePrefix($userId) . "{$limit}_{$offset}";
 
-        // WBS 4.3.4: timeline cache TTL is 5 minutes (300s), not 60s.
-        return $cache->remember($cacheKey, 300, function() use ($userId, $limit, $offset) {
+        $rows = Cache::getInstance()->remember($cacheKey, 300, function() use ($userId, $limit, $offset) {
             $sql = "SELECT p.id, p.user_id, p.content, p.is_announcement, p.created_at, p.updated_at,
-                           u.name AS author_name, u.role AS author_role, u.email AS author_email,
-                           (SELECT COUNT(*) FROM replies r WHERE r.post_id = p.id AND r.deleted_at IS NULL) AS reply_count,
-                           (SELECT COUNT(*) FROM likes l2 WHERE l2.post_id = p.id) AS like_count,
-                           (SELECT COUNT(*) FROM likes l3 WHERE l3.post_id = p.id AND l3.user_id = :viewer_id) AS is_liked,
-                           (SELECT COUNT(*) FROM bookmarks b WHERE b.post_id = p.id AND b.user_id = :viewer_id2) AS is_bookmarked
+                           u.name AS author_name, u.role AS author_role, u.email AS author_email
                     FROM posts p
                     JOIN users u ON p.user_id = u.id
                     WHERE p.deleted_at IS NULL
@@ -377,22 +413,23 @@ class Post {
                            OR p.user_id IN (SELECT followed_id FROM follows WHERE follower_id = :user_id2))
                     ORDER BY p.created_at DESC, p.id DESC
                     LIMIT :limit OFFSET :offset";
-
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':viewer_id', $userId, PDO::PARAM_INT);
-            $stmt->bindParam(':viewer_id2', $userId, PDO::PARAM_INT);
-            $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
-            $stmt->bindParam(':user_id2', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':user_id2', $userId, PDO::PARAM_INT);
             $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
             $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
             $stmt->execute();
-
-            $posts = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            foreach ($posts as &$post) {
-                $post['time_ago'] = $this->formatTimeAgo($post['created_at']);
-            }
-            return $posts;
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
         });
+        return $this->attachLiveState($rows, $userId);
+    }
+
+    /**
+     * Cache-key prefix of one user's personalized feed pages. The trailing
+     * underscore keeps user 1's prefix from matching user 12's keys.
+     */
+    public static function personalizedCachePrefix(int $userId): string {
+        return "feed_personalized_{$userId}_";
     }
 
     public function countPersonalized(int $userId): int {
@@ -415,7 +452,7 @@ class Post {
         if ($clean === '') {
             return [];
         }
-        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+        $like = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $clean) . '%';
 
         $viewerSubquery = $viewerId > 0
             ? ", (SELECT COUNT(*) FROM likes l WHERE l.post_id = p.id AND l.user_id = :viewer_id) AS is_liked,
@@ -429,7 +466,7 @@ class Post {
                        {$viewerSubquery}
                 FROM posts p
                 JOIN users u ON p.user_id = u.id
-                WHERE p.deleted_at IS NULL AND p.content LIKE :q ESCAPE '\\'
+                WHERE p.deleted_at IS NULL AND p.content LIKE :q ESCAPE '!'
                 ORDER BY p.created_at DESC, p.id DESC
                 LIMIT :limit OFFSET :offset";
         $stmt = $this->db->prepare($sql);
@@ -454,9 +491,9 @@ class Post {
         if ($clean === '') {
             return 0;
         }
-        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+        $like = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $clean) . '%';
         $sql = "SELECT COUNT(*) FROM posts p
-                WHERE p.deleted_at IS NULL AND p.content LIKE :q ESCAPE '\\'";
+                WHERE p.deleted_at IS NULL AND p.content LIKE :q ESCAPE '!'";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':q', $like, PDO::PARAM_STR);
         $stmt->execute();
@@ -498,7 +535,7 @@ class Post {
      * @return string
      */
     public static function formatTimeAgo(string $datetime): string {
-        $timestamp = strtotime($datetime);
+        $timestamp = self::parseDbTimestamp($datetime);
         if (!$timestamp) {
             return 'recently';
         }
@@ -521,5 +558,39 @@ class Post {
             return floor($diff / 86400) . 'd ago';
         }
         return date('M j, Y', $timestamp);
+    }
+
+    /**
+     * Parse a timestamp read from the database (audit C2).
+     *
+     * Every DB timestamp is UTC: SQLite's CURRENT_TIMESTAMP is always
+     * UTC, and Database pins the MySQL session time zone to +00:00. The
+     * old code parsed them with strtotime() in PHP's zone (Asia/Karachi),
+     * so on SQLite — or any MySQL server not running in PKT — a brand-new
+     * post showed "5h ago". Parse as UTC here; date() then renders the
+     * result in the app's display zone.
+     *
+     * @return int|false Unix timestamp, or false when unparseable
+     */
+    public static function parseDbTimestamp(?string $datetime) {
+        if ($datetime === null || trim($datetime) === '') {
+            return false;
+        }
+        try {
+            $dt = new DateTimeImmutable(trim($datetime), new DateTimeZone('UTC'));
+            return $dt->getTimestamp();
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    /**
+     * Format a DB timestamp for display in the app's time zone, e.g.
+     * Post::formatDbDate($row['created_at'], 'M j, Y'). Returns '' when
+     * the value cannot be parsed.
+     */
+    public static function formatDbDate(?string $datetime, string $format): string {
+        $timestamp = self::parseDbTimestamp($datetime);
+        return $timestamp === false ? '' : date($format, $timestamp);
     }
 }

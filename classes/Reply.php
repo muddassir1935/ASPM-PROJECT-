@@ -78,9 +78,8 @@ class Reply {
             if ($stmt->execute()) {
                 $newReplyId = (int)$this->db->lastInsertId();
 
-                // Reply counts are rendered inside cached feed rows:
-                // invalidate cached feeds (Sprint 4, WBS 4.3.5 hooks).
-                Cache::getInstance()->deleteByPrefix('feed_');
+                // No feed-cache flush (audit C9): reply_count is attached
+                // live to cached feed rows.
 
                 // Sprint 5 (WBS 5.x): Notify post author if not replying to own post
                 try {
@@ -147,7 +146,7 @@ class Reply {
      *        'reply.delete_any' permission (RBAC, Sprint 5 — the caller
      *        decides via Authorization, this method only enforces)
      */
-    public function delete(int $replyId, int $userId, bool $canDeleteAny = false): bool {
+    public function delete(int $replyId, int $userId, bool $canDeleteAny = false, bool $canDeleteOwn = true): bool {
         $checkSql = "SELECT user_id FROM replies WHERE id = :id AND deleted_at IS NULL LIMIT 1";
         $checkStmt = $this->db->prepare($checkSql);
         $checkStmt->bindParam(':id', $replyId, PDO::PARAM_INT);
@@ -159,18 +158,15 @@ class Reply {
         }
 
         $isAuthor = ((int)$owner['user_id'] === $userId);
-        if (!$isAuthor && !$canDeleteAny) {
+        // Audit C7: $canDeleteOwn carries the 'reply.delete_own' permission.
+        if (!($isAuthor && $canDeleteOwn) && !$canDeleteAny) {
             return false;
         }
 
         $sql = "UPDATE replies SET deleted_at = CURRENT_TIMESTAMP WHERE id = :id AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':id', $replyId, PDO::PARAM_INT);
-        $ok = $stmt->execute();
-        if ($ok) {
-            Cache::getInstance()->deleteByPrefix('feed_');
-        }
-        return $ok;
+        return $stmt->execute();
     }
 
     public function countByPost(int $postId): int {
