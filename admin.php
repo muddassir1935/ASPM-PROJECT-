@@ -19,6 +19,7 @@ require_once 'classes/Auth.php';
 require_once 'classes/Authorization.php';
 require_once 'classes/User.php';
 require_once 'classes/Post.php';
+require_once 'classes/Report.php';
 require_once 'classes/Csrf.php';
 
 if (!Auth::isLoggedIn()) {
@@ -57,6 +58,12 @@ $totalPages = max(1, (int)ceil($totalUsers / $perPage));
 // Moderation queue: newest posts first (same data as the feed).
 $postModel = new Post($db);
 $recentPosts = $postModel->getFeed(20, 0, $currentUserId, true);
+
+// Reports queue: user flags waiting for administrator review.
+$reportModel = new Report($db);
+$pendingReports = $reportModel->listPending(50);
+$totalPendingReports = $reportModel->countPending();
+$reviewedReports = $reportModel->listReviewed(20);
 ?>
 
 <div class="layout-3col">
@@ -207,6 +214,95 @@ $recentPosts = $postModel->getFeed(20, 0, $currentUserId, true);
                     </div>
                 </div>
             <?php endforeach; ?>
+        <?php endif; ?>
+
+        <h3 class="section-title" id="reports" style="margin-top: 2rem;">Reports Queue (<?= (int)$totalPendingReports ?>)</h3>
+        <?php if (empty($pendingReports)): ?>
+            <div class="empty-state" style="padding: 24px; text-align: center; border-bottom: 1px solid var(--line);">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="32" height="32" style="color: var(--muted); margin-bottom: 8px;"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                <p class="empty-title" style="margin: 0; font-weight: 700;">No pending reports</p>
+                <p class="empty-text" style="margin: 4px 0 0 0; color: var(--muted); font-size: 0.88rem;">All student flags have been reviewed. The moderation queue is clean!</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($pendingReports as $report): ?>
+                <div class="admin-report-card" style="padding: 16px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 10px;">
+                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                            <span class="report-badge-reason" style="background: rgba(244, 33, 46, 0.12); color: #F4212E; font-weight: 700; font-size: 0.80rem; padding: 3px 8px; border-radius: 6px; border: 1px solid rgba(244, 33, 46, 0.25);">
+                                <?= htmlspecialchars($report['reason_label']) ?>
+                            </span>
+                            <span style="font-size: 0.82rem; color: var(--muted);">
+                                Reported by <a href="profile.php?id=<?= (int)$report['reporter_id'] ?>" style="color: var(--ink); font-weight: 600; text-decoration: none;"><?= htmlspecialchars($report['reporter_name']) ?></a> &middot; <?= htmlspecialchars($report['time_ago']) ?>
+                            </span>
+                            <?php if ((int)$report['post_report_count'] > 1): ?>
+                                <span style="font-size: 0.78rem; font-weight: 700; background: var(--wash); border: 1px solid var(--line); padding: 2px 7px; border-radius: 9999px; color: var(--muted);">
+                                    <?= (int)$report['post_report_count'] ?> reports on this post
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <form method="POST" action="report_review.php" style="margin:0;">
+                                <?= Csrf::field() ?>
+                                <input type="hidden" name="action" value="dismiss">
+                                <input type="hidden" name="report_id" value="<?= (int)$report['id'] ?>">
+                                <button type="submit" class="admin-btn-action" style="background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 5px 12px; font-size: 0.82rem; border-radius: 9999px; cursor: pointer;">
+                                    Dismiss
+                                </button>
+                            </form>
+                            <form method="POST" action="report_review.php" class="inline-form js-confirm-delete" data-confirm-title="Delete Reported Post" data-confirm-message="Are you sure you want to delete this post? The post will be soft-deleted and all pending reports for it will be marked actioned." data-confirm-btn="Delete Post" style="margin:0;">
+                                <?= Csrf::field() ?>
+                                <input type="hidden" name="action" value="action">
+                                <input type="hidden" name="report_id" value="<?= (int)$report['id'] ?>">
+                                <button type="submit" class="admin-mod-delete-btn" style="padding: 5px 12px; font-size: 0.82rem;">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                                    Delete Post
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <?php if (!empty($report['detail'])): ?>
+                        <div style="background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; font-size: 0.86rem; color: var(--ink);">
+                            <strong style="font-size: 0.78rem; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 2px;">Reporter Note:</strong>
+                            <?= htmlspecialchars($report['detail']) ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div style="background: var(--wash); border-left: 3px solid var(--accent); padding: 10px 14px; border-radius: 0 8px 8px 0;">
+                        <div style="font-size: 0.82rem; color: var(--muted); margin-bottom: 4px;">
+                            Post by <a href="profile.php?id=<?= (int)$report['post_author_id'] ?>" style="color: var(--ink); font-weight: 600; text-decoration: none;"><?= htmlspecialchars($report['post_author_name']) ?></a>:
+                        </div>
+                        <p style="margin: 0; font-size: 0.90rem; color: var(--ink); line-height: 1.4;">
+                            <?= htmlspecialchars(mb_strimwidth($report['post_content'], 0, 180, '…', 'UTF-8')) ?>
+                        </p>
+                        <div style="margin-top: 6px;">
+                            <a href="post.php?id=<?= (int)$report['post_id'] ?>" style="font-size: 0.80rem; font-weight: 600; color: var(--accent); text-decoration: none;">View original post &rarr;</a>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+
+        <?php if (!empty($reviewedReports)): ?>
+            <details style="margin-top: 16px; padding: 12px 16px; border-top: 1px solid var(--line);">
+                <summary style="font-size: 0.90rem; font-weight: 700; color: var(--muted); cursor: pointer; user-select: none;">
+                    Reviewed Reports Audit Log (<?= count($reviewedReports) ?> shown)
+                </summary>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 12px;">
+                    <?php foreach ($reviewedReports as $rev): ?>
+                        <div style="padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; font-size: 0.84rem; display: flex; justify-content: space-between; align-items: center; background: var(--bg);">
+                            <div>
+                                <span style="display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 0.74rem; font-weight: 700; text-transform: uppercase; margin-right: 6px; <?= $rev['status'] === 'actioned' ? 'background: rgba(244, 33, 46, 0.15); color: #F4212E;' : 'background: var(--wash); color: var(--muted);' ?>">
+                                    <?= htmlspecialchars($rev['status']) ?>
+                                </span>
+                                <strong><?= htmlspecialchars($rev['reason_label']) ?></strong> on post by <?= htmlspecialchars($rev['post_author_name']) ?>
+                                <span style="color: var(--muted); font-size: 0.78rem;">&middot; Reviewed by <?= htmlspecialchars($rev['reviewer_name'] ?? 'Admin') ?> <?= htmlspecialchars($rev['reviewed_time_ago']) ?></span>
+                            </div>
+                            <span style="color: var(--muted); font-size: 0.78rem;">Post #<?= (int)$rev['post_id'] ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </details>
         <?php endif; ?>
     </div>
 
