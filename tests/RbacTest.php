@@ -97,15 +97,15 @@ runTest("isValidRole rejects legacy 'admin' for assignment",
     Authorization::isValidRole('admin'), false);
 runTest("isValidRole rejects unknown roles",
     Authorization::isValidRole('root'), false);
-runTest("permissionsFor('system_admin') holds all 12 permissions",
-    count(Authorization::permissionsFor('system_admin')), 12);
+runTest("permissionsFor('system_admin') holds all 14 permissions",
+    count(Authorization::permissionsFor('system_admin')), 14);
 runTest("system_admin can reset passwords, student cannot",
     Authorization::can('system_admin', 'user.reset_password') === true
         && Authorization::can('student', 'user.reset_password') === false
         && Authorization::can('society_admin', 'user.reset_password') === false,
     true);
-runTest("permissionsFor('student') holds 5 permissions",
-    count(Authorization::permissionsFor('student')), 5);
+runTest("permissionsFor('student') holds 6 permissions",
+    count(Authorization::permissionsFor('student')), 6);
 runTest("displayLabel('system_admin') is 'System Admin'",
     Authorization::displayLabel('system_admin'), 'System Admin');
 
