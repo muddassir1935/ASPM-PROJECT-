@@ -1,4 +1,8 @@
-CREATE DATABASE IF NOT EXISTS campusconnect;
+-- Audit C6: explicit utf8mb4 (XAMPP MariaDB defaults to latin1, which breaks
+-- emoji / Urdu). Indexes are declared inside each CREATE TABLE so the whole
+-- file is idempotent: re-importing it on an existing database is a no-op
+-- instead of failing with "Duplicate key name".
+CREATE DATABASE IF NOT EXISTS campusconnect CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE campusconnect;
 
 -- Users Table (Sprint 1)
@@ -11,7 +15,7 @@ CREATE TABLE IF NOT EXISTS users (
     bio TEXT DEFAULT NULL,
     cover_style VARCHAR(20) NOT NULL DEFAULT 'signature',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Posts Table (Sprint 2: Core Post Engine)
 CREATE TABLE IF NOT EXISTS posts (
@@ -22,12 +26,10 @@ CREATE TABLE IF NOT EXISTS posts (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
-    CONSTRAINT fk_posts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-
--- Performance Indexes for Feed & User Queries
-CREATE INDEX idx_posts_user_id ON posts(user_id);
-CREATE INDEX idx_posts_created_at ON posts(created_at DESC);
+    CONSTRAINT fk_posts_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_posts_user_id (user_id),
+    INDEX idx_posts_created_at (created_at DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Follows Table (Sprint 3: Social Graph, WBS 3.2)
 CREATE TABLE IF NOT EXISTS follows (
@@ -37,9 +39,9 @@ CREATE TABLE IF NOT EXISTS follows (
     PRIMARY KEY (follower_id, followed_id),
     CONSTRAINT fk_follows_follower FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT fk_follows_followed FOREIGN KEY (followed_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT chk_follows_no_self CHECK (follower_id <> followed_id)
-);
-CREATE INDEX idx_follows_followed_id ON follows(followed_id);
+    CONSTRAINT chk_follows_no_self CHECK (follower_id <> followed_id),
+    INDEX idx_follows_followed_id (followed_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Replies Table (Sprint 3: Threaded Replies, WBS 3.4.1)
 CREATE TABLE IF NOT EXISTS replies (
@@ -51,10 +53,10 @@ CREATE TABLE IF NOT EXISTS replies (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
     CONSTRAINT fk_replies_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-    CONSTRAINT fk_replies_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_replies_post_id ON replies(post_id);
-CREATE INDEX idx_replies_created_at ON replies(created_at);
+    CONSTRAINT fk_replies_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_replies_post_id (post_id),
+    INDEX idx_replies_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Bookmarks Table (Sprint 3: Saved Posts, WBS 3.4.3)
 CREATE TABLE IF NOT EXISTS bookmarks (
@@ -63,9 +65,9 @@ CREATE TABLE IF NOT EXISTS bookmarks (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, post_id),
     CONSTRAINT fk_bookmarks_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_bookmarks_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_bookmarks_post_id ON bookmarks(post_id);
+    CONSTRAINT fk_bookmarks_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    INDEX idx_bookmarks_post_id (post_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Sessions Table (Sprint 3: DB-backed Sessions, approved Problem 2)
 -- Session data lives here instead of files; user_id is set at login.
@@ -74,10 +76,10 @@ CREATE TABLE IF NOT EXISTS sessions (
     user_id INT DEFAULT NULL,
     data TEXT NOT NULL,
     last_activity INT NOT NULL,
-    CONSTRAINT fk_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_sessions_user_id ON sessions(user_id);
-CREATE INDEX idx_sessions_last_activity ON sessions(last_activity);
+    CONSTRAINT fk_sessions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_sessions_user_id (user_id),
+    INDEX idx_sessions_last_activity (last_activity)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Likes Table (Sprint 4: Heart Reactions, WBS 4.1)
 CREATE TABLE IF NOT EXISTS likes (
@@ -86,18 +88,17 @@ CREATE TABLE IF NOT EXISTS likes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (user_id, post_id),
     CONSTRAINT fk_likes_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_likes_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_likes_post_id ON likes(post_id);
-CREATE INDEX idx_likes_created_at ON likes(created_at);
+    CONSTRAINT fk_likes_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    INDEX idx_likes_post_id (post_id),
+    INDEX idx_likes_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Hashtags Table (Sprint 4: Hashtag System, WBS 4.2)
 CREATE TABLE IF NOT EXISTS hashtags (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tag VARCHAR(100) UNIQUE NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX idx_hashtags_tag ON hashtags(tag);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Post Hashtags Association Table (Sprint 4, WBS 4.2)
 CREATE TABLE IF NOT EXISTS post_hashtags (
@@ -106,9 +107,9 @@ CREATE TABLE IF NOT EXISTS post_hashtags (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (post_id, hashtag_id),
     CONSTRAINT fk_post_hashtags_post FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
-    CONSTRAINT fk_post_hashtags_tag FOREIGN KEY (hashtag_id) REFERENCES hashtags(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_post_hashtags_tag ON post_hashtags(hashtag_id);
+    CONSTRAINT fk_post_hashtags_tag FOREIGN KEY (hashtag_id) REFERENCES hashtags(id) ON DELETE CASCADE,
+    INDEX idx_post_hashtags_tag (hashtag_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Notifications Table (Sprint 5: In-App Notifications, WBS 5.x)
 -- Fresh installs get this table from schema.sql; migrate_sprint5_notifications_mysql.sql
@@ -123,10 +124,10 @@ CREATE TABLE IF NOT EXISTS notifications (
     is_read TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_notifications_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
-);
-CREATE INDEX idx_notifications_user_read ON notifications(user_id, is_read);
-CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at DESC);
+    CONSTRAINT fk_notifications_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_notifications_user_read (user_id, is_read),
+    INDEX idx_notifications_user_created (user_id, created_at DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Login Attempts Table (Sprint 5: login rate-limit / lockout)
 -- One row per (email, IP) pair; see classes/LoginRateLimiter.php.
@@ -139,7 +140,7 @@ CREATE TABLE IF NOT EXISTS login_attempts (
     last_attempt INT NOT NULL DEFAULT 0,
     locked_until INT NOT NULL DEFAULT 0,
     PRIMARY KEY (email, ip)
-);
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Reports Table (Sprint 5: Post Reporting & Moderation Queue)
 -- Fresh installs get this table from schema.sql; migrate_6_reports.sql
@@ -160,8 +161,8 @@ CREATE TABLE IF NOT EXISTS reports (
     CONSTRAINT fk_reports_post FOREIGN KEY (post_id)
         REFERENCES posts(id) ON DELETE CASCADE,
     CONSTRAINT fk_reports_reviewer FOREIGN KEY (reviewed_by)
-        REFERENCES users(id) ON DELETE SET NULL
-);
-CREATE INDEX idx_reports_status ON reports(status);
-CREATE INDEX idx_reports_post ON reports(post_id);
+        REFERENCES users(id) ON DELETE SET NULL,
+    INDEX idx_reports_status (status),
+    INDEX idx_reports_post (post_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

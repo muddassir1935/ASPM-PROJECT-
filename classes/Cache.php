@@ -44,6 +44,18 @@ class Cache {
     }
 
     /**
+     * Namespace for every Redis key (audit C17). Without it the app's keys
+     * ("feed_...", "like_count_...") shared one flat keyspace with anything
+     * else on the same Redis server, deleteByPrefix('feed_') could remove
+     * another app's keys, and flush() ran FLUSHDB on the whole database.
+     * Override with CC_CACHE_PREFIX (e.g. per environment).
+     */
+    private function ns(string $key): string {
+        $prefix = getenv('CC_CACHE_PREFIX');
+        return ($prefix !== false && $prefix !== '' ? $prefix : 'campusconnect:') . $key;
+    }
+
+    /**
      * Attempt connection to Redis with short timeout to prevent slow request stalls.
      * Tries the phpredis extension first, then the TinyRedisClient socket client.
      */
@@ -93,6 +105,7 @@ class Cache {
     // ---- Raw backend primitives (values are raw strings at this layer) ----
 
     private function rawGet(string $key): ?string {
+        $key = $this->ns($key);
         try {
             if ($this->backend === 'phpredis' && $this->redis) {
                 $val = $this->redis->get($key);
@@ -108,6 +121,7 @@ class Cache {
     }
 
     private function rawSet(string $key, string $value, int $ttl): bool {
+        $key = $this->ns($key);
         try {
             if ($this->backend === 'phpredis' && $this->redis) {
                 return $ttl > 0
@@ -125,6 +139,7 @@ class Cache {
         return false;
     }
 
+    /** Delete keys; $keys are full, already-namespaced Redis keys. */
     private function rawDel(array $keys): int {
         if (empty($keys)) {
             return 0;
@@ -143,6 +158,7 @@ class Cache {
     }
 
     private function rawIncr(string $key): ?int {
+        $key = $this->ns($key);
         try {
             if ($this->backend === 'phpredis' && $this->redis) {
                 $val = $this->redis->incr($key);
@@ -157,9 +173,13 @@ class Cache {
         return null;
     }
 
-    /** All live keys starting with $prefix, via SCAN (KEYS fallback). */
+    /**
+     * All live keys starting with $prefix (inside this app's namespace),
+     * via SCAN (KEYS fallback). Returns full namespaced keys for rawDel().
+     */
     private function rawKeysByPrefix(string $prefix): array {
-        $pattern = $prefix . '*';
+        // Escape glob metacharacters so a prefix matches literally.
+        $pattern = addcslashes($this->ns($prefix), '*?[]\\') . '*';
         try {
             if ($this->backend === 'phpredis' && $this->redis) {
                 $keys = [];
@@ -208,7 +228,9 @@ class Cache {
         if ($this->isAvailable()) {
             $val = $this->rawGet($key);
             if ($val !== null) {
-                return unserialize($val);
+                // Audit C17: cached values are plain arrays/scalars; never
+                // instantiate objects from cache data.
+                return unserialize($val, ['allowed_classes' => false]);
             }
             // Miss (or backend hiccup): check memory before giving up
         }
@@ -244,7 +266,7 @@ class Cache {
      */
     public function delete(string $key): bool {
         unset($this->memoryCache[$key]);
-        $this->rawDel([$key]);
+        $this->rawDel([$this->ns($key)]);
         return true;
     }
 
@@ -336,14 +358,9 @@ class Cache {
      */
     public function flush(): bool {
         $this->memoryCache = [];
-        if ($this->backend === 'phpredis' && $this->redis) {
-            try {
-                return (bool)$this->redis->flushDB();
-            } catch (Throwable $e) {
-                return false;
-            }
-        }
-        if ($this->backend === 'tinyredis') {
+        // Audit C17: only this app's namespaced keys — never FLUSHDB, which
+        // wiped every key in a Redis database shared with other apps.
+        if ($this->isAvailable()) {
             $keys = $this->rawKeysByPrefix('');
             if (!empty($keys)) {
                 $this->rawDel($keys);

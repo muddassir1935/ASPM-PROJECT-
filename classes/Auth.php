@@ -1,6 +1,17 @@
 <?php
 require_once __DIR__ . '/Authorization.php';
 
+// Audit C3: action handlers (post_action.php, like_action.php, ...) never
+// include includes/header.php, which is where display_errors used to be
+// switched off — so a PHP warning there printed the server's absolute
+// file path to the browser. Every web entry point loads this class, so
+// turn browser error output off here too (errors still go to the log).
+// CLI runs (tests, scripts) keep their normal error output.
+if (PHP_SAPI !== 'cli') {
+    ini_set('display_errors', '0');
+    ini_set('log_errors', '1');
+}
+
 class Auth {
     /** Idle sessions are logged out after 30 minutes of inactivity. */
     public const IDLE_TIMEOUT_SECONDS = 1800;
@@ -135,7 +146,10 @@ class Auth {
             return;
         }
         $_SESSION = [];
-        if (ini_get("session.use_cookies")) {
+        // Audit C23: setcookie() after output only raises "headers already
+        // sent" (seen in RbacTest) — the session row is destroyed below either
+        // way, so the stale cookie is harmless and gets replaced next request.
+        if (ini_get("session.use_cookies") && !headers_sent()) {
             $params = session_get_cookie_params();
             setcookie(session_name(), '', time() - 42000,
                 $params["path"], $params["domain"],

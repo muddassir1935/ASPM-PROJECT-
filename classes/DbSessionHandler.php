@@ -17,7 +17,7 @@
  * function so session data is written before the PDO object is
  * destroyed at request shutdown.
  */
-class DbSessionHandler implements SessionHandlerInterface {
+class DbSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     private PDO $db;
     private string $driver;
 
@@ -41,6 +41,40 @@ class DbSessionHandler implements SessionHandlerInterface {
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
         return $row ? (string)$row['data'] : '';
+    }
+
+    /**
+     * Strict-mode support (audit C4). session.use_strict_mode only works
+     * for a custom handler that implements validateId(): without it PHP
+     * accepted ANY session ID a client sent (read() returns '' for an
+     * unknown id, which counts as valid) and stored a row for it. Now an
+     * ID is valid only if this server issued it, so PHP replaces unknown
+     * or revoked IDs with a fresh one.
+     */
+    public function validateId(string $id): bool {
+        $stmt = $this->db->prepare("SELECT 1 FROM sessions WHERE id = :id LIMIT 1");
+        $stmt->bindParam(':id', $id, PDO::PARAM_STR);
+        $stmt->execute();
+        return (bool)$stmt->fetchColumn();
+    }
+
+    /**
+     * Called instead of write() when the session data did not change
+     * (lazy write). Only the activity stamp moves, so an idle-but-open
+     * session is not garbage-collected while it is still in use.
+     */
+    public function updateTimestamp(string $id, string $data): bool {
+        $now = time();
+        $stmt = $this->db->prepare("UPDATE sessions SET last_activity = :last_activity WHERE id = :id");
+        $stmt->bindParam(':last_activity', $now, PDO::PARAM_INT);
+        $stmt->bindParam(':id', $id, PDO::PARAM_STR);
+        try {
+            $stmt->execute();
+            return true;
+        } catch (PDOException $e) {
+            error_log("DB session updateTimestamp error: " . $e->getMessage());
+            return false;
+        }
     }
 
     public function write(string $id, string $data): bool {

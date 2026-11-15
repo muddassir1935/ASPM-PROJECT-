@@ -33,7 +33,8 @@ require_once __DIR__ . '/../config/Database.php';
 // Bcrypt hash of the shared demo password StrongPass123! (same as db/seed.sql).
 const DEMO_PASSWORD_HASH = '$2y$10$fDK5wW3xgr8fRlkILk2URuMARwJo9on/0xWquENZUNPMEk9CmY23e';
 
-$ago = static fn(int $seconds): string => date('Y-m-d H:i:s', time() - $seconds);
+// gmdate: DB timestamps are stored in UTC (audit C2).
+$ago = static fn(int $seconds): string => gmdate('Y-m-d H:i:s', time() - $seconds);
 $DAY = 86400;
 $HOUR = 3600;
 

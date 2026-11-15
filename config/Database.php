@@ -1,4 +1,14 @@
 <?php
+// Audit C2: one display time zone for every entry point. It used to be set
+// only in includes/header.php, so action handlers and CLI scripts ran in
+// php.ini's zone. Timestamps are STORED in UTC (see the MySQL time_zone
+// below and SQLite's UTC CURRENT_TIMESTAMP) and converted for display by
+// Post::parseDbTimestamp() / Post::formatDbDate().
+if (!defined('CAMPUSCONNECT_TIMEZONE')) {
+    define('CAMPUSCONNECT_TIMEZONE', 'Asia/Karachi');
+}
+date_default_timezone_set(CAMPUSCONNECT_TIMEZONE);
+
 class Database {
     private static $instance = null;
     private $connection;
@@ -26,6 +36,9 @@ class Database {
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_TIMEOUT => 2
             ]);
+            // Audit C2: read and write TIMESTAMPs in UTC, matching SQLite,
+            // whatever time zone the MySQL server itself runs in.
+            $this->connection->exec("SET time_zone = '+00:00'");
             $this->driver = 'mysql';
         } catch(PDOException $e) {
             // Fallback to SQLite (Zero-Config mode so it works even if XAMPP is off)

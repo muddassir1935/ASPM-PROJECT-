@@ -10,6 +10,9 @@ class User {
     public const COVER_STYLES = ['signature', 'cobalt', 'teal', 'sunset', 'violet', 'graphite'];
     public const DEFAULT_COVER_STYLE = 'signature';
 
+    /** Argon2id hash of a throwaway string, verified for unknown emails (audit C12). */
+    private const TIMING_DUMMY_HASH = '$argon2id$v=19$m=65536,t=4,p=1$NmVzWUF0OHVrRHFTdGJjYg$iD2KljUx2XsAIK/QpF2+ClyEBU+N3c2ICkQRKXR/MoE';
+
     public function __construct($dbConnection) {
         $this->db = $dbConnection;
     }
@@ -25,6 +28,20 @@ class User {
     }
 
     /**
+     * Normalize a display name (audit C8): strip control characters
+     * (newlines, tabs, NUL ...) and collapse runs of whitespace. A name
+     * with an embedded newline used to break the admin panel's inline
+     * confirm() JavaScript, silently disabling the confirmation.
+     */
+    public static function cleanName($name): string {
+        $clean = preg_replace('/[\p{Cc}\p{Zl}\p{Zp}]+/u', ' ', (string)$name);
+        if ($clean === null) { // invalid UTF-8
+            return '';
+        }
+        return trim(preg_replace('/\s+/u', ' ', $clean));
+    }
+
+    /**
      * Register a new user with password hashing.
      * Ideal for Unit Testing.
      */
@@ -37,8 +54,11 @@ class User {
         // Validate here so every path (web form, tests, seed scripts) gets
         // the same rules: real email shape, name within the column, and a
         // password cap — Argon2id on a megabyte password is a CPU DoS.
-        $name = trim((string)$name);
-        $email = trim((string)$email);
+        $name = self::cleanName($name);
+        // Audit C11: emails are case-insensitive. Store them lowercased so
+        // SQLite (case-sensitive UNIQUE / lookups) cannot hold two accounts
+        // that differ only by case, matching MySQL's case-insensitive collation.
+        $email = strtolower(trim((string)$email));
         if (mb_strlen($name, 'UTF-8') < 1 || mb_strlen($name, 'UTF-8') > 255) {
             return false;
         }
@@ -189,12 +209,27 @@ class User {
      * Ideal for Unit Testing.
      */
     public function verifyPassword($email, $password) {
-        $stmt = $this->db->prepare("SELECT id, name, email, password_hash, role FROM users WHERE email = :email");
-        $stmt->bindParam(':email', $email);
+        // Audit C11: match case-insensitively. New accounts are stored
+        // lowercased; the exact-case alternative keeps any older mixed-case
+        // row (SQLite) working. No function on the column, so the UNIQUE
+        // index on email is still used.
+        $raw = trim((string)$email);
+        $stmt = $this->db->prepare(
+            "SELECT id, name, email, password_hash, role FROM users
+             WHERE email = :email OR email = :raw_email LIMIT 1"
+        );
+        $stmt->bindValue(':email', strtolower($raw), PDO::PARAM_STR);
+        $stmt->bindValue(':raw_email', $raw, PDO::PARAM_STR);
         $stmt->execute();
 
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
-        if($user && password_verify($password, $user['password_hash'])) {
+        if (!$user) {
+            // Audit C12: spend the same Argon2id time for an unknown email,
+            // so response timing does not reveal which emails are registered.
+            password_verify((string)$password, self::TIMING_DUMMY_HASH);
+            return false;
+        }
+        if (password_verify((string)$password, $user['password_hash'])) {
             return $user;
         }
         return false;
@@ -231,7 +266,7 @@ class User {
         if ((int)$userId <= 0) {
             return false;
         }
-        $cleanName = trim((string)$name);
+        $cleanName = self::cleanName($name);
         if ($cleanName === '' || mb_strlen($cleanName, 'UTF-8') > 255) {
             return false;
         }
@@ -256,10 +291,24 @@ class User {
         }
         $stmt->bindParam(':id', $userId, PDO::PARAM_INT);
         try {
-            return $stmt->execute();
+            $ok = $stmt->execute();
+            if ($ok) {
+                self::flushFeedCache();
+            }
+            return $ok;
         } catch(PDOException $e) {
             return false;
         }
+    }
+
+    /**
+     * Cached feed rows carry author_name / author_role (audit C9/B18): a
+     * rename or role change must drop them, or feeds show the old name or
+     * badge for up to 5 minutes.
+     */
+    private static function flushFeedCache(): void {
+        require_once __DIR__ . '/Cache.php';
+        Cache::getInstance()->deleteByPrefix('feed_');
     }
 
     /**
@@ -269,13 +318,13 @@ class User {
      */
     public function listUsers(string $search = '', int $limit = 50, int $offset = 0): array {
         $clean = trim($search);
-        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+        $like = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $clean) . '%';
         $sql = "SELECT u.id, u.name, u.email, u.role, u.created_at,
                        (SELECT COUNT(*) FROM posts p WHERE p.user_id = u.id AND p.deleted_at IS NULL) AS post_count
                 FROM users u";
         $params = [];
         if ($clean !== '') {
-            $sql .= " WHERE (u.name LIKE :q ESCAPE '\\' OR u.email LIKE :q2 ESCAPE '\\')";
+            $sql .= " WHERE (u.name LIKE :q ESCAPE '!' OR u.email LIKE :q2 ESCAPE '!')";
             $params[':q'] = $like;
             $params[':q2'] = $like;
         }
@@ -296,8 +345,8 @@ class User {
         $sql = "SELECT COUNT(*) FROM users u";
         $params = [];
         if ($clean !== '') {
-            $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
-            $sql .= " WHERE (u.name LIKE :q ESCAPE '\\' OR u.email LIKE :q2 ESCAPE '\\')";
+            $like = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $clean) . '%';
+            $sql .= " WHERE (u.name LIKE :q ESCAPE '!' OR u.email LIKE :q2 ESCAPE '!')";
             $params[':q'] = $like;
             $params[':q2'] = $like;
         }
@@ -328,7 +377,11 @@ class User {
         $stmt->bindValue(':id', (int)$userId, PDO::PARAM_INT);
         try {
             $stmt->execute();
-            return $stmt->rowCount() > 0;
+            $changed = $stmt->rowCount() > 0;
+            if ($changed) {
+                self::flushFeedCache();
+            }
+            return $changed;
         } catch (PDOException $e) {
             return false;
         }
@@ -354,12 +407,12 @@ class User {
         if ($clean === '') {
             return [];
         }
-        $like = '%' . str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $clean) . '%';
+        $like = '%' . str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $clean) . '%';
         $stmt = $this->db->prepare(
             "SELECT u.id, u.name, u.role, u.bio,
                     (SELECT COUNT(*) FROM follows f WHERE f.followed_id = u.id) AS follower_count
              FROM users u
-             WHERE u.name LIKE :q ESCAPE '\\'
+             WHERE u.name LIKE :q ESCAPE '!'
                AND u.id <> :exclude_id
              ORDER BY u.name ASC
              LIMIT :limit"

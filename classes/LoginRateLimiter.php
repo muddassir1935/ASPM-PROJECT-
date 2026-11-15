@@ -17,6 +17,17 @@ class LoginRateLimiter {
     public const WINDOW_SECONDS = 900;   // 15 minutes
     public const LOCK_SECONDS = 900;     // 15 minutes
 
+    /**
+     * Audit C21: per-IP ceiling across ALL emails. Keying only on
+     * (email, IP) let one machine try a common password against unlimited
+     * accounts ("password spraying"). The IP-wide counter lives in the same
+     * table under the sentinel email '*', which can never be a real
+     * (validated) address. Set well above MAX_ATTEMPTS so a shared campus
+     * NAT doesn't lock out normal typos.
+     */
+    public const IP_MAX_ATTEMPTS = 20;
+    private const IP_WIDE = '*';
+
     private PDO $db;
 
     public function __construct(PDO $db) {
@@ -56,37 +67,34 @@ class LoginRateLimiter {
         return [strtolower(trim($email)), $ip ?? $this->clientIp()];
     }
 
-    /** Is this (email, IP) pair currently locked out? */
+    /** Is this (email, IP) pair locked out — by its own failures or the IP-wide ceiling? */
     public function isLocked(string $email, ?string $ip = null, ?int $now = null): bool {
-        $now = $now ?? time();
-        [$cleanEmail, $cleanIp] = $this->key($email, $ip);
-        $stmt = $this->db->prepare(
-            "SELECT locked_until FROM login_attempts WHERE email = :email AND ip = :ip LIMIT 1"
-        );
-        $stmt->execute([':email' => $cleanEmail, ':ip' => $cleanIp]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        return $row !== false && (int)($row['locked_until'] ?? 0) > $now;
+        return $this->lockRemainingSeconds($email, $ip, $now) > 0;
     }
 
     /** Seconds remaining on the lock (0 when not locked). */
     public function lockRemainingSeconds(string $email, ?string $ip = null, ?int $now = null): int {
         $now = $now ?? time();
         [$cleanEmail, $cleanIp] = $this->key($email, $ip);
+        // The longer of the pair lock and the IP-wide lock (audit C21).
         $stmt = $this->db->prepare(
-            "SELECT locked_until FROM login_attempts WHERE email = :email AND ip = :ip LIMIT 1"
+            "SELECT MAX(locked_until) FROM login_attempts
+             WHERE ip = :ip AND (email = :email OR email = :ip_wide)"
         );
-        $stmt->execute([':email' => $cleanEmail, ':ip' => $cleanIp]);
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row === false) {
-            return 0;
-        }
-        return max(0, (int)($row['locked_until'] ?? 0) - $now);
+        $stmt->execute([':email' => $cleanEmail, ':ip' => $cleanIp, ':ip_wide' => self::IP_WIDE]);
+        return max(0, (int)$stmt->fetchColumn() - $now);
     }
 
     /** Record a failed login; locks the pair once MAX_ATTEMPTS is hit. */
     public function recordFailure(string $email, ?string $ip = null, ?int $now = null): void {
         $now = $now ?? time();
         [$cleanEmail, $cleanIp] = $this->key($email, $ip);
+        $this->bump($cleanEmail, $cleanIp, $now, self::MAX_ATTEMPTS);
+        $this->bump(self::IP_WIDE, $cleanIp, $now, self::IP_MAX_ATTEMPTS);
+    }
+
+    /** Count one failure for a (key, IP) row; lock it at $max failures. */
+    private function bump(string $cleanEmail, string $cleanIp, int $now, int $max): void {
         $stmt = $this->db->prepare(
             "SELECT attempts, last_attempt FROM login_attempts WHERE email = :email AND ip = :ip LIMIT 1"
         );
@@ -100,26 +108,33 @@ class LoginRateLimiter {
                 ? (int)$row['attempts'] + 1
                 : 1;
         }
-        $lockedUntil = $attempts >= self::MAX_ATTEMPTS ? $now + self::LOCK_SECONDS : 0;
-
-        if ($row === false) {
-            $upsert = $this->db->prepare(
-                "INSERT INTO login_attempts (email, ip, attempts, last_attempt, locked_until)
-                 VALUES (:email, :ip, :attempts, :last_attempt, :locked_until)"
-            );
-        } else {
-            $upsert = $this->db->prepare(
-                "UPDATE login_attempts SET attempts = :attempts, last_attempt = :last_attempt,
-                 locked_until = :locked_until WHERE email = :email AND ip = :ip"
-            );
-        }
-        $upsert->execute([
+        $lockedUntil = $attempts >= $max ? $now + self::LOCK_SECONDS : 0;
+        $params = [
             ':email' => $cleanEmail,
             ':ip' => $cleanIp,
             ':attempts' => $attempts,
             ':last_attempt' => $now,
             ':locked_until' => $lockedUntil,
-        ]);
+        ];
+        $update = "UPDATE login_attempts SET attempts = :attempts, last_attempt = :last_attempt,
+                   locked_until = :locked_until WHERE email = :email AND ip = :ip";
+
+        if ($row === false) {
+            try {
+                $this->db->prepare(
+                    "INSERT INTO login_attempts (email, ip, attempts, last_attempt, locked_until)
+                     VALUES (:email, :ip, :attempts, :last_attempt, :locked_until)"
+                )->execute($params);
+                return;
+            } catch (PDOException $e) {
+                // Audit C21: a concurrent first failure inserted the row
+                // between our SELECT and INSERT (primary-key clash). This
+                // used to bubble up as a 500; count it as an update instead.
+                $params[':attempts'] = $attempts + 1;
+                $params[':locked_until'] = $params[':attempts'] >= $max ? $now + self::LOCK_SECONDS : 0;
+            }
+        }
+        $this->db->prepare($update)->execute($params);
     }
 
     /** Record a successful login: the pair's failure history is wiped. */

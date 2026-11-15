@@ -14,16 +14,22 @@ Options -Indexes
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
-    # Whole internal directories
-    RewriteRule ^(config|classes|db|docs|tests|scripts)/ - [F,L]
-    # Sensitive file types anywhere (SQLite DB, SQL dumps, markdown)
-    RewriteRule \.(sqlite|sqlite3|db|sql|md)$ - [F,L]
+    # Dotfiles and dot-directories anywhere: .git/ (full source + history),
+    # .env, .agents/ ... (audit C5 — .git/ was downloadable before).
+    RewriteRule (^|/)\. - [F,L]
+    # Whole internal directories (includes/ added in audit C5: the
+    # partials are never meant to be requested directly).
+    RewriteRule ^(config|classes|db|docs|tests|scripts|includes)(/|$) - [F,L,NC]
+    # Sensitive file types anywhere (SQLite DB, SQL dumps, markdown, scripts)
+    RewriteRule \.(sqlite|sqlite3|db|sql|md|py|sh|log)$ - [F,L,NC]
+    # The dev-server router is not a page
+    RewriteRule ^router\.php$ - [F,L,NC]
     # NOTE: benchmark.php is deliberately NOT blocked here anymore — its
     # web view is a real (admin-only) page now, gated in the file itself
     # (Sprint 5 final fix, audit item 9).
 </IfModule>
 
-<FilesMatch "\.(sqlite|sqlite3|db|sql|md)$">
+<FilesMatch "\.(sqlite|sqlite3|db|sql|md|py|sh|log)$">
     <IfModule mod_authz_core.c>
         Require all denied
     </IfModule>
