@@ -1,16 +1,19 @@
 # Team Contribution Matrix & Git Audit
 
-> **Honesty & Verification Notice**: This matrix is constructed directly from the verifiable Git repository commit history (`git log --all`). It documents the exact division of labor across all 5 Agile sprints for project **CampusConnect** (`ASPM-PROJECT-`), Section **BCS-7A**, Group Code **AIR**. Counts below were verified against main `8f516cf` (PR #9 merged 13 Nov 2026) plus the unmerged Sprint 5 branches. Main now has 34 commits total.
+> **Honesty & Verification Notice**: This matrix is constructed directly from the verifiable Git history of `main` (`git log`). It documents the division of labor across all 5 Agile sprints for project **CampusConnect** (`ASPM-PROJECT-`), Section **BCS-7A**, Group Code **AIR**. Counts below were re-verified on 15 Nov 2026 against main `e0371c2`: PRs #1–#15 are merged, and the post-delivery audit fixes are counted separately. "Commits" counts every commit including merge commits; "authored" excludes merges.
 
 ---
 
 ## 1. Executive Summary & Author Statistics
 
-| Team Member | Git Author Identity | Primary Role / Ownership | Commit Count (Sprints 1–4) | Commit Count (Sprint 5) | Total Commits |
+| Team Member | Git Author Identity | Primary Role / Ownership | Sprints 1–4 (authored / all) | Sprint 5, PRs #9–#15 (authored / all) | Total on main (authored / all) |
 |---|---|---|:---:|:---:|:---:|
-| **Muddassir** | `muddassir1935` | Technical Lead / Core Backend & Architecture (Sprints 1–3, Sprint 4 Fixes, Sprint 5 RBAC) | 25 | 2 on main (+1 RBAC branch) | 27 on main |
-| **Faiz Hussain** | `FaizHussain1912` | Backend & Testing Lead (Sprint 4 Core Likes/Hashtags/Cache, Sprint 5 Notifications) | 4 | 3 | 7 |
-| **Qaim** | `Qaim` | Frontend & Documentation Lead (Sprint 5 Responsive Polish, Docs Suite, Deliverables) | 0 | 4 (branch, PR #10) | 4 (pending merge) |
+| **Muddassir** | `muddassir1935` | Technical Lead / Core Backend & Architecture (Sprints 1–3, Sprint 4 fixes, Sprint 5 RBAC + security, UI redesign, PR reviews & merges) | 16 / 25 | 13 / 21 | 29 / 46 |
+| **Faiz Hussain** | `FaizHussain1912` | Backend & Testing Lead (Sprint 4 likes/hashtags/cache, Sprint 5 notifications, seed data, UI fixes) | 3 / 4 | 9 / 9 | 12 / 13 |
+| **Qaim** | `Qaim` | Frontend & Documentation Lead (Sprint 5 responsive polish, docs suite, deliverables, post reporting & moderation) | 0 / 0 | 12 / 12 | 12 / 12 |
+| **Haseeb** | `Haseebasif7` | Post-delivery code/docs audit and fixes (15 Nov; see `docs/AUDIT_FINDINGS.md`) | 0 / 0 | 0 / 0 | 7 / 7 |
+
+> Note on the audit row: the audit fixes are grouped into 7 commits (security/DB, core, UI, tests, docs, deliverables, audit report), made directly on top of Sprint 5 delivery (PR #15, `424390e`).
 
 ---
 
@@ -25,14 +28,16 @@ gantt
     section Sprint 2 (Post Engine & Feed)
     Muddassir (Posts, Feed UI, Docs)    :done, s2, 2026-10-22, 2026-11-03
     section Sprint 3 (Social & Redesign)
-    Muddassir (Follows, Replies, Design):done, s3, 2026-11-04, 2026-11-06
+    Muddassir (Follows, Replies, Design):done, s3, 2026-11-05, 2026-11-06
     section Sprint 4 (Likes, Tags, Cache)
     Faiz (Likes, Hashtags, Caching)     :done, s4_1, 2026-11-07, 2026-11-09
     Muddassir (TinyRedis, N+1, Fixes)   :done, s4_2, 2026-11-09, 2026-11-09
     section Sprint 5 (Hardening & Delivery)
-    Faiz (Notifications, Seed SQL)      :active, s5_1, 2026-11-13, 2026-11-14
-    Muddassir (RBAC, CSRF, Release)     :active, s5_2, 2026-11-13, 2026-11-15
-    Qaim (Mobile Polish, Docs, Report, PPTX):active, s5_3, 2026-11-13, 2026-11-14
+    Faiz (Notifications, Seed, UI fixes):done, s5_1, 2026-11-13, 2026-11-15
+    Muddassir (RBAC, CSRF, Redesign)    :done, s5_2, 2026-11-13, 2026-11-15
+    Qaim (Polish, Docs, Reports/Moderation):done, s5_3, 2026-11-13, 2026-11-15
+    section Audit (post-delivery)
+    Haseeb (Audit fixes)                :done, a1, 2026-11-15, 2026-11-15
 ```
 
 ### Sprint 1: Authentication OOP Foundation (WBS 1.0)
@@ -54,7 +59,7 @@ gantt
   - Documentation increment, WBS mapping, UML Class Diagram & ERD (`b59c5ae`)
 
 ### Sprint 3: Social Graph, Profiles, DB Sessions & Design System (WBS 3.0)
-- **Period**: 4 Nov 2026 – 6 Nov 2026 (PRs #4, #5, #6, #7)
+- **Period**: 5 Nov 2026 – 6 Nov 2026 (PRs #4, #5, #6, #7)
 - **Primary Contributor**: Muddassir (100% of commits)
 - **Key Deliverables**:
   - `Follow.php`, `Reply.php`, `Bookmark.php`, personalized feed queries (`6cbe7d4`)
@@ -100,31 +105,68 @@ gantt
     - `db/seed.sql` realistic university dataset (`4a79114`).
     - `docs/DEPLOYMENT.md` 5-minute XAMPP deployment guide (`4a79114`).
     - `tests/NotificationTest.php` automated test suite (`2500727`).
-  - **Muddassir & Muse** (Branch `feature/sprint-5-rbac`, plus PR #9 review fixes):
-    - Role-Based Access Control (`student`, `society_admin`, `system_admin`) — core built (`748f65d`).
-    - Central permissions matrix, society announcement channels (in progress), admin moderation panel (in progress).
-    - Security hardening: session idle timeout built; CSRF token validation and login rate limiting in progress.
-    - PR #9 review fixes on Faiz's branch (`af641f3`): notifications table in `db/schema.sql`, auth redirect order, `create()` error handling, `rowCount()` truth — suite 181/181.
-    - Final release verification, tagging, and zip packaging (`AIR_WorkingSoftware.zip`, regenerated from merged main on 15 Nov).
+    - UI fixes merged in PR #14 (`f61e5c6`): wider feed, user dock dropdown, campus hero background, in-app delete modal (`4f459d5`, `54bd171`, `f4097fc`, `76b204f`, `24e448b`, `073bbf8`).
+  - **Qaim** (continued): post reporting & admin moderation queue — `Report` model, report endpoint and modal, admin review queue, `tests/ReportTest.php`, manuals (PR #15, `424390e`; `548d463` … `4ba8d16`).
+  - **Muddassir & Muse** (Branch `feature/sprint-5-rbac`, PR reviews and the UI redesign):
+    - Role-Based Access Control (`student`, `society_admin`, `system_admin`), central permissions matrix, society announcements, admin panel, CSRF tokens, login rate limiting, session idle timeout, `.htaccess`, hardened sessions — merged in PR #11 (`2c92121`; commit `1c0c4eb`).
+    - PR #9 review fixes on Faiz's branch (`af641f3`) and PR #10 review fixes (`c020271`).
+    - UI polish, gap sweep and password management — PR #12 (`25f74d3`, commit `2f24566`).
+    - X-style redesign, dual themes, feed tabs, campus email guard — PR #13 (`57c77a1`).
+    - Review and merge of PRs #14 and #15 (incl. `3501247`, `c4c43da`).
+    - Release verification and packaging.
+  - *Note: "Muse" is credited by the team for this work but is not a git author — every commit on this branch is authored by `muddassir1935`, so Muse has no row in the commit counts above.*
+  - **Haseeb** (`Haseebasif7`, 15 Nov, after delivery): code, feature and documentation audit (`docs/AUDIT_FINDINGS.md`) and 58 fixes, committed in 7 grouped commits — e.g. MySQL search crash, UTC timestamps, session strict mode, file exposure, RBAC enforcement, cache redesign, pagination, accessibility, and the documentation corrections. `tests/MysqlCompatTest.php` added; suite 322 → 412 tests.
 
 ---
 
 ## 3. Verifiable Git Commit Log Audit
 
-Below is the chronological commit register from the repository:
+Below is the chronological commit register of `main` through the end of Sprint 5 (PR #15, `424390e`), generated with `git log --format='%h|%an|%ad|%s' 424390e`. The 7 post-delivery audit commits (`git log 424390e..main`) are summarized in §2 and itemized in `docs/AUDIT_FINDINGS.md`.
 
 | Hash | Author | Date | Subject |
 |---|---|---|---|
+| `424390e` | muddassir1935 | 2026-11-15 | Merge pull request #15 from muddassir1935/feature/sprint-5-report-moderation |
+| `c4c43da` | muddassir1935 | 2026-11-15 | fix(reports): replace ctype_digit with preg_match (drop ctype dependency) |
+| `4ba8d16` | Qaim | 2026-11-15 | docs(reports): user/admin manual and WBS mapping |
+| `dfe1c2e` | Qaim | 2026-11-15 | test(reports): ReportTest suite |
+| `a0e0b00` | Qaim | 2026-11-15 | feat(reports): admin moderation queue in admin panel |
+| `5447174` | Qaim | 2026-11-15 | feat(reports): report UI in post menu with reason modal |
+| `d093da9` | Qaim | 2026-11-15 | feat(reports): report permissions and report endpoint |
+| `8914538` | Qaim | 2026-11-15 | feat(reports): Report model with validation and counts |
+| `548d463` | Qaim | 2026-11-15 | feat(reports): add reports table migration and schema |
+| `f61e5c6` | muddassir1935 | 2026-11-15 | Merge pull request #14 from muddassir1935/feature/ui-fixes |
+| `3501247` | muddassir1935 | 2026-11-15 | fix(ui): wire delete-modal confirm button via delegated listener (script runs before modal markup exists, so direct getElementById returned null and Delete did nothing) |
+| `073bbf8` | FaizHussain1912 | 2026-11-15 | feat(ui): remove role label and improve vertical alignment in top navbar |
+| `24e448b` | FaizHussain1912 | 2026-11-15 | feat(ui): replace browser delete confirmation popup with in-app modal |
+| `76b204f` | FaizHussain1912 | 2026-11-15 | feat(ui): add campus hero background to landing page with dark and light mode styling |
+| `f4097fc` | FaizHussain1912 | 2026-11-14 | feat(ui): pin user dock to bottom of viewport and remove bookmarks from dropdown |
+| `54bd171` | FaizHussain1912 | 2026-11-14 | feat(ui): add user dock popup dropdown menu with profile and logout |
+| `4f459d5` | FaizHussain1912 | 2026-11-14 | feat(ui): increase middle feed width and reduce page outer gaps |
+| `57c77a1` | muddassir1935 | 2026-11-14 | Merge pull request #13 from muddassir1935/feature/final-ui-fix |
+| `7f52201` | muddassir1935 | 2026-11-14 | feat(ui): complete production X-style redesign, dual themes, campus email guard, and interactive landing page |
+| `7ace6d5` | muddassir1935 | 2026-11-14 | fix(feed): remove duplicate else block in index.php empty state |
+| `df72c95` | muddassir1935 | 2026-11-14 | feat(ui): add X-style feed tabs (For you / Following), interactive compose box with progress ring, and mobile theme fix |
+| `8f49b57` | muddassir1935 | 2026-11-14 | style: remove left post button, fix user pill dock, remove fallback banner and side scrollbar |
+| `0aa74ce` | muddassir1935 | 2026-11-14 | feat(ui): add elevated container cards, search pill, 3-dots post menu and left rail dock |
+| `95f7379` | muddassir1935 | 2026-11-14 | feat(ui): implement dual theme system with instant zero-flicker toggle |
+| `c1ee73f` | muddassir1935 | 2026-11-14 | feat(ui): implement multi-shade dark design tokens and base canvas |
+| `25f74d3` | muddassir1935 | 2026-11-14 | Merge pull request #12 from muddassir1935/feature/sprint-5-ui-polish |
+| `2f24566` | muddassir1935 | 2026-11-14 | feat(sprint-5): UI polish + final gap sweep + password management |
+| `2c92121` | muddassir1935 | 2026-11-13 | Merge pull request #11 from muddassir1935/feature/sprint-5-rbac |
+| `1c0c4eb` | muddassir1935 | 2026-11-13 | feat(sprint-5): RBAC + security audit top-5 fixes (admin panel, announcements, CSRF, rate-limit, .htaccess, fallback banner, test isolation, hidden emails, hardened sessions) |
+| `58e1ece` | muddassir1935 | 2026-11-13 | Merge pull request #10 from muddassir1935/feature/sprint-5-docs |
+| `8b536fb` | Qaim | 2026-11-13 | build(deliverables): regenerate deck, report and figures from corrected sources; drop duplicate/stale binaries |
+| `8362d87` | muddassir1935 | 2026-11-13 | Merge branch 'main' into feature/sprint-5-docs |
+| `c020271` | muddassir1935 | 2026-11-13 | fix(sprint-5): PR #10 review fixes — correct manuals/SRS/WBS, honest statuses, 532x, AIR-only deliverables |
 | `8f516cf` | muddassir1935 | 2026-11-13 | Merge pull request #9 from muddassir1935/feature/sprint-5-notifications |
-| `af641f3` | muddassir1935 | 2026-11-13 | fix(sprint-5): review fixes — notifications table in schema.sql, auth redirect order, create() error handling, rowCount() truth (Muse, on Faiz's branch) |
-| `5714c7f` | Qaim | 2026-11-13 | build(deliverables): Finalize deliverables for Section BCS-7A & Group Code AIR (branch `feature/sprint-5-docs`, PR #10) |
-| `4ea2c53` | Qaim | 2026-11-13 | build(deliverables): Add Agile presentation deck, comprehensive technical report, figures & release packaging scripts (branch `feature/sprint-5-docs`, PR #10) |
-| `bb448d1` | Qaim | 2026-11-13 | docs(sprint-5): Comprehensive documentation suite (SRS increment, User & Admin manuals, Contribution matrix, Meeting minutes, Retro) (branch `feature/sprint-5-docs`, PR #10) |
-| `8ae9bd7` | Qaim | 2026-11-13 | feat(ui): Responsive mobile polish (360px/tablet), overflow fixes & micro-interactions (branch `feature/sprint-5-docs`, PR #10) |
+| `af641f3` | muddassir1935 | 2026-11-13 | fix(sprint-5): review fixes — notifications table in schema.sql, auth redirect order, create() error handling, rowCount() truth |
+| `5714c7f` | Qaim | 2026-11-13 | build(deliverables): Finalize deliverables for Section BCS-7A & Group Code AIR |
+| `4ea2c53` | Qaim | 2026-11-13 | build(deliverables): Add Agile presentation deck, comprehensive technical report, figures & release packaging scripts |
+| `bb448d1` | Qaim | 2026-11-13 | docs(sprint-5): Comprehensive documentation suite (SRS increment, User & Admin manuals, Contribution matrix, Meeting minutes, Retro) |
+| `8ae9bd7` | Qaim | 2026-11-13 | feat(ui): Responsive mobile polish (360px/tablet), overflow fixes & micro-interactions |
 | `2500727` | FaizHussain1912 | 2026-11-13 | test(notifications): unit test suite for notification model, unread counters, and triggers |
 | `4a79114` | FaizHussain1912 | 2026-11-13 | feat(seed): university demo dataset and 5-minute deployment guide (Problem 12) |
 | `3933e4d` | FaizHussain1912 | 2026-11-13 | feat(notifications): in-app notifications model, triggers, center page, and header unread badge (WBS 5.x) |
-| `748f65d` | muddassir1935 | 2026-11-12 | feat(rbac): central RBAC core — Authorization permissions, new role names, role refresh, idle timeout (Sprint 5) (branch `feature/sprint-5-rbac`, unmerged) |
 | `d1e4400` | muddassir1935 | 2026-11-09 | Merge pull request #8 from muddassir1935/feature/sprint-4-fixes |
 | `56415ef` | muddassir1935 | 2026-11-09 | fix(sprint-4): verification fixes — TinyRedisClient + Cache chain, hashtag entity rendering bug, viewer like state, bookmarks like counts, bound viewer-id params, feed cache TTL/invalidation, benchmark SVG dashboard, N+1 audit, regression tests |
 | `d7f1938` | FaizHussain1912 | 2026-11-09 | Merge branch 'feature/sprint-4-core' into main (Sprint 4 Complete) |

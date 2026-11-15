@@ -1,5 +1,7 @@
 # CampusConnect — Log of Real Team Meetings & Agile Ceremonies
 
+> **When and how this log was written**: this file was written retrospectively on 13 Nov 2026 (commit `bb448d1`), reconstructed from the git/PR timeline and the team's recollection of each sync. No minutes were taken *during* the sprints — which is what `docs/sprint-1-2-review-retro.md` means by "no separate standup/meeting minutes were kept". The two documents agree: the meetings below took place, but their written record dates from Sprint 5.
+
 > **Integrity Statement**: In strict accordance with the project rules, this document records **only real team meetings and synchronization checkpoints** that actually took place. No fictional standups or phantom meetings are fabricated. Dates, attendees, and decisions below match the verifiable Git commit timeline, pull request reviews, and documented team sync notes.
 
 ---

@@ -54,11 +54,9 @@ Society Administrators represent officially registered student societies, studen
 
 ### 2.1 Broadcasting Official Society Announcements
 
-> **In progress** — the announcement toggle lands with the `feature/sprint-5-rbac` branch (due 15 Nov). The flow below describes the planned behaviour once that branch merges.
-
-1. When logged in as a `society_admin`, the compose form on `index.php` unlocks the **Society Announcement** toggle.
-2. Composing an announcement marks the post with an official announcement badge and highlights the border with the university accent style.
-3. Official announcements receive priority distribution in the Explore section and appear with high-visibility markers across student followers' feeds.
+1. When logged in as a `society_admin` (or `system_admin`), the compose form on `index.php` shows an **Announcement** checkbox. Students never see it, and a crafted request from a student is downgraded to a normal post on the server.
+2. Posting with the box ticked marks the post as an announcement: it shows an **Announcement** line above the text wherever the post appears (feeds, Explore, profiles, post detail).
+3. Announcements are ordered like every other post (newest first); there is no separate priority ranking.
 4. Use standard hashtags (e.g., `#IEEE_Recruitment`, `#SportsGala`, `#Orientation2026`) to maximize reach.
 
 ### 2.2 Managing Society Profile Identity
@@ -85,7 +83,7 @@ CampusConnect operates a zero-tolerance policy for academic dishonesty, harassme
 ### 3.2 User Role Governance
 To upgrade a student to a Society Admin or System Admin, use the Admin Panel
 (`admin.php`, Users section): find the user, pick the new role from the
-dropdown and click **Update role**. The change takes effect immediately —
+dropdown and click **Update**. The change takes effect immediately —
 the user's sessions are revoked, so a demotion signs them out at once. You
 cannot change your own role from the panel, and the last system admin cannot
 be demoted.
@@ -96,12 +94,12 @@ Direct SQL still works as a fallback (e.g. when locked out of the panel):
 -- Upgrading a verified society account:
 UPDATE users
 SET role = 'society_admin'
-WHERE email = 'computing.society@campus.edu.pk';
+WHERE email = 'computing.society@nu.edu.pk';
 
 -- Appointing a platform administrator:
 UPDATE users
 SET role = 'system_admin'
-WHERE email = 'lead.admin@campus.edu.pk';
+WHERE email = 'lead.admin@nu.edu.pk';
 ```
 *Note: the role column is `ENUM('student','society_admin','system_admin')` since the RBAC merge (PR #11). The old values `'society'` / `'admin'` no longer exist. A role change made by SQL takes effect on the user's next request (the session role is refreshed from the database on every request).*
 
@@ -136,14 +134,15 @@ The dashboard runs comparative stress iterations of the timeline feed query (lim
 ### 4.2 Redis vs. Memory Fallback Diagnostics
 CampusConnect uses a multi-tier caching strategy (`classes/Cache.php`):
 - **Tier 1 (Redis via phpredis / TinyRedisClient)**: Connects to Redis daemon (`127.0.0.1:6379`) with a 300ms connect timeout.
-- **Tier 2 (In-Process Memory Fallback)**: If Redis is absent, down, or socket connectivity is refused, the cache automatically falls back to PHP in-memory runtime caching without throwing exceptions or degrading user uptime.
+- **Tier 2 (In-Process Memory Fallback)**: If Redis is absent, down, or socket connectivity is refused, the cache automatically falls back to PHP in-memory runtime caching without throwing exceptions or degrading user uptime. Note that PHP memory is per request: without Redis, cached values only live for the rest of the current request, so the benchmark's speedup in this mode shows the cost of the query versus a memory lookup, not cross-request caching. Run Redis to get real cross-request caching.
 - To verify active cache backend:
-  - Check the label on `benchmark.php`: "Redis (Active)" or "Memory (Fallback)".
+  - Check the driver label on `benchmark.php`: `Redis` or `MemoryFallback`.
 
 ### 4.3 Cache Invalidation Life-Cycle
 The caching layer automatically maintains consistency:
-- Mutations (`Post::create`, `Post::update`, `Post::delete`) invoke `Cache::getInstance()->deleteByPrefix('feed_')`.
-- Engagement events (`Follow::toggle`, `Bookmark::toggle`) flush relevant cached timeline segments to prevent stale engagement counters. `Like::toggle` updates the cached like counter directly instead of flushing the feed — the anonymous/global feed `like_count` can sit stale up to the 300s TTL.
+- **What is cached:** only the slow-changing part of each feed row — post text, author name/role, timestamps (`feed_global_*` shared by all viewers, `feed_personalized_{user}_*` per user, 300s TTL).
+- **What is always live:** like and reply counts, the viewer's liked/saved state and the relative time are attached to every page with one query (`Post::attachLiveState`), so they are never stale.
+- **Invalidation:** post create/update/delete, a profile rename and a role change clear all `feed_` keys; a follow/unfollow clears only the follower's `feed_personalized_` keys. Likes, bookmarks and replies need no invalidation.
 
 ---
 
@@ -151,7 +150,7 @@ The caching layer automatically maintains consistency:
 
 ### 5.1 Migration Sequence Guide
 
-**Fresh install (new server, empty database): run `db/schema.sql` ONLY.** It already contains all 10 tables (users, posts, follows, replies, bookmarks, sessions, likes, hashtags, post_hashtags, notifications) with all indexes. Do NOT run any `migrate_*.sql` file afterwards — the tables and indexes already exist, so the migrations error out.
+**Fresh install (new server, empty database): run `db/schema.sql` ONLY.** It already contains all 12 tables (users, posts, follows, replies, bookmarks, sessions, likes, hashtags, post_hashtags, notifications, login_attempts, reports) with all indexes. `schema.sql` is idempotent — re-importing it on an existing database is harmless — but do NOT run any `migrate_*.sql` file on a fresh install: the tables and indexes already exist, so the migrations error out.
 
 **Upgrading an existing database** created before a sprint: run only the migration(s) for the sprints newer than that database, in chronological order:
 
@@ -159,6 +158,8 @@ The caching layer automatically maintains consistency:
 2. `db/migrate_cover_style_mysql.sql` — User profile cover style attribute (only if the DB predates it).
 3. `db/migrate_sprint4_mysql.sql` — Likes, Hashtags, Post-Hashtags taxonomy (only if the DB predates Sprint 4).
 4. `db/migrate_sprint5_notifications_mysql.sql` — In-app activity notifications (only if the DB predates Sprint 5).
+5. `db/migrate_sprint5_rbac_mysql.sql` — **Required for any DB that predates Sprint 5 RBAC**: renames roles (`admin` → `system_admin`, `society` → `society_admin`), adds `posts.is_announcement` and the `login_attempts` table. Without it, posting and every feed fail (the code selects `is_announcement`) and the admin panel cannot save the new role names.
+6. `db/migrate_6_reports.sql` — Post reporting / moderation queue (`reports` table; only if the DB predates it).
 
 ### 5.2 Seed Data Ingestion
 To populate realistic university test fixtures for accreditation demonstrations or staging (run after `db/schema.sql` on a fresh install):

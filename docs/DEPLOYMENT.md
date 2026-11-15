@@ -39,7 +39,7 @@ Open your browser and navigate to **phpMyAdmin** at [http://localhost/phpmyadmin
 3. Import the university seed data:
    - Choose file: `db/seed.sql` &rarr; click **Go**.
 
-> **Existing databases only:** if your `campusconnect` database was created before Sprint 5, run `db/migrate_sprint5_notifications_mysql.sql` once to add the `notifications` table. Do not run it on a fresh install — `schema.sql` already has the table.
+> **Existing databases only:** if your `campusconnect` database was created before Sprint 5, run these once, in order: `db/migrate_sprint5_notifications_mysql.sql` (notifications table), `db/migrate_sprint5_rbac_mysql.sql` (new role names, `posts.is_announcement`, `login_attempts` — without it posting and the feed break), and `db/migrate_6_reports.sql` (reports table). Do not run them on a fresh install — `schema.sql` already has everything. The full sequence is in `docs/ADMIN_MANUAL.md` §5.1.
 
 *(Or via command line in 5 seconds):*
 ```bash
@@ -48,7 +48,7 @@ mysql -u root -p campusconnect < db/seed.sql
 ```
 
 ### Step 4: Verify Database Configuration
-Check [`config/Database.php`](file:///config/Database.php) to ensure credentials match your local MySQL server (default XAMPP credentials work out-of-the-box):
+Check [`config/Database.php`](../config/Database.php) to ensure credentials match your local MySQL server (default XAMPP credentials work out-of-the-box):
 ```php
 private $host = "localhost";
 private $db   = "campusconnect";
@@ -68,9 +68,17 @@ You can run CampusConnect **without XAMPP or MySQL** using the embedded PHP deve
 
 ```bash
 cd campusconnect
-php -S localhost:8000
+php -S localhost:8000 router.php
 ```
-Open **[http://localhost:8000](http://localhost:8000)** in your browser. All tables, sessions, and tests initialize automatically in `db/campusconnect.sqlite`.
+
+> Always pass `router.php`: the built-in server ignores `.htaccess`, and the router is what keeps `db/`, `docs/`, `tests/`, `includes/` and `.git/` from being served to the browser.
+Open **[http://localhost:8000](http://localhost:8000)** in your browser. The tables are created automatically in `db/campusconnect.sqlite`, but they start **empty** — `db/seed.sql` uses MySQL-only syntax and cannot load into SQLite, so none of the demo logins in §4 exist yet. To load the same 7 demo accounts and 8 posts into the SQLite database, run once:
+
+```bash
+php db/reseed_demo.php --confirm
+```
+
+> ⚠️ `reseed_demo.php` wipes **all** data in whichever database the app connects to. It tries MySQL first, so only run it for SQLite while MySQL is stopped — otherwise it re-seeds your MySQL database instead. (The test suites never use this file: they run on their own throwaway SQLite database.)
 
 ---
 
@@ -81,12 +89,12 @@ The seed data (`db/seed.sql`) pre-configures realistic accounts representing all
 | Role | Name | Email | Password | Department / Description |
 |---|---|---|---|---|
 | **Student** | Ali Ahmed | `student@nu.edu.pk` | `StrongPass123!` | CS Junior; active poster, has followers, likes, & bookmarks |
-| **Society Admin** | ACM Chapter | `society@nu.edu.pk` | `StrongPass123!` | Official ACM Student Chapter; posts hackathon announcements |
-| **System Admin** | Campus Admin | `admin@nu.edu.pk` | `StrongPass123!` | Central University Administrator; posts official notices & moderates |
+| **Society Admin** | ACM NUCES Chapter | `society@nu.edu.pk` | `StrongPass123!` | Official ACM Student Chapter; posts hackathon announcements |
+| **System Admin** | Campus Administrator | `admin@nu.edu.pk` | `StrongPass123!` | Central University Administrator; posts official notices & moderates |
 | **Student** | Zainab Malik | `zainab@nu.edu.pk` | `StrongPass123!` | AI researcher; published author; followers & threads |
 | **Student** | Bilal Khan | `bilal@nu.edu.pk` | `StrongPass123!` | Competitive programmer; replies & team discussions |
 | **Student** | Sara Tariq | `sara@nu.edu.pk` | `StrongPass123!` | Robotics sophomore; hardware discussions |
-| **Society** | IEEE Branch | `ieee@nu.edu.pk` | `StrongPass123!` | IEEE FAST Student Branch; workshops & seminars |
+| **Society Admin** | IEEE Student Branch | `ieee@nu.edu.pk` | `StrongPass123!` | IEEE FAST Student Branch; workshops & seminars |
 
 *Note: All accounts share the password `StrongPass123!` for easy grading and live evaluation.*
 
@@ -103,7 +111,7 @@ The seed data (`db/seed.sql`) pre-configures realistic accounts representing all
    - Delete controls available on your own posts; administrative moderation on admin login.
 3. **Likes & Heart Reactions (WBS 4.1)**:
    - Click the heart icon on any post: instant AJAX reaction with live counter update.
-   - Visit user profiles: check the dedicated **"Likes" tab** to see all liked posts.
+   - Open your own profile: the **"Likes" tab** lists every post you liked (it is private — other users' profiles do not show it).
 4. **Hashtags & Discovery (WBS 4.2)**:
    - Click any `#tag` link in post text (e.g., `#Hackathon2026`, `#FASTNUCES`) to filter posts.
    - Check the **Trending Topics** widget in the right rail.
@@ -113,7 +121,7 @@ The seed data (`db/seed.sql`) pre-configures realistic accounts representing all
    - Click "Mark all as read" or click individual notifications to clear unread badges.
 6. **Social Graph**:
    - Follow / unfollow users from the right rail "Who to follow" widget or user profiles.
-   - Notice how the home feed automatically filters to personalized followed feeds.
+   - Switch the home feed between **For you** (all posts, the default) and **Following** (you + people you follow).
 7. **Threaded Replies & Saved Bookmarks**:
    - Click on any post to open detail view with threaded comments.
    - Bookmark posts and view them anytime on `bookmarks.php`.
@@ -127,15 +135,21 @@ The seed data (`db/seed.sql`) pre-configures realistic accounts representing all
 CampusConnect includes comprehensive automated test suites covering all modules:
 
 ```bash
-# Run all unit test suites from the project root:
-php tests/UserTest.php          # 18 tests: Auth, password policy, SQLi immunity
-php tests/PostTest.php          # 29 tests: Post CRUD, validation, soft-delete, pagination
-php tests/SocialTest.php        # 49 tests: Follows, personalized feed, replies, bookmarks
-php tests/SessionTest.php       #  9 tests: DB-backed session handler & GC
-php tests/Sprint4Test.php       # 48 tests: Likes, hashtags, cache invalidation, Redis fallback
-php tests/NotificationTest.php   # 28 tests: Notifications model, unread counts, social triggers
+# Run every suite at once (exit code 0 = all green):
+php tests/run_all.php
+
+# Or one suite at a time:
+php tests/UserTest.php          #  31 tests: auth, password policy, email case, SQLi immunity
+php tests/PostTest.php          #  49 tests: post CRUD, validation, soft-delete, pagination, time zones, safe redirects
+php tests/SocialTest.php        #  62 tests: follows, personalized feed, replies, bookmarks, search, pagers
+php tests/NotificationTest.php  #  35 tests: notifications, unread counts, triggers, dedupe
+php tests/SessionTest.php       #  13 tests: DB-backed session handler, GC, strict-mode IDs
+php tests/Sprint4Test.php       #  68 tests: likes, hashtags/trending, cache (live counts, invalidation)
+php tests/RbacTest.php          # 104 tests: roles/permissions, CSRF, rate limiting, announcements
+php tests/ReportTest.php        #  36 tests: post reports and the moderation queue
+php tests/MysqlCompatTest.php   #  14 tests: real MySQL (temporary DB); skipped when MySQL is down
 ```
-**Total: 181 / 181 Tests Passing (100% Green)**.
+**Total: 412 tests (398 + 14 MySQL-only), all passing on 15 Nov 2026.** Every suite except `MysqlCompatTest` runs on its own throwaway SQLite database, so no server is needed.
 
 ---
 
@@ -145,5 +159,5 @@ To demonstrate the Redis / in-memory caching performance gain versus direct data
 ```bash
 php benchmark.php
 ```
-Or view in browser at: `http://localhost/campusconnect/benchmark.php`.
+Or view in browser at: `http://localhost/campusconnect/benchmark.php` — **system admins only** (log in as `admin@nu.edu.pk`); other users get 403 and logged-out visitors are sent to login.
 Displays execution latency and visual SVG performance comparison graphs.

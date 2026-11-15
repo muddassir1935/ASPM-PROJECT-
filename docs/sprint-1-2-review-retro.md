@@ -3,7 +3,10 @@
 > Honesty note: no separate standup/meeting minutes were kept during the
 > sprints, so none are invented here. This record is reconstructed from the
 > git history, the merged pull requests, and the approved sprint plan, and is
-> dated by the evidence, not backdated. Dates below are commit/merge dates.
+> dated by the evidence, not backdated.
+> The team's meeting log, `docs/MEETINGS.md`, was written retrospectively
+> on 13 Nov 2026 from the same evidence; it is a reconstruction, not
+> minutes taken at the time. Dates below are commit/merge dates.
 > Per the Sprint 2 decision, Sprint 3+ reviews are appended to this same
 > file (the filename keeps the original Sprint 1–2 name for stable links).
 
@@ -93,8 +96,8 @@
 - [x] UI merged (PR #2, `f496a09`)
 - [x] Tests green on merge day (UserTest 17/17, PostTest 29/29)
 - [x] Browser flow + XSS check passed 2 Nov
-- [ ] This docs increment reviewed and approved by the user (pending — the
-      branch is **not** pushed or merged until approval)
+- [x] This docs increment reviewed and approved by the user (merged as
+      PR #3, `3e4b292`)
 
 ---
 
@@ -122,7 +125,7 @@
   the same branch by the end (see "What went badly" below). The shipped
   Sprint 3 is the v2 restraint direction + character pass + cover styles +
   user-chosen logo — not the first "Campus masthead" draft, which the user
-  rejected as still generic-AI. The Sprint 3 window runs to 8 Nov; only
+  rejected as still generic-AI. The Sprint 3 *planned* window ran to 8 Nov (the work itself was committed 5–6 Nov, before Sprint 4 began on 9 Nov); only
   this documentation increment remained at merge time, which is what the
   `feature/sprint-3-docs` branch closes.
 
@@ -245,14 +248,14 @@
   - [x] Redis caching layer with seamless memory fallback and benchmark (WBS 4.3)
   - [x] 153/153 unit tests green after the verification pass (PR #8, `d1e4400`)
   - [x] Documentation, SRS increment, WBS mapping, and UML/ERD synchronized
-  - [ ] User runs `db/schema.sql` on XAMPP MySQL before demoing (XAMPP not set up yet — fresh setup is schema.sql only)
+  - [x] `db/schema.sql` + `db/seed.sql` imported on a local MySQL server (15 Nov; Homebrew MySQL rather than XAMPP)
   - [x] Push to remote and merge `feature/sprint-4-core` into `main` after user consent (Merged `d7f1938`)
 
 ---
 
 ## Sprint 5 review — Final Delivery, Hardening, Polish & Academic Release (WBS 5.0)
 
-- **Delivered (12–14 Nov 2026; release tag 15 Nov):**
+- **Delivered (13–15 Nov 2026 by merge date — PR #9–#11 on 13 Nov, #12 on 14 Nov, #13–#15 on 14–15 Nov):**
   - **In-App Activity Notifications (WBS 5.1, Faiz):** `notifications`
     table, `Notification` model, unread badge in the header, dedicated
     center (`notifications.php`), triggers on follow/like/reply. PR #9,
@@ -351,8 +354,8 @@
     restructuring to ensure all team members contributed commits for
     academic credit. Lesson: enforce team pair-programming and
     distributed pull requests from Sprint 1 in future projects.
-  - **Toolchain fragility, finally solved properly.** PHP and OpenMPI
-    installs kept dying on VM replacements until the toolchains were
+  - **Toolchain fragility, finally solved properly.** PHP installs kept
+    dying on VM replacements until the toolchain was
     moved into the persistent workspace (`~/workspace/tools/`) with
     wrappers and cached `.deb`s — a written rule cannot protect what
     the infrastructure wipes; the fix has to live where the wipe cannot
@@ -367,8 +370,8 @@
   - [x] Demo DB re-seeded clean (7 users / 8 posts)
   - [x] Demo script written (`docs/DEMO_SCRIPT.md`)
   - [x] GroupCode confirmed by user: Section `BCS-7A`, Group Code `AIR`
-  - [ ] UI polish branch merged to main (pending user push approval, 14 Nov)
-  - [ ] Deck + report regen from merged main (Sat evening, after the polish merge)
+  - [x] UI polish branch merged to main (PR #12, `25f74d3`, 14 Nov; follow-ups PR #13, #14, and reporting/moderation PR #15)
+  - [x] Deck + report regen from merged main (15 Nov, after PR #15 and the audit fixes: 412 tests, current commit counts)
   - [ ] Working-software zip from merged main (15 Nov)
   - [ ] Release tag (15 Nov, needs the user's explicit approval)
-  - [ ] XAMPP/MySQL setup + `.htaccess` check on the user's machine (first-time setup)
+  - [x] MySQL setup on the user's machine (15 Nov, Homebrew MySQL + `php -S localhost:8000 router.php`; `router.php` applies the `.htaccess` deny rules for the built-in server)

@@ -12,7 +12,7 @@ so the numbers below are measured, not estimated.
 > is corrected accordingly, and the defect itself is fixed:
 > `Follow::getFollowingIds()` fetches the viewer's following-set once and
 > the pages check membership with `isset()` (`profile.php`, `explore.php`).
-> The statement counts in the table above are unaffected (they measure the
+> The statement counts in the table below are unaffected (they measure the
 > model methods, which were always single-statement).
 
 ## Results (statements per call, independent of row count)

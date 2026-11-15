@@ -11,7 +11,7 @@
 Sprint 5 represents the final delivery and release hardening cycle for **CampusConnect**. Building upon the authentication (Sprint 1), core posting engine (Sprint 2), social discovery and design system (Sprint 3), and engagement caching layer (Sprint 4), Sprint 5 delivers the closing feature set and operational readiness:
 
 1. **In-App Notifications System (WBS 5.1)**: Instant event-driven activity notifications for students and society leads (new followers, replies to posts, likes on posts) with unread notification badge counts and a dedicated notification hub.
-2. **Role-Based Access Control & Society Management (WBS 5.2)**: Granular three-tier role taxonomy (`student`, `society_admin`, `system_admin`), central authorization matrix, official society announcement broadcasting, and administrative content moderation. *Status: DONE — merged in PR #11 (main `2c92121`, 13 Nov 2026): permission map, admin panel with role assignment, society announcements, 92 RBAC tests.*
+2. **Role-Based Access Control & Society Management (WBS 5.2)**: Granular three-tier role taxonomy (`student`, `society_admin`, `system_admin`), central authorization matrix, official society announcement broadcasting, and administrative content moderation. *Status: DONE — merged in PR #11 (main `2c92121`, 13 Nov 2026): permission map, admin panel with role assignment, society announcements, 91 RBAC tests at merge (92 after the 14 Nov follow-ups).*
 3. **Security Hardening (WBS 5.3)**: Anti-CSRF token lifecycle across all mutation endpoints, brute-force login rate limiting, session idle expiry, and XSS sanitization audit. *Status: DONE — merged in PR #11 (main `2c92121`, 13 Nov 2026): CSRF on all state-changing forms + AJAX, login rate-limit 5 attempts / 15 min, 30-minute idle timeout, `.htaccess` blocking, security headers, hardened session cookies.*
 4. **Responsive Mobile Polish & Micro-interactions (WBS 5.4)**: Pixel-perfect layout optimization down to narrow mobile viewports (360px), tablet grid adjustments, tactile button feedback, and spring-based like heart animations.
 5. **Turnkey Deployment & Demo Seed Data (WBS 5.5)**: Deterministic university database seed (`db/seed.sql`) containing diverse department users, posts, and society channels, paired with a rapid 5-minute XAMPP deployment guide (`docs/DEPLOYMENT.md`).
@@ -90,7 +90,7 @@ Sprint 5 represents the final delivery and release hardening cycle for **CampusC
 
 ### FR-5.5: University Seed Dataset & 5-Minute Deployment (WBS 5.5)
 - **Realistic Dataset (`db/seed.sql`)**:
-  - Seed fixtures covering diverse university entities (e.g., FAST Computing Society, IEEE Student Branch, ACM Chapter, departmental faculty, students).
+  - Seed fixtures (`db/seed.sql`): 7 accounts — one system admin (Campus Administrator), two society admins (ACM NUCES Chapter, IEEE Student Branch) and four students — plus 8 posts with follows, replies and likes.
   - Pre-populated realistic posts, hashtags (`#CampusConnect`, `#Hackathon2026`, `#Orientation`), replies, follows, and likes.
 - **Zero-Friction Deployment Guide (`docs/DEPLOYMENT.md`)**:
   - Single-page recipe for bootstrapping on a clean XAMPP install within 5 minutes.
@@ -141,10 +141,12 @@ CREATE INDEX idx_notifications_user_created ON notifications(user_id, created_at
 Deliberately out of scope for the course project, documented here so the
 review can distinguish "not built" from "missed":
 
-1. **No email verification at signup.** Any email address can register; the
-   app never sends mail.
-2. **No report / block / account deletion.** Users cannot report content or
-   block another user; moderation is admin-side only (soft-delete).
+1. **No email verification at signup.** Only `@nu.edu.pk` addresses (and
+   campus subdomains) are accepted, but ownership of the address is never
+   verified; the app never sends mail.
+2. **No block / account deletion.** Users can report a post (reports go to
+   the admin moderation queue, added after this increment), but cannot block
+   another user or delete their account.
 3. **No per-society scoping.** `society_admin` is a global announcements
    role (see the scope note under FR-5.2) — there is no `societies` table
    and no ownership of one society by one admin.

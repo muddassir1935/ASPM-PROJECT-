@@ -65,7 +65,7 @@
 ## 5. Society announcement (1 min)
 
 - Log out, log in as `society@nu.edu.pk` (ACM NUCES Chapter).
-- Compose a post with **Post as announcement** checked. It renders with the
+- Compose a post with the **Announcement** box checked. It renders with the
   Announcement badge + megaphone in the feed. (Students never see that
   checkbox — it is permission-gated.)
 
@@ -91,9 +91,10 @@
 
 ## 8. Tests (1 min, optional)
 
-- In the terminal: `php tests/run_all.php` → **286/286 green**
-  (UserTest 24, PostTest 29, SocialTest 52, NotificationTest 28,
-  SessionTest 9, Sprint4Test 52, RbacTest 92).
+- In the terminal: `php tests/run_all.php` → **412/412 green** with MySQL
+  running (UserTest 31, PostTest 49, SocialTest 62, NotificationTest 35,
+  SessionTest 13, Sprint4Test 68, RbacTest 104, ReportTest 36,
+  MysqlCompatTest 14 — the last one is skipped without MySQL, giving 398).
 
 ## 9. Close
 

@@ -44,7 +44,7 @@ This user manual walks you through all features available to standard student us
 2. Click **Create Account** in the top navigation bar or **Create Your Account** on the welcome landing page.
 3. Fill out the registration form:
    - **Full Name**: Enter your official student name.
-   - **Campus Email**: Enter your university email address (e.g., `student@campus.edu.pk`). Email addresses must be unique.
+   - **Campus Email**: Enter your university email address (e.g., `yourname@nu.edu.pk`). Only official FAST-NUCES addresses are accepted — `@nu.edu.pk` or a campus subdomain such as `@isb.nu.edu.pk` or `@khi.nu.edu.pk`. Email addresses must be unique.
    - **Password**: To safeguard campus accounts, CampusConnect enforces a strong password policy:
      - Minimum **8 characters** in length
      - At least one **uppercase letter** (`A–Z`)
@@ -108,8 +108,8 @@ On desktop viewports, CampusConnect presents an intuitive 3-column architecture:
 4. Posts that have been modified show a subtle `edited` label in their timestamp.
 
 ### 3.4 Deleting a Post
-1. On posts you have authored, click the **Delete** button.
-2. Confirm the browser prompt ("Delete this post? This cannot be undone.").
+1. On posts you have authored, open the **⋯** (More options) menu on the post and choose **Delete Post**.
+2. Confirm in the in-app dialog ("Are you sure you want to delete this post? This action cannot be undone.").
 3. The post is soft-deleted: it immediately disappears from all user timelines and search indexes while preserving platform database integrity.
 
 ---
@@ -117,7 +117,9 @@ On desktop viewports, CampusConnect presents an intuitive 3-column architecture:
 ## 4. Engaging with the Campus Community
 
 ### 4.1 Personalized Feed vs. Explore Feed
-- **Home Feed**: Displays an algorithmically pure, chronological stream containing your own posts and updates published by campus members you follow.
+- **Home Feed** has two tabs:
+  - **For you** (the default): every post on CampusConnect, newest first.
+  - **Following**: only your own posts plus posts from people you follow, newest first.
 - **Explore Feed (`explore.php`)**: Displays all public university updates, community announcements, and allows keyword search across student profiles and post contents.
 
 ### 4.2 Following and Unfollowing Peers
@@ -211,7 +213,7 @@ On your profile, two dedicated tabs help you navigate your activity:
 A: Student email addresses serve as the unique academic identifier. To modify an email address, contact your system administrator.
 
 **Q: Why don't I see any posts on my Home feed?**  
-A: Your Home feed is personalized: it shows posts from yourself and users you follow. If you are a new user, head to the **Explore** page or check the "Who to follow" sidebar to follow classmates and societies!
+A: The **Following** tab on Home shows only posts from yourself and users you follow (the default **For you** tab shows everyone). If your Following tab is empty, head to the **Explore** page or check the "Who to follow" sidebar to follow classmates and societies!
 
 **Q: Are deleted posts recoverable?**  
 A: When you delete a post, it is permanently hidden from all public feeds and cannot be restored.

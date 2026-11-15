@@ -1,4 +1,4 @@
-# WBS-to-Implementation Mapping (Sprints 1–3)
+# WBS-to-Implementation Mapping (Sprints 1–5)
 
 The official WBS uses **Tweet** terminology; the code uses **Post**. The
 mapping is one-to-one and deliberate (approved 2 Nov 2026): renaming the code
@@ -103,7 +103,7 @@ Read "Tweet" in the WBS as "Post" in the code everywhere below.
 | 5.1 notifications schema | `notifications` table, FKs to `users` on `user_id` and `actor_id` | Done (`db/schema.sql` + `db/migrate_sprint5_notifications_mysql.sql` for older DBs) |
 | 5.1 Notification model | `classes/Notification.php` (create, listUnread, listAll, countUnread, markRead, markAllRead, delete) | Done (`classes/Notification.php`, PR #9, main `8f516cf`) |
 | 5.1 notification triggers & UI | Triggered on follow, reply, like; unread bell badge in header; `notifications.php` center | Done (`includes/header.php`, `notifications.php`) |
-| 5.2 RBAC hierarchy & permissions | Roles `student`, `society_admin`, `system_admin`, central `Authorization` permission map, server-side enforcement | Done (PR #11, main `2c92121`; `classes/Authorization.php`, `tests/RbacTest.php` 92 tests) |
+| 5.2 RBAC hierarchy & permissions | Roles `student`, `society_admin`, `system_admin`, central `Authorization` permission map, server-side enforcement | Done (PR #11, main `2c92121`; `classes/Authorization.php`, `tests/RbacTest.php` 91 tests at merge) |
 | 5.2 society announcements | Official society announcement dispatch with badge styling | Done (PR #11; `posts.is_announcement`, compose checkbox for `announcement.create`) |
 | 5.2 moderation & admin panel | System admin moderation (soft-deleting violating content, user governance) | Done (PR #11; `admin.php` role assignment + moderation, `admin_action.php`) |
 | 5.3 security hardening | Anti-CSRF token lifecycle, brute-force login rate limiting, session idle timeout | Done (PR #11; `classes/Csrf.php`, `classes/LoginRateLimiter.php`, 30-min idle timeout, `.htaccess`, security headers) |

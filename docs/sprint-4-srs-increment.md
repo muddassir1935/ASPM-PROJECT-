@@ -26,7 +26,7 @@ Out of scope for Sprint 4 (carried forward to Sprint 5): notifications, full CSR
 - Endpoint: `like_action.php` handles AJAX POST with JSON response `{ success, liked, like_count, message }`.
 - UI Integration:
   - Like button with animated SVG heart and live counter added to `index.php`, `explore.php`, `post.php`, and `profile.php`.
-  - Profile page includes a "Likes" tab displaying posts liked by that user.
+  - Profile page includes a "Likes" tab displaying posts liked by that user. *(Since Sprint 5, fix L9, the tab is private: only the profile owner sees it.)*
   - Soft-deleted posts are never returned in liked lists and cannot be liked.
 
 ### FR-4.2 Hashtags and Trending Topics (WBS 4.2)
@@ -46,6 +46,7 @@ Out of scope for Sprint 4 (carried forward to Sprint 5): notifications, full CSR
   - Methods: `get($key)`, `set($key, $value, $ttl)`, `delete($key)`, `deleteByPrefix($prefix)`, `remember($key, $ttl, callable)`, `flush()`.
   - Graceful Fallback: If Redis is unavailable, transparently caches in PHP runtime memory without throwing errors or breaking user requests.
   - Cache Invalidation: Calling `Post::create()`, `Post::update()`, `Post::delete()`, or `Like::toggle()` clears `feed_` prefixed caches.
+  - *Updated after the 15 Nov audit (C9):* feed caches now hold only post/author columns; counts and viewer state are attached live, so likes, bookmarks and replies no longer clear `feed_` caches. See `docs/ADMIN_MANUAL.md` §4.3.
 
 ## 3. Database Schema Increment
 
