@@ -10,6 +10,7 @@ require_once 'config/Database.php';
 require_once 'classes/Post.php';
 require_once 'classes/Reply.php';
 require_once 'classes/Bookmark.php';
+require_once 'classes/Report.php';
 require_once 'includes/social_widgets.php';
 
 require_once 'includes/header.php';
@@ -40,6 +41,10 @@ unset($_SESSION['flash_type'], $_SESSION['flash_message']);
 
 $isOwner = $post && $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
 $canDelete = $isOwner || Auth::can('post.delete_any');
+$isReported = false;
+if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
+    $isReported = (new Report($db))->alreadyReported((int)$currentUser['id'], $postId);
+}
 ?>
 
 <!-- Sprint 5 UI polish (M-3): the detail page now lives in the standard
@@ -113,6 +118,19 @@ $canDelete = $isOwner || Auth::can('post.delete_any');
                             <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                             <button type="submit" class="btn-text btn-text-danger">Delete</button>
                         </form>
+                    <?php endif; ?>
+                    <?php if ($currentUser && !$isOwner && Auth::can('report.create')): ?>
+                        <?php if ($isReported): ?>
+                            <span class="btn-text" style="opacity: 0.6; cursor: default; display: inline-flex; align-items: center; gap: 4px;" title="You have reported this post">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                                Reported
+                            </span>
+                        <?php else: ?>
+                            <button type="button" class="btn-text" onclick="openReportModal(<?= (int)$post['id'] ?>)" style="display: inline-flex; align-items: center; gap: 4px;">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
+                                Report
+                            </button>
+                        <?php endif; ?>
                     <?php endif; ?>
                 </div>
             <?php endif; ?>

@@ -71,9 +71,14 @@ Society Administrators represent officially registered student societies, studen
 
 System Administrators hold supreme technical and moderation authority across the application.
 
-### 3.1 Global Content Moderation
+### 3.1 Global Content Moderation & Reports Queue
 CampusConnect operates a zero-tolerance policy for academic dishonesty, harassment, or Terms of Service violations:
 - **Soft-Delete Any Post**: System admins see a red **Delete** button on every post — feed cards, profile/explore/bookmark cards, and the post detail page (`post.php?id=X`). Clicking it sets `deleted_at = CURRENT_TIMESTAMP`, instantly hiding the post from all public and user feeds. The Admin Panel (`admin.php`) also lists recent posts for moderation.
+- **Reports Moderation Queue (`admin.php#reports`)**: User-flagged posts are centrally routed to Section 3 of the Admin Panel:
+  - **Pending Queue**: Displays pending reports sorted newest-first with the post snippet, author link, reporter link, reason category badge, reporter notes, and total report count.
+  - **Dismiss Action**: If the flagged content does not violate policies, click **Dismiss**. The report is marked as `dismissed`, setting `reviewed_by` and `reviewed_at` stamps while leaving the post active.
+  - **Delete Post Action**: If the content violates guidelines, click **Delete Post**. The post is soft-deleted via `Post::delete()`, instantly disappearing from feeds, explore, and search, and all pending reports for that post transition to `actioned`.
+  - **Reviewed Audit Log**: A collapsible audit section provides an immutable log of all past moderation decisions (reason, author, reviewer name, status, and timestamp).
 - **Soft-Delete Any Reply**: Admin accounts possess full privilege to moderate abusive replies on thread detail pages.
 - **Audit Trails**: Soft-deleted records remain intact in the database for legal and academic disciplinary review. Soft-deleted content is never purged by normal application flows.
 

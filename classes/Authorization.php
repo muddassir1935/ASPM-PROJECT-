@@ -63,6 +63,8 @@ class Authorization {
         'user.manage' => [self::ROLE_SYSTEM_ADMIN],
         'role.assign' => [self::ROLE_SYSTEM_ADMIN],
         'user.reset_password' => [self::ROLE_SYSTEM_ADMIN],
+        'report.create' => [self::ROLE_STUDENT, self::ROLE_SOCIETY_ADMIN, self::ROLE_SYSTEM_ADMIN],
+        'report.review' => [self::ROLE_SYSTEM_ADMIN],
     ];
 
     /**

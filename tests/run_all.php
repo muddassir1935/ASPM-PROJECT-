@@ -14,6 +14,7 @@ $suites = [
     'SessionTest.php',
     'Sprint4Test.php',
     'RbacTest.php',
+    'ReportTest.php',
 ];
 
 $failedSuites = [];

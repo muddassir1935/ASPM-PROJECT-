@@ -7,6 +7,7 @@
  * All user-controlled output is escaped with htmlspecialchars here.
  */
 require_once __DIR__ . '/../classes/Hashtag.php';
+require_once __DIR__ . '/../classes/Report.php';
 
 /**
  * Left navigation column. $active is one of: home, explore, bookmarks, profile.
@@ -198,6 +199,22 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     }
     $isOwner = $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
     $canDeleteAny = $currentUser && class_exists('Auth') && Auth::can('post.delete_any');
+    $canReport = $currentUser && !$isOwner && class_exists('Auth') && Auth::can('report.create');
+
+    $isReported = false;
+    if ($canReport) {
+        static $userReportedCache = null;
+        if ($userReportedCache === null) {
+            $userReportedCache = [];
+            try {
+                if (class_exists('Database') && class_exists('Report')) {
+                    $rModel = new Report(Database::getInstance()->getConnection());
+                    $userReportedCache = $rModel->getReportedPostIds((int)$currentUser['id']);
+                }
+            } catch (Throwable $e) {}
+        }
+        $isReported = in_array($postId, $userReportedCache, true);
+    }
 
     echo '<div class="post-card-head">';
     echo '<a class="post-card-author" href="profile.php?id=' . (int)$post['user_id'] . '">'
@@ -209,7 +226,7 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     }
     echo '<span class="post-card-time">&middot; ' . htmlspecialchars($timeAgo) . '</span>';
 
-    if ($isOwner || $canDeleteAny) {
+    if ($isOwner || $canDeleteAny || $canReport) {
         echo '<div class="post-menu-wrap">';
         echo '<button type="button" class="post-menu-btn" data-post-menu-toggle="' . $postId . '" aria-label="More options">'
             . '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>'
@@ -229,6 +246,17 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
                 . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>'
                 . 'Delete Post</button>'
                 . '</form>';
+        }
+        if ($canReport) {
+            if ($isReported) {
+                echo '<button type="button" class="post-dropdown-item" disabled style="opacity: 0.6; cursor: default;">'
+                    . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'
+                    . 'Reported</button>';
+            } else {
+                echo '<button type="button" class="post-dropdown-item" onclick="openReportModal(' . $postId . '); closeAllPostMenus();">'
+                    . '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>'
+                    . 'Report Post</button>';
+            }
         }
         echo '</div>';
         echo '</div>';
