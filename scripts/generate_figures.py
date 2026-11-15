@@ -38,8 +38,9 @@ def generate_all_figures():
     # 2. Sprint Velocity & Cumulative Tests
     # NOTE: story points were never tracked during the sprints — the values
     # below are RETROSPECTIVE ESTIMATES, labelled as such on the chart.
-    # Test counts are real totals; the 141 -> 153 step came from the Sprint 4
-    # verification pass (PR #8, 12 regression tests), not from Sprint 5 work.
+    # Test counts are real totals at each sprint close: Sprint 4 closed at 153
+    # (141 + the PR #8 verification pass), Sprint 5 at 322 (measured on main
+    # 424390e, PR #15), and 412 after the 15 Nov audit fixes.
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.8), dpi=140)
     sprints = ['Sprint 1\n(Auth)', 'Sprint 2\n(Posts)', 'Sprint 3\n(Social)', 'Sprint 4\n(Cache/Likes)', 'Sprint 5\n(Polish/Hardening)']
     story_points = [8, 13, 21, 21, 15]
@@ -51,22 +52,25 @@ def generate_all_figures():
     for i, v in enumerate(story_points):
         ax1.text(i, v + 0.6, str(v), ha='center', fontweight='bold', fontsize=9)
     ax1.set_ylim(0, 26)
+    ax1.tick_params(axis='x', labelsize=7)
     ax1.grid(axis='y', linestyle='--', alpha=0.4)
 
-    test_counts = [18, 47, 105, 141, 153]
-    ax2.plot(sprints, test_counts, marker='o', color='#177245', linewidth=2.5, markersize=7)
+    test_sprints = sprints + ['Audit\n(15 Nov)']
+    test_counts = [18, 47, 105, 153, 322, 412]
+    ax2.plot(test_sprints, test_counts, marker='o', color='#177245', linewidth=2.5, markersize=7)
     ax2.set_title('Cumulative Automated Tests Passing', fontsize=10, fontweight='bold', color='#0F1419')
     ax2.set_ylabel('Total Unit Tests', fontsize=9, fontweight='bold')
     ax2.spines['top'].set_visible(False)
     ax2.spines['right'].set_visible(False)
     for i, v in enumerate(test_counts):
-        ax2.text(i, v + 4, str(v), ha='center', fontweight='bold', fontsize=9, color='#177245')
-    ax2.set_ylim(0, 180)
+        ax2.text(i - 0.12, v + 16, str(v), ha='right', fontweight='bold', fontsize=9, color='#177245')
+    ax2.set_ylim(0, 460)
+    ax2.tick_params(axis='x', labelsize=7)
     ax2.grid(axis='y', linestyle='--', alpha=0.4)
-    fig.text(0.5, -0.02, 'Test totals are real; the 141→153 step is the Sprint 4 verification pass (PR #8).',
+    fig.text(0.5, -0.02, 'Test totals are real, measured at each sprint close; "Audit" = after the 15 Nov audit fixes.',
              ha='center', fontsize=8, style='italic', color='#536471')
     plt.tight_layout()
-    plt.savefig('docs/figures/sprint_velocity.png', dpi=140)
+    plt.savefig('docs/figures/sprint_velocity.png', dpi=140, bbox_inches='tight')
     plt.close()
 
     # 3. System Architecture Diagram

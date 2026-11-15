@@ -1,5 +1,8 @@
 import os
 import fitz  # PyMuPDF
+# Note: PyMuPDF's built-in 'helv' font covers Latin-1 only; characters such as
+# bullets and em/en dashes render as '?'. Keep report text Latin-1 (use the
+# middle dot and '-' instead).
 
 def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section="BCS-7A"):
     doc = fitz.open()
@@ -15,7 +18,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     GREEN = (0.09, 0.45, 0.27)     # #177245
     RED = (0.85, 0.18, 0.13)       # #D92D20
 
-    def add_header_footer(page, page_num, total_pages, title="CampusConnect — Final Project Report"):
+    def add_header_footer(page, page_num, total_pages, title="CampusConnect - Final Project Report"):
         if page_num == 1:
             return  # No header/footer on title cover
         # Header
@@ -24,7 +27,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         page.insert_text(fitz.Point(380, 36), f"Section: {section} | Group: {group_code}", fontsize=8.5, fontname="helv", color=MUTED)
         # Footer
         page.draw_line(fitz.Point(50, 800), fitz.Point(545, 800), color=LINE, width=0.8)
-        page.insert_text(fitz.Point(50, 814), "Agile Software Project Management (ASPM) | Sprints 1–5 Final Delivery", fontsize=8, fontname="helv", color=MUTED)
+        page.insert_text(fitz.Point(50, 814), "Agile Software Project Management (ASPM) | Sprints 1-5 Final Delivery", fontsize=8, fontname="helv", color=MUTED)
         page.insert_text(fitz.Point(510, 814), f"Page {page_num} of {total_pages}", fontsize=8, fontname="helv", color=MUTED)
 
     # =========================================================================
@@ -65,10 +68,10 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         ("Class Section:", section),
         ("Group / Team Code:", group_code),
         ("Project Title:", "CampusConnect (Repository: ASPM-PROJECT-)"),
-        ("Academic Period:", "Fall Semester 2026 (Sprints 1–5 Delivered October–November 2026)"),
+        ("Academic Period:", "Fall Semester 2026 (Sprints 1-5 Delivered October-November 2026)"),
         ("Final Delivery Date:", "Sunday, 15 November 2026"),
         ("Core Stack:", "Native PHP 8.2+ (Strict OOP), MySQL (PDO), Redis / Socket Client, CSS3 Design System"),
-        ("Automated Tests:", "181 / 181 Passing Automated Unit & Regression Tests (100% Green)")
+        ("Automated Tests:", "412 / 412 Passing Automated Unit, Regression & MySQL Tests (100% Green)")
     ]
 
     my = 445
@@ -82,16 +85,16 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p1.insert_text(fitz.Point(75, my + 32), "CONTRIBUTING TEAM MEMBERS & ROLES", fontsize=11, fontname="helv", color=ACCENT)
 
     authors = [
-        ("Muddassir", "Technical Lead & Core Architecture", "Sprints 1–3 Backend/UI, Sprint 4 Redis fixes, Sprint 5 RBAC & Release (27 Commits on main)"),
-        ("Faiz Hussain", "Backend & Quality Assurance Lead", "Sprint 4 Core Likes, Hashtags & Caching Layer; Sprint 5 Notifications & Seed SQL (7 Commits on main)"),
-        ("Qaim", "Frontend & Documentation Lead", "Sprint 5 Responsive Polish (360px/tablet), Full Documentation Suite, Presentation & Final Report (4 Sprint 5 Commits)")
+        ("Muddassir", "Technical Lead & Core Architecture", "Sprints 1-3 Backend/UI, Sprint 4 Redis fixes, Sprint 5 RBAC, Security & Redesign (46 Commits on main)"),
+        ("Faiz Hussain", "Backend & Quality Assurance Lead", "Sprint 4 Core Likes, Hashtags & Caching Layer; Sprint 5 Notifications, Seed SQL & UI Fixes (13 Commits on main)"),
+        ("Qaim", "Frontend & Documentation Lead", "Sprint 5 Responsive Polish (360px/tablet), Docs Suite, Deliverables, Reporting & Moderation (12 Commits on main)")
     ]
 
     ay = my + 56
     for name, role, contrib in authors:
         p1.draw_rect(fitz.Rect(75, ay - 12, 520, ay + 28), fill=ACCENT_BG, color=LINE, width=0.8)
         p1.insert_text(fitz.Point(85, ay + 3), name, fontsize=10, fontname="helv", color=ACCENT)
-        p1.insert_text(fitz.Point(175, ay + 3), f"— {role}", fontsize=9, fontname="helv", color=INK)
+        p1.insert_text(fitz.Point(175, ay + 3), f"- {role}", fontsize=9, fontname="helv", color=INK)
         p1.insert_text(fitz.Point(85, ay + 19), contrib, fontsize=8, fontname="helv", color=MUTED)
         ay += 46
 
@@ -110,9 +113,9 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "architected a clean PHP 8 Object-Oriented platform that resolves campus communication fragmentation.\n\n"
         "Key highlights include: a 280-character posting engine, idempotent likes, automated hashtag taxonomy, a zero-downtime\n"
         "pure-PHP socket Redis caching layer delivering a measured 532x latency acceleration (Sprint 4 verification),\n"
-        "database-backed session security, in-app activity notifications, role-based access control (RBAC core built;\n"
-        "admin panel and hardening in progress for the 15 Nov release), and responsive polish down to 360px mobile viewports.\n"
-        "Every phase was reinforced with test-driven discipline, culminating in 181 passing automated unit tests."
+        "database-backed session security, in-app activity notifications, role-based access control with an admin panel,\n"
+        "CSRF tokens and login rate limiting, post reporting & moderation, and responsive polish down to 360px viewports.\n"
+        "Every phase was reinforced with test-driven discipline, culminating in 412 passing automated tests."
     )
     p2.insert_textbox(fitz.Rect(65, 130, 530, 225), summary_text, fontsize=8.5, fontname="helv", color=INK)
 
@@ -152,7 +155,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p2.insert_textbox(fitz.Rect(65, 665, 530, 755), audit_stmt, fontsize=8.5, fontname="helv", color=MUTED)
 
     # =========================================================================
-    # PAGE 3: SECTION 1 — PROJECT BACKGROUND & AGILE METHODOLOGY
+    # PAGE 3: SECTION 1 - PROJECT BACKGROUND & AGILE METHODOLOGY
     # =========================================================================
     p3 = doc.new_page(width=595, height=842)
     p3.insert_text(fitz.Point(50, 75), "Section 1: Project Background & Agile Scrum Process", fontsize=16, fontname="helv", color=ACCENT)
@@ -165,9 +168,9 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "Students frequently miss registration deadlines, society recruitments, and departmental hackathons due to noise.\n\n"
         "1.2 Project Vision & Core Objectives\n"
         "CampusConnect delivers a unified, high-speed microblogging hub that provides:\n"
-        "• Academic Identity: University email verification and role-based permissions.\n"
-        "• High Signal-to-Noise: Dual feed architecture separating personalized social circles from university-wide exploration.\n"
-        "• Zero-Dependency Deployment: Runs cleanly in local XAMPP and standalone PHP environments without complex toolchains.\n\n"
+        "· Academic Identity: University email verification and role-based permissions.\n"
+        "· High Signal-to-Noise: Dual feed architecture separating personalized social circles from university-wide exploration.\n"
+        "· Zero-Dependency Deployment: Runs cleanly in local XAMPP and standalone PHP environments without complex toolchains.\n\n"
         "1.3 The Agile Scrum Process in Practice\n"
         "The project was executed across five structured two-week sprints. Each sprint began with backlog grooming against\n"
         "the academic Work Breakdown Structure (WBS), progressed through daily asynchronous developer syncs, and concluded\n"
@@ -178,21 +181,21 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
 
     # Insert Sprint Velocity Chart
     if os.path.exists('docs/figures/sprint_velocity.png'):
-        p3.insert_text(fitz.Point(50, 310), "Figure 1: Sprint Velocity & Cumulative Automated Test Growth Across Sprints 1–5", fontsize=9.5, fontname="helv", color=ACCENT)
+        p3.insert_text(fitz.Point(50, 310), "Figure 1: Sprint Velocity & Cumulative Automated Test Growth Across Sprints 1-5", fontsize=9.5, fontname="helv", color=ACCENT)
         p3.insert_image(fitz.Rect(50, 320, 545, 540), filename='docs/figures/sprint_velocity.png')
 
     sec1_table_text = (
         "1.4 Sprint Cadence Overview\n"
-        "• Sprint 1 (6–21 Oct 2026): Auth OOP foundation, Database Singleton, SQLite fallback, UserTest (17 tests).\n"
-        "• Sprint 2 (22 Oct – 3 Nov 2026): Chirp engine, 280-char validation, timeline pagination, soft-delete, PostTest (29 tests).\n"
-        "• Sprint 3 (4–6 Nov 2026): Follows, replies, bookmarks, DB sessions, design system, SocialTest & SessionTest (58 tests).\n"
-        "• Sprint 4 (7–9 Nov 2026): AJAX likes, hashtag indexing, TinyRedisClient, Cache layer, benchmark, Sprint4Test (48 tests).\n"
-        "• Sprint 5 (13–15 Nov 2026): Notifications (28 tests), RBAC roles, security hardening, 360px mobile polish, final release."
+        "· Sprint 1 (6-21 Oct 2026): Auth OOP foundation, Database Singleton, SQLite fallback, UserTest (17 tests).\n"
+        "· Sprint 2 (22 Oct - 3 Nov 2026): Chirp engine, 280-char validation, timeline pagination, soft-delete, PostTest (29 tests).\n"
+        "· Sprint 3 (5-6 Nov 2026): Follows, replies, bookmarks, DB sessions, design system, SocialTest & SessionTest (58 tests).\n"
+        "· Sprint 4 (7-9 Nov 2026): AJAX likes, hashtag indexing, TinyRedisClient, Cache layer, benchmark, Sprint4Test (48 tests).\n"
+        "· Sprint 5 (13-15 Nov 2026): Notifications, RBAC + admin panel, CSRF/rate limiting, reporting, redesign (322 tests at close)."
     )
     p3.insert_textbox(fitz.Rect(50, 555, 545, 780), sec1_table_text, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 4: SECTION 2 — SRS & WBS TRACEABILITY MATRIX
+    # PAGE 4: SECTION 2 - SRS & WBS TRACEABILITY MATRIX
     # =========================================================================
     p4 = doc.new_page(width=595, height=842)
     p4.insert_text(fitz.Point(50, 75), "Section 2: SRS & WBS Traceability Matrix", fontsize=16, fontname="helv", color=ACCENT)
@@ -245,14 +248,14 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
 
     non_func = (
         "2.2 Non-Functional Requirements (NFR) Validation\n"
-        "• Security: Passwords hashed with Bcrypt (cost factor 10). Zero SQL concatenation; 100% prepared PDO statements.\n"
-        "• Performance: Sub-millisecond feed reads (< 0.05ms) via Redis caching layer; zero N+1 loops in database queries.\n"
-        "• Portability: Native PHP 8 OOP architecture with zero external composer/PECL dependencies required for core execution."
+        "· Security: Passwords hashed with Bcrypt (cost factor 10). Zero SQL concatenation; 100% prepared PDO statements.\n"
+        "· Performance: Sub-millisecond feed reads (< 0.05ms) via Redis caching layer; zero N+1 loops in database queries.\n"
+        "· Portability: Native PHP 8 OOP architecture with zero external composer/PECL dependencies required for core execution."
     )
     p4.insert_textbox(fitz.Rect(50, 540, 545, 780), non_func, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 5: SECTION 3 — SYSTEM ARCHITECTURE & OOP DESIGN
+    # PAGE 5: SECTION 3 - SYSTEM ARCHITECTURE & OOP DESIGN
     # =========================================================================
     p5 = doc.new_page(width=595, height=842)
     p5.insert_text(fitz.Point(50, 75), "Section 3: System Architecture & OOP Design", fontsize=16, fontname="helv", color=ACCENT)
@@ -261,10 +264,10 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     sec3_text = (
         "3.1 Tiered Architectural Decomposition\n"
         "CampusConnect is structured following strict Object-Oriented Programming (OOP) and Separation of Concerns:\n"
-        "• Presentation Layer: Lightweight PHP templates rendering safe HTML via htmlspecialchars(), backed by a responsive CSS grid.\n"
-        "• Controller Layer (PostController.php): Orchestrates request validation, pagination slicing, and session authorization.\n"
-        "• Domain Model Layer (classes/): Encapsulates business logic, data validation, and query assembly (User, Post, Follow, etc.).\n"
-        "• Persistence & Caching (config/Database.php, classes/Cache.php): Abstracted storage supporting MySQL, SQLite, and Redis."
+        "· Presentation Layer: Lightweight PHP templates rendering safe HTML via htmlspecialchars(), backed by a responsive CSS grid.\n"
+        "· Controller Layer (PostController.php): Orchestrates request validation, pagination slicing, and session authorization.\n"
+        "· Domain Model Layer (classes/): Encapsulates business logic, data validation, and query assembly (User, Post, Follow, etc.).\n"
+        "· Persistence & Caching (config/Database.php, classes/Cache.php): Abstracted storage supporting MySQL, SQLite, and Redis."
     )
     p5.insert_textbox(fitz.Rect(50, 95, 545, 185), sec3_text, fontsize=8.5, fontname="helv", color=INK)
 
@@ -286,7 +289,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p5.insert_textbox(fitz.Rect(50, 445, 545, 780), patterns_text, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 6: SECTION 4 — RELATIONAL DATABASE DESIGN & ERD
+    # PAGE 6: SECTION 4 - RELATIONAL DATABASE DESIGN & ERD
     # =========================================================================
     p6 = doc.new_page(width=595, height=842)
     p6.insert_text(fitz.Point(50, 75), "Section 4: Database Design, Schema & ERD Evolution", fontsize=16, fontname="helv", color=ACCENT)
@@ -306,20 +309,20 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
 
     schema_dict = (
         "4.2 Relational Data Dictionary\n"
-        "• users: Core identity table. id (PK), name, email (UNIQUE), password_hash, role (student/society/admin on main; student/society_admin/system_admin after the Sprint 5 RBAC migration), cover_style, bio.\n"
-        "• posts: Microblog chirps. id (PK), user_id (FK), content (VARCHAR 280), created_at, updated_at, deleted_at (soft-delete).\n"
-        "• follows: Social graph. follower_id (FK), followed_id (FK), created_at. Composite PK (follower_id, followed_id).\n"
-        "• replies: Discussion threads. id (PK), post_id (FK), user_id (FK), content, created_at, deleted_at.\n"
-        "• bookmarks: Private saves. user_id (FK), post_id (FK), created_at. Composite PK (user_id, post_id).\n"
-        "• sessions: Server session storage. id (PK VARCHAR 128), user_id (FK), data (TEXT), last_activity (INT).\n"
-        "• likes: Engagement heart reactions. user_id (FK), post_id (FK), created_at. Composite PK (user_id, post_id).\n"
-        "• hashtags & post_hashtags: Many-to-many taxonomy linking posts to unique lowercase tags (#tag).\n"
-        "• notifications: In-app alerts. id (PK), user_id (FK), actor_id (FK), type, reference_id, message, is_read, created_at."
+        "· users: Core identity table. id (PK), name, email (UNIQUE), password_hash, role (student/society/admin on main; student/society_admin/system_admin after the Sprint 5 RBAC migration), cover_style, bio.\n"
+        "· posts: Microblog chirps. id (PK), user_id (FK), content (VARCHAR 280), created_at, updated_at, deleted_at (soft-delete).\n"
+        "· follows: Social graph. follower_id (FK), followed_id (FK), created_at. Composite PK (follower_id, followed_id).\n"
+        "· replies: Discussion threads. id (PK), post_id (FK), user_id (FK), content, created_at, deleted_at.\n"
+        "· bookmarks: Private saves. user_id (FK), post_id (FK), created_at. Composite PK (user_id, post_id).\n"
+        "· sessions: Server session storage. id (PK VARCHAR 128), user_id (FK), data (TEXT), last_activity (INT).\n"
+        "· likes: Engagement heart reactions. user_id (FK), post_id (FK), created_at. Composite PK (user_id, post_id).\n"
+        "· hashtags & post_hashtags: Many-to-many taxonomy linking posts to unique lowercase tags (#tag).\n"
+        "· notifications: In-app alerts. id (PK), user_id (FK), actor_id (FK), type, reference_id, message, is_read, created_at."
     )
     p6.insert_textbox(fitz.Rect(50, 460, 545, 780), schema_dict, fontsize=8.2, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 7: SECTION 5 — PERFORMANCE & REDIS CACHING
+    # PAGE 7: SECTION 5 - PERFORMANCE & REDIS CACHING
     # =========================================================================
     p7 = doc.new_page(width=595, height=842)
     p7.insert_text(fitz.Point(50, 75), "Section 5: Performance Engineering & Redis Caching", fontsize=16, fontname="helv", color=ACCENT)
@@ -329,7 +332,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "5.1 Multi-Tier Caching Architecture (WBS 4.3)\n"
         "To achieve enterprise-grade responsiveness under high campus load, CampusConnect implements a high-performance\n"
         "caching subsystem (classes/Cache.php). The cache layer automatically connects to a local Redis instance (127.0.0.1:6379).\n"
-        "To eliminate external dependencies, technical lead Muddassir engineered classes/TinyRedisClient.php — a standalone\n"
+        "To eliminate external dependencies, technical lead Muddassir engineered classes/TinyRedisClient.php - a standalone\n"
         "pure-PHP RESP socket client that talks raw TCP to Redis without requiring the compiled phpredis extension.\n"
         "If Redis is absent or stopped, the engine transparently falls back to PHP runtime memory with zero downtime.\n\n"
         "5.2 Latency Benchmark Findings (benchmark.php)\n"
@@ -338,8 +341,8 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p7.insert_textbox(fitz.Rect(50, 95, 545, 215), perf_text, fontsize=8.5, fontname="helv", color=INK)
 
     if os.path.exists('docs/figures/benchmark_chart.png'):
-        p7.insert_text(fitz.Point(50, 225), "Figure 4: Query Latency Benchmark — Direct MySQL vs. Redis & Memory Cache (illustrative values;", fontsize=9.5, fontname="helv", color=ACCENT)
-        p7.insert_text(fitz.Point(50, 237), "measured speedup 532x — see benchmark.php)", fontsize=9.5, fontname="helv", color=ACCENT)
+        p7.insert_text(fitz.Point(50, 225), "Figure 4: Query Latency Benchmark - Direct MySQL vs. Redis & Memory Cache (illustrative values;", fontsize=9.5, fontname="helv", color=ACCENT)
+        p7.insert_text(fitz.Point(50, 237), "measured speedup 532x - see benchmark.php)", fontsize=9.5, fontname="helv", color=ACCENT)
         p7.insert_image(fitz.Rect(50, 235, 545, 455), filename='docs/figures/benchmark_chart.png')
 
     nplus1_text = (
@@ -347,15 +350,15 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "As documented in docs/n-plus-1-audit-sprint4.md, the engineering team conducted an exhaustive query profiling audit.\n"
         "In naive implementations, displaying 20 posts generates 1 initial query plus 20 separate queries for authors, likes, and replies.\n"
         "CampusConnect eliminates this entirely using single-query SQL JOINs and subselect aggregations:\n"
-        "• Author details (name, email, role) are joined in the primary timeline query.\n"
-        "• Reply counts and like counts are calculated using indexed GROUP BY subqueries.\n"
-        "• Viewer-specific states (is_liked, is_bookmarked) are resolved in the same single query using bound parameters.\n"
+        "· Author details (name, email, role) are joined in the primary timeline query.\n"
+        "· Reply counts and like counts are calculated using indexed GROUP BY subqueries.\n"
+        "· Viewer-specific states (is_liked, is_bookmarked) are resolved in the same single query using bound parameters.\n"
         "Result: A feed of 50 posts executes in exactly 1 database round-trip (or 0 round-trips when served from cache)."
     )
     p7.insert_textbox(fitz.Rect(50, 470, 545, 780), nplus1_text, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 8: SECTION 6 — SECURITY ARCHITECTURE & HARDENING
+    # PAGE 8: SECTION 6 - SECURITY ARCHITECTURE & HARDENING
     # =========================================================================
     p8 = doc.new_page(width=595, height=842)
     p8.insert_text(fitz.Point(50, 75), "Section 6: Security Architecture & Hardening Matrix", fontsize=16, fontname="helv", color=ACCENT)
@@ -370,19 +373,19 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "   bound via PDO prepared statements with explicit parameter data types, neutralizing SQL injection vectors.\n"
         "3. Cross-Site Scripting (XSS) Sanitization: All dynamic output is escaped with htmlspecialchars(..., ENT_QUOTES, 'UTF-8').\n"
         "   In Sprint 4, a regex negative lookbehind ((?<!&)) was introduced to prevent mangling HTML entities like &#039; into fake tags.\n"
-        "4. Anti-CSRF Synchronizer Tokens (in progress — Sprint 5 RBAC branch, due 15 Nov): All state-mutating POST requests\n"
-        "   (post, reply, like, follow, bookmark, profile edit) will validate a cryptographically secure 32-byte pseudo-random\n"
+        "4. Anti-CSRF Synchronizer Tokens (PR #11): All state-mutating POST requests, forms and AJAX alike (post, reply,\n"
+        "   like, follow, bookmark, profile edit, login, logout) validate a cryptographically secure 32-byte random\n"
         "   token (bin2hex(random_bytes(32))) matched using hash_equals().\n"
-        "5. Session Fixation Defense: The custom DbSessionHandler regenerates session IDs upon login. Unauthenticated sessions\n"
-        "   cannot access member endpoints. Sessions are stored server-side in the database.\n"
-        "6. Login Brute-Force Rate Limiting (in progress — Sprint 5 RBAC branch, due 15 Nov): Failed login attempts will be\n"
-        "   throttled per IP/Email; 5 failed attempts trigger a 15-minute lockout."
+        "5. Session Fixation Defense: Session IDs are regenerated at login, and DbSessionHandler enforces strict mode (only\n"
+        "   server-issued IDs are accepted). Sessions are stored server-side in the database.\n"
+        "6. Login Brute-Force Rate Limiting (PR #11): 5 failed attempts per email+IP, or 20 per IP across all emails\n"
+        "   (password spraying), trigger a 15-minute lockout."
     )
     p8.insert_textbox(fitz.Rect(50, 95, 545, 330), sec_text, fontsize=8.5, fontname="helv", color=INK)
 
-    # RBAC Table (target permissions — enforced by the Sprint 5 RBAC branch, due 15 Nov)
+    # RBAC Table (enforced on main since PR #11)
     p8.insert_text(fitz.Point(50, 350), "6.2 Role-Based Access Control (RBAC) Permissions Matrix", fontsize=11, fontname="helv", color=ACCENT)
-    p8.insert_text(fitz.Point(50, 362), "Target matrix — RBAC core built (748f65d); admin panel & enforcement land with the RBAC branch.", fontsize=8, fontname="helv", color=MUTED)
+    p8.insert_text(fitz.Point(50, 362), "Enforced matrix - merged in PR #11 (2c92121); checked server-side via classes/Authorization.php.", fontsize=8, fontname="helv", color=MUTED)
     p8.draw_rect(fitz.Rect(50, 360, 545, 380), fill=ACCENT, color=ACCENT)
     p8.insert_text(fitz.Point(60, 374), "System Action / Capability", fontsize=8.5, fontname="helv", color=WHITE)
     p8.insert_text(fitz.Point(260, 374), "Student (student)", fontsize=8.5, fontname="helv", color=WHITE)
@@ -418,7 +421,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p8.insert_textbox(fitz.Rect(50, 565, 545, 780), sec_footer, fontsize=8.5, fontname="helv", color=MUTED)
 
     # =========================================================================
-    # PAGE 9: SECTION 7 — RESPONSIVE POLISH (360PX) & MICRO-INTERACTIONS
+    # PAGE 9: SECTION 7 - RESPONSIVE POLISH (360PX) & MICRO-INTERACTIONS
     # =========================================================================
     p9 = doc.new_page(width=595, height=842)
     p9.insert_text(fitz.Point(50, 75), "Section 7: Frontend Engineering & Responsive Polish", fontsize=16, fontname="helv", color=ACCENT)
@@ -428,11 +431,11 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "7.1 Responsive Viewport Engineering (Sprint 5, Qaim)\n"
         "In Sprint 5, frontend lead Qaim audited and polished the entire application interface to ensure a seamless experience\n"
         "across all device form factors, specifically targeting narrow smartphone viewports down to 360px width.\n\n"
-        "• Desktop Layout (1080px+): Full 3-column architecture (260px navigation rail, 600px main stream, 350px context sidebar).\n"
-        "• Tablet Layout (721px–1080px): Right sidebar is hidden; navigation collapses to a compact 76px icon rail; main feed centers.\n"
-        "• Mobile Layout (360px–720px): Navigation moves to a sticky top navigation bar (.col-nav, top: 52px) with 44px touch targets.\n"
+        "· Desktop Layout (1080px+): Full 3-column architecture (260px navigation rail, 600px main stream, 350px context sidebar).\n"
+        "· Tablet Layout (721px-1080px): Right sidebar is hidden; navigation collapses to a compact 76px icon rail; main feed centers.\n"
+        "· Mobile Layout (360px-720px): Navigation moves to a sticky top navigation bar (.col-nav, top: 52px) with 44px touch targets.\n"
         "  Header elements reflow dynamically: brand text, logo mark, and action buttons scale to prevent awkward multi-line wrapping.\n"
-        "• Compact Mobile Viewports (<= 360px): Extra media query rules ensure post action rows (reply, like, bookmark, delete) and\n"
+        "· Compact Mobile Viewports (<= 360px): Extra media query rules ensure post action rows (reply, like, bookmark, delete) and\n"
         "  profile follower statistics wrap gracefully with zero horizontal scrollbar blowout."
     )
     p9.insert_textbox(fitz.Rect(50, 95, 545, 235), ui_text, fontsize=8.5, fontname="helv", color=INK)
@@ -441,15 +444,15 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p9.draw_rect(fitz.Rect(50, 245, 545, 410), fill=ACCENT_BG, color=ACCENT, width=1)
     p9.insert_text(fitz.Point(65, 268), "7.2 TACTILE MICRO-INTERACTIONS & ACCESSIBILITY ENHANCEMENTS", fontsize=10.5, fontname="helv", color=ACCENT)
     micro_text = (
-        "• Physical Button Press: Added transform: scale(0.97) on :active pseudo-states across all buttons (.btn-primary, .btn-outline,\n"
+        "· Physical Button Press: Added transform: scale(0.97) on :active pseudo-states across all buttons (.btn-primary, .btn-outline,\n"
         "  .btn-follow, .btn-hero-primary) providing immediate tactile tactile haptic feedback.\n"
-        "• Heart Like Animation: Engineered a smooth spring keyframe animation (@keyframes heartPop) that scales the heart SVG\n"
+        "· Heart Like Animation: Engineered a smooth spring keyframe animation (@keyframes heartPop) that scales the heart SVG\n"
         "  to 1.3x before snapping back into place when liked.\n"
-        "• Profile Tab Polish: Refactored inline styles in profile.php to dedicated .profile-tabs and .profile-tab classes with smooth\n"
+        "· Profile Tab Polish: Refactored inline styles in profile.php to dedicated .profile-tabs and .profile-tab classes with smooth\n"
         "  border-bottom color transitions and active ink highlights.\n"
-        "• Keyboard & Assistive Technology: Enhanced :focus-visible outlines (2px solid cobalt with 2px offset) ensuring full WCAG 2.1\n"
+        "· Keyboard & Assistive Technology: Enhanced :focus-visible outlines (2px solid cobalt with 2px offset) ensuring full WCAG 2.1\n"
         "  accessibility compliance for keyboard-only campus users.\n"
-        "• Fluid SVG Dashboards: benchmark.php bar charts now render with style='max-width: 100%; height: auto;' so they never\n"
+        "· Fluid SVG Dashboards: benchmark.php bar charts now render with style='max-width: 100%; height: auto;' so they never\n"
         "  force horizontal overflow on mobile screens."
     )
     p9.insert_textbox(fitz.Rect(65, 280, 530, 400), micro_text, fontsize=8.2, fontname="helv", color=INK)
@@ -464,7 +467,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p9.insert_textbox(fitz.Rect(50, 430, 545, 780), design_lang, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 10: SECTION 8 — QUALITY ASSURANCE & AUTOMATED TESTING
+    # PAGE 10: SECTION 8 - QUALITY ASSURANCE & AUTOMATED TESTING
     # =========================================================================
     p10 = doc.new_page(width=595, height=842)
     p10.insert_text(fitz.Point(50, 75), "Section 8: Quality Assurance & Automated Test Suite", fontsize=16, fontname="helv", color=ACCENT)
@@ -486,12 +489,15 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p10.insert_text(fitz.Point(480, 179), "Pass Rate", fontsize=8.5, fontname="helv", color=WHITE)
 
     suites = [
-        ("tests/UserTest.php", "Authentication & Password Policy", "Registration, SQLi, Bcrypt, Strong Password Rules, Profile Covers", "18 / 18 (100%)"),
-        ("tests/PostTest.php", "Core Post Engine & Soft-Delete", "280-char limits, CRUD, pagination, author ownership, soft-delete", "29 / 29 (100%)"),
-        ("tests/SocialTest.php", "Social Graph, Follows & Replies", "Follow/unfollow, personalized feed, threaded replies, bookmarks, search", "49 / 49 (100%)"),
-        ("tests/SessionTest.php", "Database Session Handler", "Session read/write/destroy, user tagging, garbage collection", "9 / 9 (100%)"),
-        ("tests/Sprint4Test.php", "Likes, Hashtags & Redis Caching", "Idempotent likes, hashtag regex, TinyRedisClient RESP, feed invalidation", "48 / 48 (100%)"),
-        ("tests/NotificationTest.php", "Notifications & Social Triggers", "Create/list/count, mark read, ownership guards, follow/like/reply triggers", "28 / 28 (100%)")
+        ("tests/UserTest.php", "Authentication & Password Policy", "Registration, SQLi, Argon2id, Strong Password Rules, Email Case", "31 / 31 (100%)"),
+        ("tests/PostTest.php", "Core Post Engine & Soft-Delete", "280-char limits, CRUD, pagination, time zones, safe redirects", "49 / 49 (100%)"),
+        ("tests/SocialTest.php", "Social Graph, Follows & Replies", "Follow/unfollow, personalized feed, threaded replies, bookmarks, search", "62 / 62 (100%)"),
+        ("tests/SessionTest.php", "Database Session Handler", "Session read/write/destroy, strict-mode IDs, garbage collection", "13 / 13 (100%)"),
+        ("tests/Sprint4Test.php", "Likes, Hashtags & Redis Caching", "Idempotent likes, trending window, live counts on cached feeds", "68 / 68 (100%)"),
+        ("tests/NotificationTest.php", "Notifications & Social Triggers", "Create/list/count, mark read, ownership guards, dedupe, triggers", "35 / 35 (100%)"),
+        ("tests/RbacTest.php", "RBAC & Security Hardening", "Permissions, CSRF, rate limiting & spraying, announcements", "104 / 104 (100%)"),
+        ("tests/ReportTest.php", "Post Reporting & Moderation", "Report validation, duplicates, moderation queue, review actions", "36 / 36 (100%)"),
+        ("tests/MysqlCompatTest.php", "MySQL Compatibility", "Schema import (idempotent, utf8mb4), search, notifications on MySQL", "14 / 14 (100%)")
     ]
 
     sty = 190
@@ -503,24 +509,24 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         p10.insert_text(fitz.Point(480, sty + 16), rate, fontsize=8, fontname="helv", color=GREEN)
         sty += 24
 
-    p10.draw_rect(fitz.Rect(50, 335, 545, 365), fill=(0.91, 0.96, 0.93), color=GREEN, width=1)
-    p10.insert_text(fitz.Point(140, 355), "TOTAL AUTOMATED REGRESSION SUITE: 181 / 181 TESTS PASSED (100%)", fontsize=10, fontname="helv", color=GREEN)
+    p10.draw_rect(fitz.Rect(50, 412, 545, 442), fill=(0.91, 0.96, 0.93), color=GREEN, width=1)
+    p10.insert_text(fitz.Point(140, 432), "TOTAL AUTOMATED REGRESSION SUITE: 412 / 412 TESTS PASSED (100%)", fontsize=10, fontname="helv", color=GREEN)
 
     qa_details = (
         "8.2 Regression Verification Methodology\n"
-        "• Boundary Condition Audits: Verified strict 280-character Unicode handling (mb_strlen) accepting valid multi-byte strings\n"
+        "· Boundary Condition Audits: Verified strict 280-character Unicode handling (mb_strlen) accepting valid multi-byte strings\n"
         "  while rejecting empty and 281+ character payloads.\n"
-        "• Authorization Invariants: Asserted that non-authors cannot edit or soft-delete other users' posts or replies.\n"
-        "• Cache Invalidation Rigor: Verified that mutations (create, edit, delete, bookmark, follow) reliably flush the\n"
-        "  feed_ cache namespace, ensuring zero stale reads. Like toggles update the cached like counter directly instead\n"
-        "  of flushing the feed (the anonymous feed like_count can sit stale up to the 300s TTL).\n"
-        "• Regression Fix Verification (9 Nov): Added dedicated assertions confirming apostrophe HTML entities (&#039;) render cleanly\n"
+        "· Authorization Invariants: Asserted that non-authors cannot edit or soft-delete other users' posts or replies.\n"
+        "· Cache Correctness: Feed caches hold only post/author columns; like/reply counts and the viewer's like/save state\n"
+        "  are attached live, so they are never stale. Post changes, renames and role changes flush feed_ keys; a follow\n"
+        "  clears only the follower's pages. Verified against a real Redis server and the memory fallback.\n"
+        "· Regression Fix Verification (9 Nov): Added dedicated assertions confirming apostrophe HTML entities (&#039;) render cleanly\n"
         "  without generating bogus #039 hashtag anchors."
     )
-    p10.insert_textbox(fitz.Rect(50, 385, 545, 780), qa_details, fontsize=8.5, fontname="helv", color=INK)
+    p10.insert_textbox(fitz.Rect(50, 462, 545, 780), qa_details, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 11: SECTION 9 — USER OPERATIONS MANUAL
+    # PAGE 11: SECTION 9 - USER OPERATIONS MANUAL
     # =========================================================================
     p11 = doc.new_page(width=595, height=842)
     p11.insert_text(fitz.Point(50, 75), "Section 9: End-User Operations Manual", fontsize=16, fontname="helv", color=ACCENT)
@@ -534,24 +540,24 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "   number, and special symbol). All indicators must turn green before submission is permitted.\n"
         "3. Login via login.php. Sessions are stored server-side in the database (DbSessionHandler) and invalidated on logout.\n\n"
         "9.2 Publishing & Timeline Discovery\n"
-        "• Publishing Chirps: Use the top compose box on index.php. Enter up to 280 characters. The live counter updates in real time.\n"
-        "• Using Hashtags: Insert #tags anywhere in your text. They are automatically highlighted as clickable links and added to the\n"
+        "· Publishing Chirps: Use the top compose box on index.php. Enter up to 280 characters. The live counter updates in real time.\n"
+        "· Using Hashtags: Insert #tags anywhere in your text. They are automatically highlighted as clickable links and added to the\n"
         "  Trending Topics sidebar.\n"
-        "• Dual Feed Architecture:\n"
+        "· Dual Feed Architecture:\n"
         "  - Home Feed: Displays only your posts and updates from users you follow (chronological, distraction-free).\n"
         "  - Explore Feed (explore.php): Displays all campus activity, search results by name/content, and tag filters.\n\n"
         "9.3 Social Engagement & Personalization\n"
-        "• Following Peers: Click 'Follow' on user profiles or in the 'Who to follow' sidebar. Feed updates immediately.\n"
-        "• Heart Likes: Click the heart SVG icon to like a post. The counter increments dynamically and the post is saved to your Likes tab.\n"
-        "• Discussion Threads: Click any post to view its threaded replies. Enter responses in the 'Post a reply' box.\n"
-        "• Bookmarks: Click 'Save' to privately bookmark posts. Access your archive at any time via bookmarks.php.\n"
-        "• Notifications Center: The header bell displays an unread badge. Click Notifications to inspect recent activity.\n"
-        "• Profile Customization: Click 'Edit Profile' to update your bio (500 chars) and pick from 6 curated cover gradient presets."
+        "· Following Peers: Click 'Follow' on user profiles or in the 'Who to follow' sidebar. Feed updates immediately.\n"
+        "· Heart Likes: Click the heart SVG icon to like a post. The counter increments dynamically and the post is saved to your Likes tab.\n"
+        "· Discussion Threads: Click any post to view its threaded replies. Enter responses in the 'Post a reply' box.\n"
+        "· Bookmarks: Click 'Save' to privately bookmark posts. Access your archive at any time via bookmarks.php.\n"
+        "· Notifications Center: The header bell displays an unread badge. Click Notifications to inspect recent activity.\n"
+        "· Profile Customization: Click 'Edit Profile' to update your bio (500 chars) and pick from 6 curated cover gradient presets."
     )
     p11.insert_textbox(fitz.Rect(50, 95, 545, 780), user_man_text, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 12: SECTION 10 — ADMINISTRATOR & OPERATIONS MANUAL
+    # PAGE 12: SECTION 10 - ADMINISTRATOR & OPERATIONS MANUAL
     # =========================================================================
     p12 = doc.new_page(width=595, height=842)
     p12.insert_text(fitz.Point(50, 75), "Section 10: Administrator & Operations Manual", fontsize=16, fontname="helv", color=ACCENT)
@@ -560,16 +566,16 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     admin_man_text = (
         "This guide outlines governance and administrative operations for society leads and system administrators:\n\n"
         "10.1 Society Administration (society_admin)\n"
-        "• Broadcasting Announcements (in progress — Sprint 5 RBAC branch, due 15 Nov): When authenticated with a society role,\n"
-        "  the compose box will unlock the 'Society Announcement' toggle. Announcements receive distinct badge highlights and\n"
-        "  priority placement in student feeds.\n"
-        "• Profile Governance: Society admins must maintain official executive committee contact info and meeting schedules in their bio.\n\n"
+        "· Broadcasting Announcements (PR #11): Society and system admins see an 'Announcement' checkbox in the compose box.\n"
+        "  Announcements carry an 'Announcement' line wherever they appear; feeds stay newest-first. A student's request is\n"
+        "  downgraded to a normal post on the server.\n"
+        "· Profile Governance: Society admins must maintain official executive committee contact info and meeting schedules in their bio.\n\n"
         "10.2 System Administration & Content Moderation (system_admin)\n"
-        "• Global Content Moderation: System administrators possess universal soft-delete authority. Clicking 'Delete Post' or 'Delete Reply'\n"
+        "· Global Content Moderation: System administrators possess universal soft-delete authority. Clicking 'Delete Post' or 'Delete Reply'\n"
         "  on the post detail page sets deleted_at = CURRENT_TIMESTAMP, instantly removing content from all feeds while preserving audit records.\n"
-        "• User Governance: There is no admin console yet — roles are changed by direct SQL only. The new role values\n"
+        "· User Governance: There is no admin console yet - roles are changed by direct SQL only. The new role values\n"
         "  (society_admin/system_admin) apply after the RBAC migration; on main today the values are student/society/admin.\n"
-        "• Session Maintenance: Active sessions are monitored in the sessions table; expired sessions are pruned during garbage collection.\n\n"
+        "· Session Maintenance: Active sessions are monitored in the sessions table; expired sessions are pruned during garbage collection.\n\n"
         "10.3 Turnkey Deployment (Fresh Machine in 5 Minutes)\n"
         "1. Prerequisites: XAMPP with PHP 8.2+ and MySQL running.\n"
         "2. Database Setup: Open phpMyAdmin or MySQL CLI. Create database campusconnect:\n"
@@ -577,7 +583,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "3. Schema Import: Import db/schema.sql (it already contains all 10 tables, including notifications), then db/seed.sql:\n"
         "   mysql -u root campusconnect < db/schema.sql\n"
         "   mysql -u root campusconnect < db/seed.sql\n"
-        "   Do NOT run the migrate_*.sql files on a fresh install — they are only for upgrading pre-existing databases.\n"
+        "   Do NOT run the migrate_*.sql files on a fresh install - they are only for upgrading pre-existing databases.\n"
         "4. Credentials Verification: Update config/Database.php if MySQL credentials differ from root/empty password.\n"
         "5. Demo Accounts (password StrongPass123! for all): admin@nu.edu.pk (system admin), society@nu.edu.pk (ACM society),\n"
         "   student@nu.edu.pk (student)."
@@ -585,7 +591,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     p12.insert_textbox(fitz.Rect(50, 95, 545, 780), admin_man_text, fontsize=8.5, fontname="helv", color=INK)
 
     # =========================================================================
-    # PAGE 13: SECTION 11 — VERIFIABLE GIT AUDIT & REAL MEETING LOGS
+    # PAGE 13: SECTION 11 - VERIFIABLE GIT AUDIT & REAL MEETING LOGS
     # =========================================================================
     p13 = doc.new_page(width=595, height=842)
     p13.insert_text(fitz.Point(50, 75), "Section 11: Team Contribution Audit & Meeting Logs", fontsize=16, fontname="helv", color=ACCENT)
@@ -594,11 +600,11 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
     git_intro = (
         "11.1 Verifiable Git Contribution Audit\n"
         "In compliance with ASPM evaluation rules, individual contributions were verified from the repository commit log (git log --all):\n"
-        "• Muddassir (27 commits on main): Auth foundation (S1), Post Engine & Feed UI (S2), Social Graph, DB Sessions & Design System (S3),\n"
-        "  TinyRedisClient socket client & verification fixes (S4), RBAC & Security Release (S5).\n"
-        "• Faiz Hussain (7 commits on main): Sprint 4 core likes, hashtags, Redis/memory caching layer (3ac38d4); Sprint 5 notifications backend & seed fixtures (PR #9).\n"
-        "• Qaim (4 Sprint 5 commits): Sprint 5 frontend responsive mobile polish (360px/tablet), micro-interactions (8ae9bd7), comprehensive\n"
-        "  documentation suite, Agile Presentation deck (AIR_Presentation.pptx), and Final Technical Report (AIR_Report.pdf).\n\n"
+        "· Muddassir (46 commits on main through PR #15): Auth (S1), Post Engine & Feed UI (S2), Social Graph, DB Sessions & Design (S3),\n"
+        "  TinyRedisClient & verification fixes (S4), RBAC, CSRF, rate limiting, redesign and PR reviews (S5).\n"
+        "· Faiz Hussain (13 commits): Sprint 4 likes, hashtags, caching layer (3ac38d4); Sprint 5 notifications, seed data (PR #9), UI fixes (PR #14).\n"
+        "· Qaim (12 commits): Sprint 5 responsive polish (8ae9bd7), documentation suite, deck and report (PR #10), and post\n"
+        "  reporting & admin moderation queue (PR #15). Full per-period counts: docs/CONTRIBUTION.md.\n\n"
         "11.2 Chronological Register of Real Team Meetings\n"
         "Per project rules ('never invent meetings'), only genuine synchronization meetings that took place are recorded below:"
     )
@@ -621,7 +627,7 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         my += 52
 
     # =========================================================================
-    # PAGE 14: SECTION 12 — RETROSPECTIVE & RELEASE PACKAGING
+    # PAGE 14: SECTION 12 - RETROSPECTIVE & RELEASE PACKAGING
     # =========================================================================
     p14 = doc.new_page(width=595, height=842)
     p14.insert_text(fitz.Point(50, 75), "Section 12: Retrospective & Release Packaging", fontsize=16, fontname="helv", color=ACCENT)
@@ -629,13 +635,13 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
 
     retro_text = (
         "12.1 Sprint Retrospective Insights\n"
-        "• What Went Well:\n"
+        "· What Went Well:\n"
         "  - Architectural Rigor: Zero-dependency PHP 8 OOP design with 100% prepared statements prevented technical debt.\n"
-        "  - Rapid Automated Testing: The SQLite memory test harness allowed all 181 tests to run in seconds without external daemons.\n"
+        "  - Rapid Automated Testing: Throwaway SQLite databases run 398 tests in seconds; 14 more run against a temporary MySQL DB.\n"
         "  - Performance Excellence: Sub-millisecond feed reads achieved through Redis and pure socket fallback caching.\n"
         "  - Real-World Usability: Viewport optimization confirmed fluid navigation down to 360px mobile viewports.\n\n"
-        "• What Went Badly & Corrective Actions:\n"
-        "  - Early Commit Centralization: Sprints 1–3 were delivered primarily by the technical lead. In Sprint 5, the team restructured\n"
+        "· What Went Badly & Corrective Actions:\n"
+        "  - Early Commit Centralization: Sprints 1-3 were delivered primarily by the technical lead. In Sprint 5, the team restructured\n"
         "    ownership into parallel feature branches to ensure balanced, verifiable Git contributions.\n"
         "  - Documentation Lag: Sprints 1 & 2 documentation lagged behind code; Sprints 4 & 5 corrected this by authoring SRS sections,\n"
         "    manuals, and diagrams alongside feature implementations.\n\n"
@@ -647,14 +653,14 @@ def build_pdf_report(output_filename="AIR_Report.pdf", group_code="AIR", section
         "   (regenerated from merged main on 15 Nov).\n\n"
         "12.3 Academic Conclusion & Sign-Off\n"
         "CampusConnect successfully demonstrates the power of Agile Software Project Management in delivering robust, high-performance\n"
-        "software. Sprints 1–4 are complete and merged; Sprint 5 closes on 15 Nov with the RBAC branch (admin panel, society\n"
-        "announcements, CSRF tokens, login rate-limit) as the final merge, reaching 100% WBS feature coverage."
+        "software. All five sprints are merged (PRs #1-#15), followed by a 15 Nov code and documentation audit whose fixes\n"
+        "are recorded in docs/AUDIT_FINDINGS.md, reaching 100% WBS feature coverage."
     )
     p14.insert_textbox(fitz.Rect(50, 95, 545, 680), retro_text, fontsize=8.5, fontname="helv", color=INK)
 
     p14.draw_rect(fitz.Rect(50, 700, 545, 780), fill=ACCENT_BG, color=ACCENT, width=1)
     p14.insert_text(fitz.Point(120, 730), "CAMPUSCONNECT PROJECT SUCCESSFULLY DELIVERED & AUDITED", fontsize=11, fontname="helv", color=ACCENT)
-    p14.insert_text(fitz.Point(170, 755), "Sprints 1–4 Complete · Sprint 5 closes 15 Nov | 181 / 181 Tests Green | November 2026", fontsize=8.5, fontname="helv", color=MUTED)
+    p14.insert_text(fitz.Point(170, 755), "Sprints 1-5 Complete · Audited 15 Nov | 412 / 412 Tests Green | November 2026", fontsize=8.5, fontname="helv", color=MUTED)
 
     # Apply Headers and Footers to all pages
     total_pages = len(doc)

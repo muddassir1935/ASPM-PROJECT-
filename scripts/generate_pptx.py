@@ -59,7 +59,7 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
                 "Likes & Heart Reactions: Idempotent like toggle, AJAX endpoint, real-time DOM counter updates, and profile Likes archive tab.",
                 "Hashtags & Discovery: Regex parser extracting `#tags`, clickable link rendering, tag-filtered exploration, and Trending Topics sidebar widget.",
                 "Multi-Tier Caching Architecture: Redis caching with a pure-PHP socket client (`TinyRedisClient.php`) and seamless runtime memory fallback.",
-                "Intelligent Invalidation: Post mutations and engagement toggles automatically purge the `feed_` cache prefix to maintain consistency."
+                "Intelligent Invalidation: Feed caches hold post/author rows only; counts and like/save state are attached live, so likes never flush the cache."
             ]
         },
         {
@@ -67,19 +67,19 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
             "subtitle": "Hardening, Governance & Viewport Polish",
             "bullets": [
                 "In-App Notifications (WBS 5.1): Instant event notifications (new follower, reply to post, like on post) with dynamic unread header badge.",
-                "Role-Based Access Control (WBS 5.2): Three-tier role hierarchy (`student`, `society_admin`, `system_admin`) — core built; admin panel and society announcements in progress (due 15 Nov).",
-                "Security Hardening (WBS 5.3): 30-minute session idle timeout built; anti-CSRF tokens and login rate limiting in progress (due 15 Nov).",
+                "Role-Based Access Control (WBS 5.2): Three-tier roles (`student`, `society_admin`, `system_admin`), admin panel, society announcements and post reporting/moderation (PRs #11, #15).",
+                "Security Hardening (WBS 5.3): CSRF tokens on every form and AJAX call, login rate limiting (per account and per IP), 30-minute idle timeout, strict session IDs.",
                 "Responsive Polish (WBS 5.4): Complete layout reflow down to 360px mobile viewports, tablet optimization, tactile button press feedback (`transform: scale(0.97)`)."
             ]
         },
         {
             "title": "Database Architecture & Schema Evolution",
-            "subtitle": "Relational Data Modeling (9 Tables)",
+            "subtitle": "Relational Data Modeling (12 Tables)",
             "bullets": [
                 "Core Entities: `users` (profiles, roles, cover styles) and `posts` (280-char content, soft-delete timestamp).",
                 "Social Relations: `follows` (composite PK, self-follow check), `replies` (threaded comments), and `bookmarks` (saved posts).",
                 "Security & Sessions: `sessions` table for database-backed session persistence (`DbSessionHandler`) with session-ID regeneration on login.",
-                "Engagement & Activity: `likes` (composite PK), `hashtags`, `post_hashtags`, and `notifications` (foreign keys with cascade rules)."
+                "Engagement & Governance: `likes`, `hashtags`, `post_hashtags`, `notifications`, `reports` (moderation) and `login_attempts` (rate limiting)."
             ]
         },
         {
@@ -107,9 +107,9 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
             "title": "Team Contribution & Verifiable Git Audit",
             "subtitle": "Documented Division of Labor",
             "bullets": [
-                "Muddassir (27 Commits on main): Architecture lead, Sprint 1 Auth, Sprint 2 Post Engine, Sprint 3 Social/Design, Sprint 4 Redis fixes, Sprint 5 RBAC & Release.",
-                "Faiz Hussain (7 Commits on main): Sprint 4 core likes, hashtags, caching layer foundation (`3ac38d4`); Sprint 5 notifications backend & seed data fixtures (3 commits, PR #9).",
-                "Qaim (4 Sprint 5 Commits): Sprint 5 frontend responsive mobile polish (360px/tablet), micro-interactions, complete documentation suite, Agile presentation & report.",
+                "Muddassir (46 commits on main through PR #15): Architecture lead, Sprints 1–3, Sprint 4 Redis fixes, Sprint 5 RBAC, security, redesign and PR reviews.",
+                "Faiz Hussain (13 commits): Sprint 4 likes, hashtags, caching layer (`3ac38d4`); Sprint 5 notifications & seed data (PR #9) and UI fixes (PR #14).",
+                "Qaim (12 commits): Sprint 5 responsive polish, documentation suite, deck & report (PR #10), and post reporting & moderation queue (PR #15).",
                 "Full Auditability: Complete commit log, author emails, dates, and diff statistics recorded in `docs/CONTRIBUTION.md`."
             ]
         },
@@ -117,7 +117,7 @@ def generate_presentation(output_path="AIR_Presentation.pptx", group_code="AIR",
             "title": "Sprint Retrospective & Project Conclusions",
             "subtitle": "Agile Maturity & Lessons Learned",
             "bullets": [
-                "What Went Well: Zero regressions across 181 unit tests; high code reusability via OOP; clean responsive UI without heavyweight frameworks.",
+                "What Went Well: 412 automated tests green (incl. a real-MySQL suite); high code reusability via OOP; clean responsive UI without frameworks.",
                 "Lessons Learned: Early sprints suffered from commit centralization; Sprint 5 restructuring ensured distributed academic ownership and fair credit.",
                 "Production Readiness: Complete documentation suite (`USER_MANUAL.md`, `ADMIN_MANUAL.md`, `DEPLOYMENT.md`), seed SQL, and packaged deliverables.",
                 "Thank You! Q&A Session."
