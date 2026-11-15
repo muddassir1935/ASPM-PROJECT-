@@ -165,6 +165,23 @@ runTest("Attempts reset once the window passes",
 $limiter->recordFailure($testEmail, $testIp, $now + LoginRateLimiter::LOCK_SECONDS + 100);
 runTest("Failure after lock + window expiry starts a fresh count (not locked)",
     $limiter->isLocked($testEmail, $testIp, $now + LoginRateLimiter::LOCK_SECONDS + 101), false);
+
+// Audit C21: IP-wide ceiling against password spraying
+$sprayIp = '198.51.100.7';
+for ($i = 0; $i < LoginRateLimiter::IP_MAX_ATTEMPTS - 1; $i++) {
+    $limiter->recordFailure("spray{$i}@nu.edu.pk", $sprayIp, $now);
+}
+runTest("Spraying: 19 failures across 19 emails is not yet locked",
+    $limiter->isLocked('fresh.victim@nu.edu.pk', $sprayIp, $now + 1), false);
+$limiter->recordFailure("spray_last@nu.edu.pk", $sprayIp, $now + 1);
+runTest("Spraying: 20th failure locks the IP for every email",
+    $limiter->isLocked('fresh.victim@nu.edu.pk', $sprayIp, $now + 2), true);
+runTest("Spraying lock does not affect other IPs",
+    $limiter->isLocked('fresh.victim@nu.edu.pk', '198.51.100.8', $now + 2), false);
+runTest("Spraying lock reports remaining time",
+    $limiter->lockRemainingSeconds('fresh.victim@nu.edu.pk', $sprayIp, $now + 2) > 0, true);
+runTest("Spraying lock expires after LOCK_SECONDS",
+    $limiter->isLocked('fresh.victim@nu.edu.pk', $sprayIp, $now + 2 + LoginRateLimiter::LOCK_SECONDS), false);
 $limiter->recordSuccess($testEmail, $testIp);
 runTest("Success clears the failure history",
     $limiter->attemptsInWindow($testEmail, $testIp, $now + 22), 0);
@@ -295,6 +312,36 @@ runTest("destroySessionsForUser with no exception revokes the rest",
     $revokedAll, 1);
 runTest("destroySessionsForUser rejects invalid users",
     $handler->destroySessionsForUser(0), false);
+
+// ---------------------------------------------------------
+// AUDIT C7: declared permissions are enforced
+// ---------------------------------------------------------
+echo "\n--- PERMISSION ENFORCEMENT (audit C7) ---\n";
+require_once __DIR__ . '/../classes/Reply.php';
+$c7Post = new Post($db);
+$c7Reply = new Reply($db);
+$c7Own = $c7Post->create($studentId, "C7 own post");
+runTest("Post::delete refuses an own delete without post.delete_own",
+    $c7Post->delete((int)$c7Own, $studentId, false, false), false);
+runTest("Post::delete allows an own delete with post.delete_own",
+    $c7Post->delete((int)$c7Own, $studentId, false, true), true);
+$c7Target = $c7Post->create($studentId, "C7 reply target");
+$c7ReplyId = $c7Reply->create($studentId, (int)$c7Target, "C7 reply");
+runTest("Reply::delete refuses an own delete without reply.delete_own",
+    $c7Reply->delete((int)$c7ReplyId, $studentId, false, false), false);
+runTest("Reply::delete allows an own delete with reply.delete_own",
+    $c7Reply->delete((int)$c7ReplyId, $studentId, false, true), true);
+$c7SocietyCtl = new PostController(new Post($db), ['id' => $societyId, 'role' => 'society_admin', 'name' => 'S', 'email' => '']);
+$c7Ann = $c7SocietyCtl->handleCreate("C7 announcement", true);
+$c7StudentCtl = new PostController(new Post($db), ['id' => $studentId, 'role' => 'student', 'name' => 'St', 'email' => '']);
+runTest("Student cannot delete someone else's announcement",
+    $c7StudentCtl->handleDelete((int)$c7Ann['post_id'])['success'], false);
+$c7AdminCtl = new PostController(new Post($db), ['id' => $adminId, 'role' => 'system_admin', 'name' => 'A', 'email' => '']);
+runTest("System admin (post.delete_any + announcement.delete_any) can delete it",
+    $c7AdminCtl->handleDelete((int)$c7Ann['post_id'])['success'], true);
+runTest("handleDelete on a missing post fails cleanly",
+    $c7AdminCtl->handleDelete(99999999)['success'], false);
+$db->exec("DELETE FROM posts WHERE id = " . (int)$c7Target);
 
 // ---------------------------------------------------------
 // CLEANUP

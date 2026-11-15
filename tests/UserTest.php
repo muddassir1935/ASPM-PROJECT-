@@ -246,6 +246,29 @@ runTest("Test 24: Generated temporary passwords are 16 chars and policy-valid",
     true
 );
 
+// Audit C8: names are stripped of control characters
+runTest("Test 25: cleanName removes newlines/tabs and collapses spaces",
+    User::cleanName("  Evil\nName\t  Here\r\n "), "Evil Name Here");
+$c8Email = "c8_" . time() . rand(100, 999) . "@nu.edu.pk";
+$user->register("Line\nBreak", $c8Email, "StrongPass123!");
+$c8Row = $db->query("SELECT id, name FROM users WHERE email = " . $db->quote($c8Email))->fetch(PDO::FETCH_ASSOC);
+runTest("Test 26: register() stores the cleaned name", $c8Row['name'] ?? null, "Line Break");
+$user->updateProfile((int)$c8Row['id'], "Edit\nName", "bio");
+$c8Name = $db->query("SELECT name FROM users WHERE id = " . (int)$c8Row['id'])->fetchColumn();
+runTest("Test 27: updateProfile() stores the cleaned name", $c8Name, "Edit Name");
+runTest("Test 28: a name of only control characters is rejected",
+    $user->updateProfile((int)$c8Row['id'], "\n\t", "bio"), false);
+
+// Audit C11: email case-insensitivity (SQLite is case-sensitive by default)
+$c11Local = "Case_" . time() . rand(100, 999);
+$c11Ok = $user->register("Case Tester", "{$c11Local}@NU.edu.pk", "StrongPass123!");
+$c11Stored = $db->query("SELECT email FROM users WHERE email = " . $db->quote(strtolower("{$c11Local}@nu.edu.pk")))->fetchColumn();
+runTest("Test 29: register() stores the email lowercased", $c11Ok && $c11Stored === strtolower("{$c11Local}@nu.edu.pk"), true);
+runTest("Test 30: login works with different email casing",
+    $user->verifyPassword(strtoupper($c11Local) . "@nu.EDU.pk", "StrongPass123!") !== false, true);
+runTest("Test 31: a second account differing only by case is rejected",
+    $user->register("Case Clone", strtoupper($c11Local) . "@nu.edu.pk", "StrongPass123!"), false);
+
 // ---------------------------------------------------------
 echo "\n=================================================\n";
 echo "TEST SUMMARY: $passedTests / $totalTests Passed\n";

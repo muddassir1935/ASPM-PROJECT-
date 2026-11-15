@@ -75,5 +75,18 @@ assertTest("GC removes expired sessions only",
     $handler->gc(3600) >= 1 && $handler->read($oldId) === '' && $handler->read($newId) === "new|b:1;");
 $handler->destroy($newId);
 
+// --- Audit C4: strict-mode support ---
+$issuedId = "issued_session_{$uniq}";
+$handler->write($issuedId, "x|b:1;");
+assertTest("validateId accepts an ID this server issued", $handler->validateId($issuedId) === true);
+assertTest("validateId rejects an attacker-chosen ID", $handler->validateId("attackerchosen_{$uniq}") === false);
+$db->prepare("UPDATE sessions SET last_activity = :t WHERE id = :id")
+   ->execute([':t' => time() - 5000, ':id' => $issuedId]);
+$handler->updateTimestamp($issuedId, "x|b:1;");
+$stamp = (int)$db->query("SELECT last_activity FROM sessions WHERE id = " . $db->quote($issuedId))->fetchColumn();
+assertTest("updateTimestamp refreshes last_activity", $stamp >= time() - 5);
+$handler->destroy($issuedId);
+assertTest("validateId rejects a destroyed (revoked) ID", $handler->validateId($issuedId) === false);
+
 echo PHP_EOL . "Result: {$passed}/{$total} passed" . PHP_EOL;
 exit($passed === $total ? 0 : 1);

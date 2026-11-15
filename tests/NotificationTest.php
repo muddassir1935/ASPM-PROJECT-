@@ -76,7 +76,9 @@ $countAfterOne = $notifModel->countUnread($taraId);
 assertTest("countUnread increments by 1", $countAfterOne === $initialCount + 1);
 
 $notifId2 = $notifModel->create($taraId, Notification::TYPE_REPLY, 101, 'Adam replied to your post.', $adamId);
-$notifId3 = $notifModel->create($taraId, Notification::TYPE_FOLLOW, $adamId, 'Adam started following you.', $adamId);
+// Actor is Ian (not Adam): the live follow trigger test below has Adam
+// follow Tara, and an identical follow notification would be deduplicated.
+$notifId3 = $notifModel->create($taraId, Notification::TYPE_FOLLOW, $ianId, 'Ian started following you.', $ianId);
 assertTest("Multiple notifications create successfully", is_int($notifId2) && is_int($notifId3));
 assertTest("countUnread reflects 3 new notifications", $notifModel->countUnread($taraId) === $initialCount + 3);
 
@@ -146,6 +148,38 @@ $adamPostId = $postModel->create($adamId, "Adam post text here.");
 $beforeSelfLikeCount = $notifModel->countUnread($adamId);
 $likeModel->add($adamId, $adamPostId);
 assertTest("Liking own post does not create self-notification", $notifModel->countUnread($adamId) === $beforeSelfLikeCount);
+
+// 7d. Audit C10: toggles do not spam the recipient
+echo PHP_EOL . "--- DEDUPLICATION (audit C10) ---" . PHP_EOL;
+$beforeToggle = count($notifModel->listAll($taraId, 500));
+$likeModel->remove($adamId, $taraPostId);
+$likeModel->add($adamId, $taraPostId);
+$likeModel->remove($adamId, $taraPostId);
+$likeModel->add($adamId, $taraPostId);
+assertTest("Like/unlike/like does not create duplicate notifications",
+    count($notifModel->listAll($taraId, 500)) === $beforeToggle);
+$followModel->unfollow($adamId, $taraId);
+$followModel->follow($adamId, $taraId);
+assertTest("Unfollow/follow does not create a duplicate notification",
+    count($notifModel->listAll($taraId, 500)) === $beforeToggle);
+$replyModel->create($adamId, $taraPostId, "Second reply");
+$replyModel->create($adamId, $taraPostId, "Third reply");
+assertTest("Every reply still notifies (replies are never deduplicated)",
+    count($notifModel->listAll($taraId, 500)) === $beforeToggle + 2);
+
+// 7e. Audit C20: notifications about a deleted post disappear
+echo PHP_EOL . "--- DELETED-POST NOTIFICATIONS (audit C20) ---" . PHP_EOL;
+$c20Post = $postModel->create($taraId, "C20 post that will be deleted");
+$likeModel->add($ianId, (int)$c20Post);
+$c20Before = $notifModel->countUnread($taraId);
+$c20Listed = count(array_filter($notifModel->listAll($taraId, 500), fn($n) => (int)$n['reference_id'] === (int)$c20Post && $n['type'] === 'like'));
+assertTest("Like notification for a live post is listed", $c20Listed === 1);
+$postModel->delete((int)$c20Post, $taraId);
+assertTest("Unread count drops when the post is deleted", $notifModel->countUnread($taraId) === $c20Before - 1);
+$c20After = count(array_filter($notifModel->listAll($taraId, 500), fn($n) => (int)$n['reference_id'] === (int)$c20Post && $n['type'] === 'like'));
+assertTest("Notification for a deleted post is no longer listed", $c20After === 0);
+assertTest("Follow notifications are unaffected (reference is a user id)",
+    count(array_filter($notifModel->listAll($taraId, 500), fn($n) => $n['type'] === 'follow')) >= 1);
 
 echo PHP_EOL . "=== SPRINT 5 NOTIFICATIONS TEST RESULTS: {$passed} / {$total} PASSED ===" . PHP_EOL;
 if ($passed === $total) {

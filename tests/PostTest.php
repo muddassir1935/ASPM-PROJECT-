@@ -188,6 +188,46 @@ assertTest("Soft-deleted post cannot be deleted twice",
     $postModel->delete($postId4, $authorId, false) === false);
 
 
+// --- Audit C2: DB timestamps are UTC; display zone is Asia/Karachi ---
+assertTest("App display time zone is Asia/Karachi", date_default_timezone_get() === 'Asia/Karachi');
+$freshPostId = $postModel->create($authorId, "Timezone check post");
+$freshPost = $postModel->getById((int)$freshPostId);
+assertTest("A brand-new post reads 'just now' (not '5h ago')",
+    $freshPost !== false && $freshPost['time_ago'] === 'just now', $freshPost['time_ago'] ?? 'no post');
+assertTest("formatTimeAgo treats DB values as UTC",
+    Post::formatTimeAgo(gmdate('Y-m-d H:i:s', time() - 7200)) === '2h ago');
+assertTest("formatDbDate renders UTC midnight as 05:00 PKT",
+    Post::formatDbDate('2026-01-01 00:00:00', 'H:i') === '05:00');
+assertTest("formatDbDate returns '' for garbage", Post::formatDbDate('not a date', 'Y') === '');
+
+// --- Audit F1: paging past the end clamps to the last page ---
+$f1Ctl = new PostController($postModel, ['id' => $authorId, 'role' => 'student', 'name' => 'A', 'email' => '']);
+$f1Total = $postModel->countAll();
+$f1Feed = $f1Ctl->getTimelineFeed(9999, 2);
+$f1Last = max(1, (int)ceil($f1Total / 2));
+assertTest("Page past the end is clamped to the last page", $f1Feed['page'] === $f1Last, "page {$f1Feed['page']} vs {$f1Last}");
+assertTest("Clamped last page still has posts", $f1Total === 0 || count($f1Feed['posts']) > 0);
+assertTest("Clamped last page reports no further pages", $f1Feed['has_more'] === false);
+assertTest("Page below 1 is clamped to page 1", $f1Ctl->getTimelineFeed(-3, 2)['page'] === 1);
+$f1User = $f1Ctl->getUserFeed($authorId, 9999, 1);
+assertTest("Profile feed past the end is clamped too", count($f1User['posts']) === 1 && $f1User['page'] === $postModel->countByUser($authorId));
+
+// --- Audit F4: safe return targets after post actions ---
+require_once __DIR__ . '/../classes/SafeRedirect.php';
+assertTest("Return to a profile tab is honoured",
+    SafeRedirect::target('profile.php?id=3&tab=likes') === 'profile.php?id=3&tab=likes');
+assertTest("Return to the admin panel is honoured", SafeRedirect::target('admin.php') === 'admin.php');
+assertTest("Legacy numeric return maps to the post page", SafeRedirect::target('42') === 'post.php?id=42');
+assertTest("Legacy 'index' maps to the feed", SafeRedirect::target('index') === 'index.php');
+assertTest("Absolute URLs are rejected (no open redirect)", SafeRedirect::target('https://evil.example/') === 'index.php');
+assertTest("Protocol-relative URLs are rejected", SafeRedirect::target('//evil.example/x') === 'index.php');
+assertTest("Unknown pages are rejected", SafeRedirect::target('logout.php') === 'index.php');
+assertTest("Header injection is rejected", SafeRedirect::target("index.php\r\nSet-Cookie: x=1") === 'index.php');
+assertTest("Returning to a just-deleted post's page falls back to the feed",
+    SafeRedirect::target('post.php?id=42', 'index.php', 42) === 'index.php');
+assertTest("Deleting from another page stays there",
+    SafeRedirect::target('explore.php?q=x', 'index.php', 42) === 'explore.php?q=x');
+
 echo PHP_EOL . "=================================================" . PHP_EOL;
 echo "TEST SUMMARY: {$passed} / {$total} Passed" . PHP_EOL;
 echo "=================================================" . PHP_EOL;

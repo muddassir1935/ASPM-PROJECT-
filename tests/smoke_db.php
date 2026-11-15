@@ -10,6 +10,12 @@
  *   php tests/smoke_db.php clearlock <email>
  *   php tests/smoke_db.php cleanup <uniq>
  */
+// CLI only (audit C5): under `php -S` without the router, or a misconfigured
+// Apache, this file was reachable over HTTP and would run for any visitor.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 

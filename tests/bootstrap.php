@@ -13,6 +13,12 @@
  * (tests/smoke_db.php is the exception: the live smoke script needs
  * the REAL database the web server sees, and cleans up after itself.)
  */
+// CLI only (audit C5): under `php -S` without the router, or a misconfigured
+// Apache, this file was reachable over HTTP and would run for any visitor.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 $testDbPath = sys_get_temp_dir() . '/campusconnect_test_' . getmypid() . '.sqlite';
 if (file_exists($testDbPath)) {
     unlink($testDbPath);

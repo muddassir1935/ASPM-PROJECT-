@@ -6,6 +6,12 @@
  * its own process against its own throwaway database (see
  * tests/bootstrap.php), so results are independent of run order.
  */
+// CLI only (audit C5): under `php -S` without the router, or a misconfigured
+// Apache, this file was reachable over HTTP and would run for any visitor.
+if (PHP_SAPI !== 'cli') {
+    http_response_code(404);
+    exit;
+}
 $suites = [
     'UserTest.php',
     'PostTest.php',
@@ -15,6 +21,7 @@ $suites = [
     'Sprint4Test.php',
     'RbacTest.php',
     'ReportTest.php',
+    'MysqlCompatTest.php',
 ];
 
 $failedSuites = [];

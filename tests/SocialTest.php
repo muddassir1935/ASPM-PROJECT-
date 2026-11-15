@@ -174,5 +174,29 @@ assertTest("Post search count matches",
     $postModel->countSearch("stranger post {$uniq}") === 1);
 assertTest("Empty post search returns nothing", $postModel->searchPosts("   ") === []);
 
+// Audit C14: bookmark ID list (narrow query, ints, no 500 cap)
+$c14Post = $postModel->create($bobId, "C14 bookmark id probe {$uniq}");
+$bookmarkModel->add($aliceId, (int)$c14Post);
+$c14Ids = $bookmarkModel->getBookmarkedIds($aliceId);
+assertTest("getBookmarkedIds includes a saved post (as int)", in_array((int)$c14Post, $c14Ids, true));
+assertTest("getBookmarkedIds returns ints only", $c14Ids === array_map('intval', $c14Ids));
+$postModel->delete((int)$c14Post, $bobId);
+assertTest("getBookmarkedIds skips soft-deleted posts", !in_array((int)$c14Post, $bookmarkModel->getBookmarkedIds($aliceId), true));
+assertTest("getBookmarkedIds for invalid user is empty", $bookmarkModel->getBookmarkedIds(0) === []);
+
+// Audit C15: shared pager helpers
+require_once __DIR__ . '/../includes/social_widgets.php';
+assertTest("clampPage clamps past the end", clampPage(99, 45, 20) === 3);
+assertTest("clampPage clamps below 1", clampPage(-2, 45, 20) === 1);
+assertTest("clampPage with no items is page 1", clampPage(5, 0, 20) === 1);
+ob_start(); renderPager('bookmarks.php', 1, false); $c15None = ob_get_clean();
+assertTest("renderPager prints nothing for a single page", $c15None === '');
+ob_start(); renderPager('post.php?id=7', 2, true, 'rpage'); $c15Html = ob_get_clean();
+assertTest("renderPager links Previous and Next with the right parameter",
+    strpos($c15Html, 'post.php?id=7&amp;rpage=1') !== false && strpos($c15Html, 'post.php?id=7&amp;rpage=3') !== false);
+$c15Notif = new Notification($db);
+assertTest("Notification::countAll counts read and unread",
+    $c15Notif->countAll($aliceId) === count($c15Notif->listAll($aliceId, 1000)));
+
 echo PHP_EOL . "Result: {$passed}/{$total} passed" . PHP_EOL;
 exit($passed === $total ? 0 : 1);

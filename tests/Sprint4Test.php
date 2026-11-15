@@ -232,6 +232,63 @@ $bmRow = null;
 foreach ($bookmarked as $row) { if ((int)$row['id'] === $postId1) { $bmRow = $row; break; } }
 assertTest("Bookmarked post shows real like_count", $bmRow !== null && (int)$bmRow['like_count'] === 2);
 assertTest("Bookmarked post shows viewer is_liked", $bmRow !== null && (int)$bmRow['is_liked'] === 1);
+assertTest("Bookmarked rows carry is_announcement (audit F6)", $bmRow !== null && array_key_exists('is_announcement', $bmRow));
+assertTest("Bookmarked rows carry author_email for the handle (audit F6)", $bmRow !== null && !empty($bmRow['author_email']));
+
+// --- Audit C9: cached rows + live counts/viewer state ---
+echo PHP_EOL . "--- FEED CACHE: LIVE STATE (audit C9) ---" . PHP_EOL;
+require_once __DIR__ . '/../classes/Follow.php';
+require_once __DIR__ . '/../classes/Reply.php';
+$c9Post = $postModel->create($pennyId, "C9 cache probe");
+$c9Find = static function (array $rows, int $id) {
+    foreach ($rows as $r) { if ((int)$r['id'] === $id) { return $r; } }
+    return null;
+};
+$postModel->getFeed(10, 0, 0); // warm the shared global cache
+assertTest("Global feed cache entry exists", $cache->get("feed_global_10_0") !== null);
+$likeModel->add($liamId, (int)$c9Post);
+assertTest("A like does not flush the global feed cache", $cache->get("feed_global_10_0") !== null);
+$c9Row = $c9Find($postModel->getFeed(10, 0, $liamId), (int)$c9Post);
+assertTest("Cached feed still shows the new like_count live", $c9Row !== null && $c9Row['like_count'] === 1);
+assertTest("Cached feed shows is_liked for the liker", $c9Row !== null && $c9Row['is_liked'] === 1);
+$c9Other = $c9Find($postModel->getFeed(10, 0, $farhanId), (int)$c9Post);
+assertTest("Same cached page shows is_liked=0 for another viewer", $c9Other !== null && $c9Other['is_liked'] === 0);
+(new Reply($db))->create($farhanId, (int)$c9Post, "C9 reply");
+$c9Row = $c9Find($postModel->getFeed(10, 0, $liamId), (int)$c9Post);
+assertTest("Cached feed shows the new reply_count live", $c9Row !== null && $c9Row['reply_count'] === 1);
+(new Bookmark($db))->add($liamId, (int)$c9Post);
+$c9Row = $c9Find($postModel->getFeed(10, 0, $liamId), (int)$c9Post);
+assertTest("Cached feed shows is_bookmarked live", $c9Row !== null && $c9Row['is_bookmarked'] === 1);
+$c9Ids = array_map(fn($r) => (int)$r['id'], $postModel->getFeed(10, 0, 0));
+$c9Fresh = array_map(fn($r) => (int)$r['id'], $postModel->getFeed(10, 0, 0, true));
+assertTest("Live overlay preserves feed order", $c9Ids === $c9Fresh);
+
+$postModel->getPersonalizedFeed($liamId, 10, 0);
+$postModel->getPersonalizedFeed($farhanId, 10, 0);
+(new Follow($db))->follow($liamId, $pennyId);
+assertTest("Following clears only the follower's personalized cache",
+    $cache->get(Post::personalizedCachePrefix($liamId) . "10_0") === null
+    && $cache->get(Post::personalizedCachePrefix($farhanId) . "10_0") !== null);
+assertTest("Follower's personalized feed now includes the followed user's post",
+    $c9Find($postModel->getPersonalizedFeed($liamId, 10, 0), (int)$c9Post) !== null);
+
+$postModel->getFeed(10, 0, 0);
+$userModel->updateProfile($pennyId, "Penny Renamed {$uniq}", "");
+$c9Row = $c9Find($postModel->getFeed(10, 0, 0), (int)$c9Post);
+assertTest("A rename shows in the feed immediately (no stale author_name)",
+    $c9Row !== null && $c9Row['author_name'] === "Penny Renamed {$uniq}");
+
+// --- Audit C22: trending is time-windowed, with an all-time fallback ---
+echo PHP_EOL . "--- TRENDING WINDOW (audit C22) ---" . PHP_EOL;
+$oldTag = "oldtag_" . $uniq;
+$oldPost = $postModel->create($pennyId, "Ancient #{$oldTag} #{$oldTag}x");
+$db->prepare("UPDATE posts SET created_at = :t WHERE id = :id")
+   ->execute([':t' => gmdate('Y-m-d H:i:s', time() - 30 * 86400), ':id' => (int)$oldPost]);
+$recentTags = array_column($hashtagModel->getTrending(500), 'tag');
+assertTest("A tag used only 30 days ago is not trending this week", !in_array($oldTag, $recentTags, true));
+$allTime = array_column($hashtagModel->getTrending(500, 3650), 'tag');
+assertTest("It still counts in a wide window", in_array($oldTag, $allTime, true));
+assertTest("Recent tags are trending", in_array($tagA, $recentTags, true));
 
 echo PHP_EOL . "=== SPRINT 4 TEST RESULTS: {$passed} / {$total} PASSED ===" . PHP_EOL;
 if ($passed === $total) {
