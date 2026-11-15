@@ -27,7 +27,11 @@ $db = Database::getInstance()->getConnection();
 $userId = (int)$currentUser['id'];
 $notifModel = new Notification($db);
 
-$notifications = $notifModel->listAll($userId, 100, 0);
+// Audit C15: paginate instead of silently stopping at 100.
+$perPage = 30;
+$notifTotal = $notifModel->countAll($userId);
+$page = clampPage((int)($_GET['page'] ?? 1), $notifTotal, $perPage);
+$notifications = $notifModel->listAll($userId, $perPage, ($page - 1) * $perPage);
 $unreadCount = $notifModel->countUnread($userId);
 ?>
 
@@ -108,13 +112,14 @@ $unreadCount = $notifModel->countUnread($userId);
                         </div>
 
                         <?php if (!$isRead): ?>
-                            <button type="button" class="btn-text btn-notif-mark" onclick="markNotificationRead(<?= $notifId ?>, this)" title="Mark as read">
+                            <button type="button" class="btn-text btn-notif-mark" onclick="markNotificationRead(<?= $notifId ?>, this)" title="Mark as read" aria-label="Mark as read">
                                 &bull;
                             </button>
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
+            <?php renderPager('notifications.php', $page, $page * $perPage < $notifTotal); ?>
         <?php endif; ?>
     </div>
 
@@ -135,6 +140,10 @@ $unreadCount = $notifModel->countUnread($userId);
     function markNotificationRead(id, btnElement) {
         fetch('notification_action.php', {
             method: 'POST',
+            // Audit F2: clicking a notification link navigates away at once,
+            // which could cancel this request and leave the item unread.
+            // keepalive lets the browser finish it after the page unloads.
+            keepalive: true,
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
             body: 'action=mark_read&id=' + encodeURIComponent(id)
                 + '&csrf_token=' + encodeURIComponent(csrfToken)
@@ -152,7 +161,8 @@ $unreadCount = $notifModel->countUnread($userId);
                 }
                 updateUnreadBadges(data.unread_count);
             }
-        });
+        })
+        .catch(function () { /* page may be unloading; the request still completes */ });
     }
 
     var markAllBtn = document.getElementById('btn-mark-all-read');

@@ -130,7 +130,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                                 <span>&middot;</span>
                                 <span><?= (int)$row['post_count'] ?> <?= pluralize((int)$row['post_count'], 'post') ?></span>
                                 <span>&middot;</span>
-                                <span>Joined <?= htmlspecialchars(date('M j, Y', strtotime($row['created_at']))) ?></span>
+                                <span>Joined <?= htmlspecialchars(Post::formatDbDate($row['created_at'], 'M j, Y')) ?></span>
                             </div>
                         </div>
                     </div>
@@ -139,7 +139,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                         <?php if ($isSelf): ?>
                             <span class="admin-self-pill">This is you</span>
                         <?php else: ?>
-                            <form method="POST" action="admin_action.php" class="admin-role-form" onsubmit="return confirm('Change <?= htmlspecialchars(addslashes($row['name'])) ?>’s role? Their sessions will be signed out.');">
+                            <form method="POST" action="admin_action.php" class="admin-role-form" onsubmit="return confirm(<?= htmlspecialchars(json_encode('Change ' . $row['name'] . '’s role? Their sessions will be signed out.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE), ENT_QUOTES) ?>);">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="assign_role">
                                 <input type="hidden" name="user_id" value="<?= (int)$row['id'] ?>">
@@ -150,7 +150,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                                 </select>
                                 <button type="submit" class="admin-btn-action">Update</button>
                             </form>
-                            <form method="POST" action="admin_action.php" onsubmit="return confirm('Reset <?= htmlspecialchars(addslashes($row['name'])) ?>’s password? A temporary password will be shown once.');" style="margin: 0;">
+                            <form method="POST" action="admin_action.php" onsubmit="return confirm(<?= htmlspecialchars(json_encode('Reset ' . $row['name'] . '’s password? A temporary password will be shown once.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE), ENT_QUOTES) ?>);" style="margin: 0;">
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="reset_password">
                                 <input type="hidden" name="user_id" value="<?= (int)$row['id'] ?>">
@@ -204,7 +204,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                                 <?= Csrf::field() ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="post_id" value="<?= (int)$modPost['id'] ?>">
-                                <input type="hidden" name="return" value="index">
+                                <input type="hidden" name="return" value="admin.php">
                                 <button type="submit" class="admin-mod-delete-btn">
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     Delete Post

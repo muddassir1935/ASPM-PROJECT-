@@ -6,6 +6,7 @@
  * and trending hashtags used by the logged-in pages (index, profile, explore, bookmarks).
  * All user-controlled output is escaped with htmlspecialchars here.
  */
+require_once __DIR__ . '/../classes/SafeRedirect.php';
 require_once __DIR__ . '/../classes/Hashtag.php';
 require_once __DIR__ . '/../classes/Report.php';
 
@@ -15,7 +16,12 @@ require_once __DIR__ . '/../classes/Report.php';
 function renderLeftNav(string $active): void {
     $viewerId = isset($GLOBALS['currentUser']['id']) ? (int)$GLOBALS['currentUser']['id'] : 0;
     $unreadCount = 0;
-    if ($viewerId > 0) {
+    if ($viewerId > 0 && isset($GLOBALS['unreadNotifCount'])) {
+        // Audit C24: includes/header.php already counted this request's
+        // unread notifications for the navbar bell — reuse it instead of
+        // running the same query a second time on every page.
+        $unreadCount = (int)$GLOBALS['unreadNotifCount'];
+    } elseif ($viewerId > 0) {
         try {
             require_once __DIR__ . '/../classes/Notification.php';
             $navDb = isset($GLOBALS['db']) ? $GLOBALS['db'] : Database::getInstance()->getConnection();
@@ -39,7 +45,9 @@ function renderLeftNav(string $active): void {
     foreach ($links as $key => [$href, $label, $icon, $badge]) {
         $isActive = $key === $active ? ' nav-col-active' : '';
         echo '<a href="' . htmlspecialchars($href) . '" class="nav-col-link' . $isActive . '"'
-            . ' aria-label="' . htmlspecialchars($label) . '"'
+            // Audit F12: the aria-label replaced the visible badge for screen
+            // readers; include the unread count in the name instead.
+            . ' aria-label="' . htmlspecialchars($label . ($badge > 0 ? ", {$badge} unread" : '')) . '"'
             . ($key === $active ? ' aria-current="page"' : '') . '>'
             . $icon . '<span>' . htmlspecialchars($label) . '</span>';
         if ($key === 'notifications') {
@@ -173,6 +181,32 @@ function renderTrendingHashtagsWidget(PDO $db, int $limit = 5): void {
  * $bookmarkedIds lists post ids the viewer has saved. When
  * $removeCardOnUnsave is true (bookmarks page), unsaving removes the card.
  */
+/**
+ * Previous / Page N / Next pager (audit C15), same markup as the feed's.
+ * $baseUrl already carries every query parameter except the page one;
+ * $param names the page parameter (default "page").
+ */
+function renderPager(string $baseUrl, int $page, bool $hasMore, string $param = 'page'): void {
+    if ($page <= 1 && !$hasMore) {
+        return;
+    }
+    $sep = strpos($baseUrl, '?') === false ? '?' : '&';
+    echo '<div class="pager">';
+    echo $page > 1
+        ? '<a href="' . htmlspecialchars($baseUrl . $sep . $param . '=' . ($page - 1)) . '">&larr; Previous</a>'
+        : '<span></span>';
+    echo '<span class="pager-info">Page ' . $page . '</span>';
+    echo $hasMore
+        ? '<a href="' . htmlspecialchars($baseUrl . $sep . $param . '=' . ($page + 1)) . '">Next &rarr;</a>'
+        : '<span></span>';
+    echo '</div>';
+}
+
+/** Clamp a requested page to [1, last page] for $total items. */
+function clampPage(int $page, int $total, int $perPage): int {
+    return min(max(1, $page), max(1, (int)ceil($total / max(1, $perPage))));
+}
+
 function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds = [], bool $removeCardOnUnsave = false): void {
     $postId = (int)$post['id'];
     $authorInitial = strtoupper(mb_substr(trim($post['author_name']), 0, 1, 'UTF-8'));
@@ -219,7 +253,12 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     echo '<div class="post-card-head">';
     echo '<a class="post-card-author" href="profile.php?id=' . (int)$post['user_id'] . '">'
         . htmlspecialchars($post['author_name']) . '</a>';
-    $authorEmail = $post['author_email'] ?? '';
+    // Audit C13: the @handle is the email's local part, so with the known
+    // @nu.edu.pk domain it reveals the full address. Show it to signed-in
+    // campus members only; anonymous visitors of public pages (Explore,
+    // profiles, post detail) never get it — the same harvesting concern
+    // the Sprint 5 H5 fix addressed for search.
+    $authorEmail = $currentUser ? ($post['author_email'] ?? '') : '';
     if ($authorEmail) {
         $handle = explode('@', $authorEmail)[0];
         echo '<span class="post-card-handle">@' . htmlspecialchars($handle) . '</span>';
@@ -240,6 +279,7 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
         if ($isOwner || $canDeleteAny) {
             echo '<form method="POST" action="post_action.php" class="js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin:0;">'
                 . Csrf::field()
+                . SafeRedirect::field()
                 . '<input type="hidden" name="action" value="delete">'
                 . '<input type="hidden" name="post_id" value="' . $postId . '">'
                 . '<button type="submit" class="post-dropdown-item item-danger">'
@@ -264,27 +304,34 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     echo '</div>';
     echo '<p class="post-card-content">' . $renderedBody . '</p>';
     echo '<div class="post-card-actions">';
-    echo '<a class="action-reply" href="post.php?id=' . $postId . '" aria-label="View post and replies"><span class="action-ic">'
+    // Audit F12: visually-hidden text instead of aria-label, so screen
+    // readers hear the count too ("Replies 3", "Like 5", pressed/not).
+    echo '<a class="action-reply" href="post.php?id=' . $postId . '"><span class="sr-only">Replies</span><span class="action-ic">'
         . $replySvg . '</span>' . $replyCount . '</a>';
 
     if ($currentUser) {
         echo '<button type="button" class="action-like' . ($isLiked ? ' is-liked' : '') . '" data-like-toggle data-post-id="'
-            . $postId . '" aria-label="Like post"><span class="action-ic">' . $likeSvg . '</span><span class="like-count">' . $likeCount . '</span></button>';
+            . $postId . '" aria-pressed="' . ($isLiked ? 'true' : 'false') . '"><span class="sr-only">Like</span><span class="action-ic">' . $likeSvg . '</span><span class="like-count">' . $likeCount . '</span></button>';
     }
 
     echo '<span class="spacer"></span>';
     if ($currentUser) {
-        echo '<button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="'
-            . $postId . '"' . ($isBookmarked && $removeCardOnUnsave ? ' data-remove-card="1"' : '') . '>'
+        // Audit F5: render the saved state on load (class + data attribute
+        // + aria-pressed), not only after the first AJAX toggle.
+        echo '<button type="button" class="btn-bookmark' . ($isBookmarked ? ' is-bookmarked' : '') . '" data-bookmark-toggle'
+            . ' data-bookmarked="' . ($isBookmarked ? '1' : '0') . '"'
+            . ' aria-pressed="' . ($isBookmarked ? 'true' : 'false') . '"'
+            . ' data-post-id="' . $postId . '"' . ($isBookmarked && $removeCardOnUnsave ? ' data-remove-card="1"' : '') . '>'
             . ($isBookmarked ? 'Saved' : 'Save') . '</button>';
     }
     echo '</div>';
     if ($isOwner) {
         echo '<form id="post-edit-' . $postId . '" method="POST" action="post_action.php" class="edit-form" style="display: none;">'
             . Csrf::field()
+            . SafeRedirect::field()
             . '<input type="hidden" name="action" value="update">'
             . '<input type="hidden" name="post_id" value="' . $postId . '">'
-            . '<textarea name="content" class="form-control" rows="3" maxlength="280" required>' . htmlspecialchars($post['content']) . '</textarea>'
+            . '<textarea name="content" class="form-control" rows="3" maxlength="280" required aria-label="Edit post">' . htmlspecialchars($post['content']) . '</textarea>'
             . '<div class="edit-form-actions">'
             . '<button type="submit" class="btn-primary">Save Changes</button>'
             . '<button type="button" class="btn-cancel" onclick="togglePostEdit(' . $postId . ')">Cancel</button>'

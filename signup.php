@@ -4,6 +4,13 @@ require_once 'classes/User.php';
 require_once 'classes/Auth.php';
 require_once 'classes/Csrf.php';
 
+// Audit C19: like login.php, a signed-in user has no business on the
+// signup form (it would create a second account while logged in).
+if (Auth::isLoggedIn()) {
+    header("Location: index.php");
+    exit;
+}
+
 $error = "";
 
 if($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -21,8 +28,11 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
             $error = "All fields are required.";
         } elseif (!User::isCampusEmail($email)) {
             $error = "Access restricted: Registration is exclusively for FAST-NUCES campus emails (@nu.edu.pk).";
-        } elseif(strlen($password) < 8 || !preg_match('/[A-Z]/', $password) || !preg_match('/[a-z]/', $password) || !preg_match('/[0-9]/', $password) || !preg_match('/[\W_]/', $password)) {
-            $error = "Password must be at least 8 chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.";
+        } elseif (!User::isValidPassword($password)) {
+            // Audit C18: one shared policy (User::isValidPassword) instead of
+            // a copy that lacked the 128-char cap — an over-long password
+            // used to get the generic "Registration failed" message.
+            $error = "Password must be 8–128 chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.";
         } else {
             $db = Database::getInstance()->getConnection();
             $user = new User($db);

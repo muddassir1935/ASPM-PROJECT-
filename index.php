@@ -24,7 +24,7 @@ if ($currentUser) {
         $feed = $feedController->getTimelineFeed($feedPage, 10);
     }
     $bookmarkModel = new Bookmark($db);
-    $bookmarkedIds = array_map('intval', array_column($bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], 500), 'id'));
+    $bookmarkedIds = $bookmarkModel->getBookmarkedIds((int)$currentUser['id']);
 } else {
     require_once 'config/Database.php';
     require_once 'classes/Hashtag.php';
@@ -69,7 +69,7 @@ if ($currentUser) {
                 <?= Csrf::field() ?>
                 <div class="compose-flex">
                     <span class="avatar-md<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
-                    <textarea id="compose-content" class="form-control" name="content" rows="2" maxlength="280" placeholder="What's happening on campus?!"></textarea>
+                    <textarea id="compose-content" class="form-control" name="content" aria-label="Write a post" rows="2" maxlength="280" placeholder="What's happening on campus?!"></textarea>
                 </div>
                 <div class="compose-row">
                     <div class="compose-left-tools">
@@ -222,6 +222,7 @@ if ($currentUser) {
                                         <?php if ($isOwnPost || $canDeleteAny): ?>
                                             <form method="POST" action="post_action.php" class="js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin:0;">
                                                 <?= Csrf::field() ?>
+                                                <?= SafeRedirect::field() ?>
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                                 <button type="submit" class="post-dropdown-item item-danger">
@@ -251,18 +252,20 @@ if ($currentUser) {
                         <p class="post-card-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($feedPost['content'])) ?></p>
 
                         <div class="post-card-actions">
-                            <a class="action-reply" href="post.php?id=<?= (int)$feedPost['id'] ?>" aria-label="View post and replies"><span class="action-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg></span><?= (int)($feedPost['reply_count'] ?? 0) ?></a>
-                            <button type="button" class="action-like <?= !empty($feedPost['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$feedPost['id'] ?>" aria-label="Like post"><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($feedPost['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($feedPost['like_count'] ?? 0) ?></span></button>
+                            <a class="action-reply" href="post.php?id=<?= (int)$feedPost['id'] ?>" ><span class="sr-only">Replies</span><span class="action-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg></span><?= (int)($feedPost['reply_count'] ?? 0) ?></a>
+                            <button type="button" class="action-like <?= !empty($feedPost['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$feedPost['id'] ?>" aria-pressed="<?= !empty($feedPost['is_liked']) ? 'true' : 'false' ?>"><span class="sr-only">Like</span><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($feedPost['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($feedPost['like_count'] ?? 0) ?></span></button>
                             <span class="spacer"></span>
-                            <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$feedPost['id'] ?>"><?= in_array((int)$feedPost['id'], $bookmarkedIds, true) ? 'Saved' : 'Save' ?></button>
+                            <?php $feedSaved = in_array((int)$feedPost['id'], $bookmarkedIds, true); ?>
+                            <button type="button" class="btn-bookmark<?= $feedSaved ? ' is-bookmarked' : '' ?>" data-bookmark-toggle data-bookmarked="<?= $feedSaved ? '1' : '0' ?>" aria-pressed="<?= $feedSaved ? 'true' : 'false' ?>" data-post-id="<?= (int)$feedPost['id'] ?>"><?= $feedSaved ? 'Saved' : 'Save' ?></button>
                         </div>
 
                         <?php if ($isOwnPost): ?>
                             <form id="post-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" class="edit-form" style="display: none;">
                                 <?= Csrf::field() ?>
+                                <?= SafeRedirect::field() ?>
                                 <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
-                                <textarea name="content" class="form-control" rows="3" maxlength="280" required><?= htmlspecialchars($feedPost['content']) ?></textarea>
+                                <textarea name="content" class="form-control" rows="3" maxlength="280" required aria-label="Edit post"><?= htmlspecialchars($feedPost['content']) ?></textarea>
                                 <div class="edit-form-actions">
                                     <button type="submit" class="btn-primary">Save Changes</button>
                                     <button type="button" class="btn-cancel" onclick="togglePostEdit(<?= (int)$feedPost['id'] ?>)">Cancel</button>
@@ -355,7 +358,7 @@ if ($currentUser) {
                 <div class="x-auth-actions">
                     <a href="signup.php" class="x-btn-signup">Create account</a>
                     <p class="x-disclaimer">
-                        By signing up, you agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a>, including campus honor code and student conduct rules.
+                        By signing up, you agree to follow the campus honor code and student conduct rules.
                     </p>
 
                     <div class="x-signin-section">

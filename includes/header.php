@@ -916,6 +916,30 @@ if (!function_exists('brandMarkSvg')) {
             border-color: var(--danger-border);
         }
 
+        /* Audit F12: text for screen readers only */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        /* Audit F11: transient AJAX error message */
+        .cc-toast {
+            position: fixed;
+            left: 50%;
+            bottom: 24px;
+            transform: translateX(-50%);
+            z-index: 10000;
+            max-width: min(92vw, 420px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        }
+
         .alert-success {
             background-color: var(--success-tint);
             color: #14532D;
@@ -4330,6 +4354,13 @@ if (!function_exists('brandMarkSvg')) {
 </head>
 <body>
 
+<?php if ($isDbFallback): ?>
+    <?php /* Audit F3: restored. Without it the app silently switches to a
+       different (empty) SQLite database when MySQL is down and logins just
+       fail. Only rendered in fallback mode, so normal use is unaffected. */ ?>
+    <div class="db-fallback-banner" role="alert">Notice: MySQL is unreachable — running on the local SQLite fallback. Accounts and posts saved here will not appear once MySQL is back.</div>
+<?php endif; ?>
+
 <header class="navbar">
     <div class="nav-inner">
         <a href="index.php" class="brand-link">
@@ -4356,7 +4387,7 @@ if (!function_exists('brandMarkSvg')) {
                     } catch (Throwable $e) {}
                 ?>
                 <li>
-                    <a href="notifications.php" class="nav-bell" aria-label="Notifications" title="Notifications">
+                    <a href="notifications.php" class="nav-bell" aria-label="Notifications<?= $unreadNotifCount > 0 ? ', ' . (int)$unreadNotifCount . ' unread' : '' ?>" title="Notifications">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
                         <span class="nav-bell-badge" data-notif-badge style="<?= $unreadNotifCount > 0 ? '' : 'display:none;' ?>"><?= $unreadNotifCount > 99 ? '99+' : $unreadNotifCount ?></span>
                     </a>

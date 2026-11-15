@@ -52,5 +52,8 @@ echo json_encode([
     'success' => true,
     'following' => $newState,
     'followers_count' => $followModel->countFollowers($targetId),
+    // Audit F7: the viewer's own Following count changes too.
+    'viewer_id' => (int)$currentUser['id'],
+    'viewer_following_count' => $followModel->countFollowing((int)$currentUser['id']),
     'message' => $newState ? 'Following.' : 'Unfollowed.'
 ]);

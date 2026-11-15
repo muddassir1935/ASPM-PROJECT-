@@ -18,6 +18,7 @@ require_once 'classes/Post.php';
 require_once 'classes/PostController.php';
 require_once 'classes/Auth.php';
 require_once 'classes/Csrf.php';
+require_once 'classes/SafeRedirect.php';
 
 // Every post action requires a logged-in user.
 if (!Auth::isLoggedIn()) {
@@ -30,6 +31,9 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $result = ['success' => false, 'message' => 'Invalid request.'];
+// Defined up front (audit C3): the redirect logic below reads $action even
+// when the request is a GET or fails the CSRF check.
+$action = is_string($_POST['action'] ?? null) ? $_POST['action'] : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Sprint 5 CSRF: refuse the request when the token is missing or wrong.
@@ -39,7 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $db = Database::getInstance()->getConnection();
         $controller = new PostController(new Post($db));
 
-        $action = $_POST['action'] ?? '';
         $postId = (int)($_POST['post_id'] ?? 0);
 
         switch ($action) {
@@ -66,14 +69,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $_SESSION['flash_type'] = $result['success'] ? 'success' : 'error';
 $_SESSION['flash_message'] = $result['message'];
 
-// Safe redirect target: only the feed or a specific post detail page.
-$return = $_POST['return'] ?? 'index';
-if ($action === 'delete') {
-    // A deleted post no longer has a detail page; always go back to the feed.
-    header('Location: index.php');
-} elseif ($return !== 'index' && preg_match('/^\d+$/', (string)$return) && (int)$return > 0) {
-    header('Location: post.php?id=' . (int)$return);
-} else {
-    header('Location: index.php');
-}
+// Audit F4: go back to the page the form came from (feed, profile,
+// Explore, bookmarks, admin panel, post detail) — validated by
+// SafeRedirect so it can only ever be a local page. A deleted post's own
+// detail page no longer exists, so that one falls back to the feed.
+$deletedId = ($action === 'delete' && !empty($result['success'])) ? (int)($_POST['post_id'] ?? 0) : null;
+header('Location: ' . SafeRedirect::target($_POST['return'] ?? 'index', 'index.php', $deletedId));
 exit;

@@ -13,6 +13,29 @@
         if (meta) { csrfToken = meta.getAttribute('content') || ''; }
     })();
 
+    // Audit F11: AJAX failures (expired session, server error, refused
+    // action) used to be ignored silently — the button just did nothing.
+    // ccNotify shows a short, self-dismissing message instead.
+    function ccNotify(message) {
+        var box = document.createElement('div');
+        box.className = 'alert alert-error cc-toast';
+        box.setAttribute('role', 'alert');
+        box.textContent = message;
+        document.body.appendChild(box);
+        setTimeout(function () { box.remove(); }, 4500);
+    }
+    function ccJson(response) {
+        if (response.status === 401) {
+            throw new Error('Your session has expired. Please log in again.');
+        }
+        return response.json().catch(function () {
+            throw new Error('Something went wrong. Please refresh and try again.');
+        });
+    }
+    function ccFail(err) {
+        ccNotify((err && err.message) || 'Network error. Please check your connection and try again.');
+    }
+
     // Global delegated click handler
     document.addEventListener('click', function (event) {
         // Theme Switcher Toggle (1-click Light / Dark)
@@ -93,9 +116,9 @@
                 body: 'user_id=' + encodeURIComponent(followBtn.getAttribute('data-user-id'))
                     + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
-            .then(function (r) { return r.json(); })
+            .then(ccJson)
             .then(function (data) {
-                if (!data.success) { return; }
+                if (!data.success) { ccNotify(data.message || 'That did not work. Please try again.'); return; }
                 var userId = followBtn.getAttribute('data-user-id');
                 // Update every follow button for this user on the page.
                 document.querySelectorAll('[data-follow-toggle][data-user-id="' + userId + '"]').forEach(function (btn) {
@@ -106,7 +129,18 @@
                 document.querySelectorAll('[data-followers-count-for="' + userId + '"]').forEach(function (el) {
                     el.textContent = data.followers_count;
                 });
+                // Audit F7: keep the Follower/Followers label and the
+                // viewer's own Following count in step too.
+                document.querySelectorAll('[data-followers-label-for="' + userId + '"]').forEach(function (el) {
+                    el.textContent = Number(data.followers_count) === 1 ? 'Follower' : 'Followers';
+                });
+                if (data.viewer_id) {
+                    document.querySelectorAll('[data-following-count-for="' + data.viewer_id + '"]').forEach(function (el) {
+                        el.textContent = data.viewer_following_count;
+                    });
+                }
             })
+            .catch(ccFail)
             .finally(function () { followBtn.disabled = false; });
             return;
         }
@@ -122,18 +156,39 @@
                 body: 'post_id=' + encodeURIComponent(bookmarkBtn.getAttribute('data-post-id'))
                     + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
-            .then(function (r) { return r.json(); })
+            .then(ccJson)
             .then(function (data) {
-                if (!data.success) { return; }
+                if (!data.success) { ccNotify(data.message || 'That did not work. Please try again.'); return; }
                 if (!data.bookmarked && bookmarkBtn.getAttribute('data-remove-card') === '1') {
                     var card = bookmarkBtn.closest('[data-post-card]');
                     if (card) { card.remove(); }
+                    // Audit F7: keep "Your Bookmarks (N)" accurate and show
+                    // the empty state once the last saved post is removed.
+                    document.querySelectorAll('[data-bookmarks-total]').forEach(function (el) {
+                        el.textContent = Math.max(0, (parseInt(el.textContent, 10) || 1) - 1);
+                    });
+                    var list = document.querySelector('[data-bookmarks-list]');
+                    if (list && !list.querySelector('[data-post-card]')) {
+                        var empty = document.createElement('div');
+                        empty.className = 'empty-state';
+                        var title = document.createElement('h4');
+                        title.className = 'empty-title';
+                        title.textContent = 'No saved posts yet';
+                        var text = document.createElement('p');
+                        text.className = 'empty-text';
+                        text.textContent = 'Tap Save on any post to keep it here for later.';
+                        empty.appendChild(title);
+                        empty.appendChild(text);
+                        list.appendChild(empty);
+                    }
                     return;
                 }
                 bookmarkBtn.textContent = data.bookmarked ? 'Saved' : 'Save';
                 bookmarkBtn.classList.toggle('is-bookmarked', data.bookmarked);
                 bookmarkBtn.setAttribute('data-bookmarked', data.bookmarked ? '1' : '0');
+                bookmarkBtn.setAttribute('aria-pressed', data.bookmarked ? 'true' : 'false');
             })
+            .catch(ccFail)
             .finally(function () { bookmarkBtn.disabled = false; });
             return;
         }
@@ -150,11 +205,12 @@
                 body: 'post_id=' + encodeURIComponent(postId)
                     + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
-            .then(function (r) { return r.json(); })
+            .then(ccJson)
             .then(function (data) {
-                if (!data.success) { return; }
+                if (!data.success) { ccNotify(data.message || 'That did not work. Please try again.'); return; }
                 document.querySelectorAll('[data-like-toggle][data-post-id="' + postId + '"]').forEach(function (btn) {
                     btn.classList.toggle('is-liked', data.liked);
+                    btn.setAttribute('aria-pressed', data.liked ? 'true' : 'false');
                     var svg = btn.querySelector('svg');
                     if (svg) {
                         svg.setAttribute('fill', data.liked ? '#e0245e' : 'none');
@@ -165,6 +221,7 @@
                     }
                 });
             })
+            .catch(ccFail)
             .finally(function () { likeBtn.disabled = false; });
             return;
         }
@@ -224,6 +281,11 @@
             modalOpener = document.activeElement;
         }
         modal.classList.toggle('open');
+        if (willOpen) {
+            // Audit F12: move keyboard focus into the dialog when it opens.
+            var focusable = modal.querySelector('input, textarea, select, button, a[href]');
+            if (focusable) { focusable.focus(); }
+        }
         if (!willOpen && modalOpener && modalOpener.focus) {
             modalOpener.focus();
             modalOpener = null;

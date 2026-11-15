@@ -47,6 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         switch ($action) {
             case 'create':
+            // Audit C7: enforce the declared permission.
+            if (!Auth::can('reply.create')) {
+                $result = ['success' => false, 'message' => 'You do not have permission to reply.'];
+                break;
+            }
             if ($postId <= 0) {
                 $result = ['success' => false, 'message' => 'Invalid post.'];
                 break;
@@ -66,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $result = ['success' => false, 'message' => 'Invalid reply.'];
                 break;
             }
-            $deleted = $replyModel->delete($replyId, (int)$currentUser['id'], Auth::can('reply.delete_any'));
+            $deleted = $replyModel->delete($replyId, (int)$currentUser['id'], Auth::can('reply.delete_any'), Auth::can('reply.delete_own'));
             $result = $deleted
                 ? ['success' => true, 'message' => 'Reply deleted.']
                 : ['success' => false, 'message' => 'Permission denied or reply not found.'];

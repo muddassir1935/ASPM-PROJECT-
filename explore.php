@@ -21,6 +21,13 @@ $tagFilter = trim((string)($_GET['tag'] ?? ''));
 if (strpos($tagFilter, '#') === 0) {
     $tagFilter = substr($tagFilter, 1);
 }
+// Audit F8: the search box says it searches "#tags", but "#campus" ran a
+// plain text search. A query that is exactly one hashtag now opens the
+// tag filter (same results as clicking the tag).
+if ($tagFilter === '' && preg_match('/^#([a-zA-Z0-9_]{1,50})$/', $query, $tagMatch) === 1) {
+    $tagFilter = $tagMatch[1];
+    $query = '';
+}
 
 $viewerId = $currentUser ? (int)$currentUser['id'] : 0;
 
@@ -63,7 +70,7 @@ if ($tagFilter !== '') {
 $bookmarkedIds = [];
 if ($currentUser) {
     $bookmarkModel = new Bookmark($db);
-    $bookmarkedIds = array_map('intval', array_column($bookmarkModel->getBookmarkedPosts($viewerId, 500), 'id'));
+    $bookmarkedIds = $bookmarkModel->getBookmarkedIds($viewerId);
 }
 // Sprint 5 final fix (security M3): fetch the viewer's following-set ONCE —
 // the people-search loop below used to call isFollowing() per row (N+1).

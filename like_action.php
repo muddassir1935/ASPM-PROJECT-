@@ -49,8 +49,8 @@ if ($result === null) {
     exit;
 }
 
-// Invalidate feed cache for fresh counters
-Cache::getInstance()->deleteByPrefix('feed_');
+// No feed-cache flush needed (audit C9): like counts and is_liked are
+// attached live to cached feed rows, never stored in them.
 
 echo json_encode([
     'success' => true,

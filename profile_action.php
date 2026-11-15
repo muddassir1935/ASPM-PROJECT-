@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($new !== $confirm) {
                 $result = ['success' => false, 'message' => 'New passwords do not match.'];
             } elseif (!User::isValidPassword($new)) {
-                $result = ['success' => false, 'message' => 'New password must be at least 8 chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.'];
+                $result = ['success' => false, 'message' => 'New password must be 8–128 chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.'];
             } elseif ($userModel->changePassword((int)$currentUser['id'], $current, $new)) {
                 // Revoke every OTHER session; this one stays logged in.
                 $handler = new DbSessionHandler($db);
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             // Keep the header's displayed name in sync after a rename.
             if ($updated) {
-                $_SESSION['user_name'] = trim((string)$_POST['name']);
+                $_SESSION['user_name'] = User::cleanName($_POST['name']);
             }
         }
     }

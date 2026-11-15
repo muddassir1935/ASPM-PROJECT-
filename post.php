@@ -13,6 +13,15 @@ require_once 'classes/Bookmark.php';
 require_once 'classes/Report.php';
 require_once 'includes/social_widgets.php';
 
+// Audit F10: a missing or deleted post returns a real 404 status (the
+// friendly "not found" page below is unchanged). Decided before output.
+$statusDb = Database::getInstance()->getConnection();
+$statusStmt = $statusDb->prepare("SELECT 1 FROM posts WHERE id = :id AND deleted_at IS NULL");
+$statusStmt->execute([':id' => (int)($_GET['id'] ?? 0)]);
+if (!$statusStmt->fetchColumn()) {
+    http_response_code(404);
+}
+
 require_once 'includes/header.php';
 
 $db = Database::getInstance()->getConnection();
@@ -27,7 +36,11 @@ if ($postId > 0) {
     $post = $postModel->getById($postId, $viewerId);
     if ($post) {
         $replyModel = new Reply($db);
-        $replies = $replyModel->getByPostId($postId);
+        // Audit C15: replies are paginated (100 per page) instead of
+        // silently hiding everything after the 100th.
+        $replyTotal = (int)$post['reply_count'];
+        $replyPage = clampPage((int)($_GET['rpage'] ?? 1), $replyTotal, 100);
+        $replies = $replyModel->getByPostId($postId, 100, ($replyPage - 1) * 100);
         if ($currentUser) {
             $isBookmarked = (new Bookmark($db))->isBookmarked((int)$currentUser['id'], $postId);
         }
@@ -72,9 +85,9 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
     <?php else: ?>
         <?php
             $authorInitial = strtoupper(mb_substr(trim($post['author_name']), 0, 1, 'UTF-8'));
-            $createdFormatted = date('M j, Y \a\t g:i A', strtotime($post['created_at']));
+            $createdFormatted = Post::formatDbDate($post['created_at'], 'M j, Y \a\t g:i A');
             $isEdited = !empty($post['updated_at']) && $post['updated_at'] !== $post['created_at'];
-            $updatedFormatted = $isEdited ? date('M j, Y \a\t g:i A', strtotime($post['updated_at'])) : null;
+            $updatedFormatted = $isEdited ? Post::formatDbDate($post['updated_at'], 'M j, Y \a\t g:i A') : null;
         ?>
         <?php $detailIsAnnouncement = !empty($post['is_announcement']); ?>
         <div class="detail-card">
@@ -105,13 +118,13 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
             <?php if ($currentUser): ?>
                 <div class="detail-actions">
                     <span class="action-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg><?= (int)($post['reply_count'] ?? 0) ?> repl<?= ((int)($post['reply_count'] ?? 0) === 1) ? 'y' : 'ies' ?></span>
-                    <button type="button" class="action-like <?= !empty($post['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$post['id'] ?>" aria-label="Like post"><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($post['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($post['like_count'] ?? 0) ?></span></button>
+                    <button type="button" class="action-like <?= !empty($post['is_liked']) ? 'is-liked' : '' ?>" data-like-toggle data-post-id="<?= (int)$post['id'] ?>" aria-pressed="<?= !empty($post['is_liked']) ? 'true' : 'false' ?>"><span class="sr-only">Like</span><span class="action-ic"><svg viewBox="0 0 24 24" fill="<?= !empty($post['is_liked']) ? '#e0245e' : 'none' ?>" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg></span><span class="like-count"><?= (int)($post['like_count'] ?? 0) ?></span></button>
                     <span class="spacer" style="flex: 1;"></span>
-                    <button type="button" class="btn-bookmark" data-bookmark-toggle data-post-id="<?= (int)$post['id'] ?>"><?= $isBookmarked ? 'Saved' : 'Save' ?></button>
+                    <button type="button" class="btn-bookmark<?= $isBookmarked ? ' is-bookmarked' : '' ?>" data-bookmark-toggle data-bookmarked="<?= $isBookmarked ? '1' : '0' ?>" aria-pressed="<?= $isBookmarked ? 'true' : 'false' ?>" data-post-id="<?= (int)$post['id'] ?>"><?= $isBookmarked ? 'Saved' : 'Save' ?></button>
                     <?php if ($isOwner): ?>
                         <button type="button" class="btn-text" onclick="toggleDetailEdit()">Edit</button>
                     <?php endif; ?>
-                    <?php if ($isOwner || $canDelete): ?>
+                    <?php if ($canDelete): /* $canDelete already includes $isOwner (audit F13) */ ?>
                         <form method="POST" action="post_action.php" class="inline-form js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete">
                             <?= Csrf::field() ?>
                             <input type="hidden" name="action" value="delete">
@@ -133,6 +146,13 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                         <?php endif; ?>
                     <?php endif; ?>
                 </div>
+            <?php else: ?>
+                <?php // Audit F9: logged-out visitors saw no counts at all here
+                      // (feed and Explore cards show them) — show read-only stats. ?>
+                <div class="detail-actions">
+                    <span class="action-stat"><?= (int)($post['reply_count'] ?? 0) ?> repl<?= ((int)($post['reply_count'] ?? 0) === 1) ? 'y' : 'ies' ?></span>
+                    <span class="action-stat"><?= (int)($post['like_count'] ?? 0) ?> <?= ((int)($post['like_count'] ?? 0) === 1) ? 'like' : 'likes' ?></span>
+                </div>
             <?php endif; ?>
 
             <?php if ($isOwner): ?>
@@ -141,7 +161,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <input type="hidden" name="return" value="<?= (int)$post['id'] ?>">
-                    <textarea name="content" class="form-control" rows="4" maxlength="280" required><?= htmlspecialchars($post['content']) ?></textarea>
+                    <textarea name="content" class="form-control" rows="4" maxlength="280" required aria-label="Edit post"><?= htmlspecialchars($post['content']) ?></textarea>
                     <div class="edit-form-actions">
                         <button type="submit" class="btn-primary">Save Changes</button>
                         <button type="button" class="btn-cancel" onclick="toggleDetailEdit()">Cancel</button>
@@ -169,7 +189,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <div class="compose-flex">
                         <span class="avatar-md<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
-                        <textarea id="reply-content" class="form-control" name="content" rows="3" maxlength="280" placeholder="Write a reply..."></textarea>
+                        <textarea id="reply-content" class="form-control" name="content" aria-label="Write a reply" rows="3" maxlength="280" placeholder="Write a reply..."></textarea>
                     </div>
                     <div class="compose-row">
                         <span id="reply-counter" class="char-counter">0 / 280</span>
@@ -210,11 +230,11 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                     $replyCanDelete = $replyIsOwner || Auth::can('reply.delete_any');
                 ?>
                 <div class="reply-card">
-                    <span class="avatar-sm<?= avatarToneClass((int)$reply['user_id']) ?>"><?= htmlspecialchars($replyInitial) ?></span>
+                    <span class="avatar-sm<?= avatarToneClass((int)$reply['user_id'], (string)($reply['author_role'] ?? '')) ?>"><?= htmlspecialchars($replyInitial) ?></span>
                     <div class="reply-body">
                         <div class="reply-head">
                             <a class="reply-author" href="profile.php?id=<?= (int)$reply['user_id'] ?>"><?= htmlspecialchars($reply['author_name']) ?></a>
-                            <span class="reply-time">&middot; <?= htmlspecialchars($reply['time_ago'] ?? date('M j, g:i A', strtotime($reply['created_at']))) ?></span>
+                            <span class="reply-time">&middot; <?= htmlspecialchars($reply['time_ago'] ?? Post::formatDbDate($reply['created_at'], 'M j, g:i A')) ?></span>
                         </div>
                         <?php /* Sprint 5 final fix (L12): replies linkify hashtags like posts do. */ ?>
                         <p class="reply-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($reply['content'])) ?></p>
@@ -230,6 +250,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                     </div>
                 </div>
             <?php endforeach; ?>
+            <?php renderPager('post.php?id=' . (int)$postId, $replyPage, $replyPage * 100 < $replyTotal, 'rpage'); ?>
         <?php endif; ?>
     <?php endif; ?>
     </div>

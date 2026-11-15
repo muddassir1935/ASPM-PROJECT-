@@ -23,7 +23,11 @@ $db = Database::getInstance()->getConnection();
 $postModel = new Post($db);
 $bookmarkModel = new Bookmark($db);
 
-$saved = $bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], 50, 0);
+// Audit C15: paginate instead of silently stopping at 50.
+$perPage = 20;
+$savedTotal = $bookmarkModel->countByUser((int)$currentUser['id']);
+$page = clampPage((int)($_GET['page'] ?? 1), $savedTotal, $perPage);
+$saved = $bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], $perPage, ($page - 1) * $perPage);
 foreach ($saved as &$savedPost) {
     $savedPost['time_ago'] = $postModel->formatTimeAgo($savedPost['created_at']);
 }
@@ -34,9 +38,9 @@ $bookmarkedIds = array_map('intval', array_column($saved, 'id'));
 <div class="layout-3col">
     <?php renderLeftNav('bookmarks'); ?>
 
-    <div class="col-main">
+    <div class="col-main" data-bookmarks-list>
         <h3 class="page-title">
-            Your Bookmarks (<?= count($saved) ?>)
+            Your Bookmarks (<span data-bookmarks-total><?= (int)$savedTotal ?></span>)
         </h3>
 
         <?php if (empty($saved)): ?>
@@ -51,6 +55,7 @@ $bookmarkedIds = array_map('intval', array_column($saved, 'id'));
             <?php foreach ($saved as $savedPost): ?>
                 <?php renderPostCard($savedPost, $currentUser, $bookmarkedIds, true); ?>
             <?php endforeach; ?>
+            <?php renderPager('bookmarks.php', $page, $page * $perPage < $savedTotal); ?>
         <?php endif; ?>
     </div>
 

@@ -41,7 +41,9 @@ if (!$isCli) {
         header('Location: login.php');
         exit;
     }
-    if (($benchUser['role'] ?? '') !== 'system_admin') {
+    // Audit F13: ask RBAC (same permission as the admin panel) instead of
+    // comparing the role string inline.
+    if (!Auth::can('user.manage')) {
         http_response_code(403);
         exit('Benchmark is available to system administrators only.');
     }

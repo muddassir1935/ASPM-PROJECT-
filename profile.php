@@ -14,6 +14,23 @@ require_once 'classes/Follow.php';
 require_once 'classes/Bookmark.php';
 require_once 'classes/Like.php';
 require_once 'includes/social_widgets.php';
+require_once 'classes/Auth.php';
+
+// Audit F10: decide the HTTP status before any output. profile.php with
+// no id means "my profile" — a logged-out visitor is sent to login rather
+// than shown "User not found"; an unknown id gets a real 404 status.
+if (!isset($_GET['id']) && !Auth::isLoggedIn()) {
+    header('Location: login.php');
+    exit;
+}
+if (isset($_GET['id'])) {
+    $statusDb = Database::getInstance()->getConnection();
+    $statusStmt = $statusDb->prepare("SELECT 1 FROM users WHERE id = :id");
+    $statusStmt->execute([':id' => (int)$_GET['id']]);
+    if (!$statusStmt->fetchColumn()) {
+        http_response_code(404);
+    }
+}
 
 require_once 'includes/header.php';
 
@@ -59,12 +76,14 @@ if ($profile) {
     $feed = $feedController->getUserFeed((int)$profile['id'], $feedPage, 10);
 
     if ($activeTab === 'likes') {
-        $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], 50, 0, $currentUser ? (int)$currentUser['id'] : 0);
+        // Audit C15: paginate the Likes tab instead of stopping at 50.
+        $likesPage = clampPage((int)($_GET['page'] ?? 1), $likesTotal, 10);
+        $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], 10, ($likesPage - 1) * 10, $currentUser ? (int)$currentUser['id'] : 0);
     }
 
     if ($currentUser) {
         $bookmarkModel = new Bookmark($db);
-        $bookmarkedIds = array_column($bookmarkModel->getBookmarkedPosts((int)$currentUser['id'], 500), 'id');
+        $bookmarkedIds = $bookmarkModel->getBookmarkedIds((int)$currentUser['id']);
         $bookmarkedIds = array_map('intval', $bookmarkedIds);
     }
 }
@@ -135,9 +154,12 @@ if ($profile) {
                         <?php endif; ?>
                     </div>
                     <?php
-                        $emailPrefix = explode('@', $profile['email'] ?? '')[0];
+                        // Audit C13: handle (= email local part) for signed-in users only.
+                        $emailPrefix = $currentUser ? explode('@', $profile['email'] ?? '')[0] : '';
                     ?>
-                    <div class="profile-handle">@<?= htmlspecialchars($emailPrefix) ?></div>
+                    <?php if ($emailPrefix !== ''): ?>
+                        <div class="profile-handle">@<?= htmlspecialchars($emailPrefix) ?></div>
+                    <?php endif; ?>
 
                     <?php if (!empty($profile['bio'])): ?>
                         <p class="profile-bio"><?= htmlspecialchars($profile['bio']) ?></p>
@@ -152,19 +174,19 @@ if ($profile) {
                                     <line x1="8" y1="2" x2="8" y2="6"></line>
                                     <line x1="3" y1="10" x2="21" y2="10"></line>
                                 </svg>
-                                Joined <?= date('F Y', strtotime($profile['created_at'])) ?>
+                                Joined <?= Post::formatDbDate($profile['created_at'], 'F Y') ?>
                             </span>
                         <?php endif; ?>
                     </div>
 
                     <div class="profile-stats-row">
                         <button type="button" class="stat-btn" onclick="toggleModal('following-modal')">
-                            <strong><?= $followingCount ?></strong>
+                            <strong data-following-count-for="<?= (int)$profile['id'] ?>"><?= $followingCount ?></strong>
                             <span>Following</span>
                         </button>
                         <button type="button" class="stat-btn" onclick="toggleModal('followers-modal')">
                             <strong data-followers-count-for="<?= (int)$profile['id'] ?>"><?= $followerCount ?></strong>
-                            <span><?= pluralize($followerCount, 'Follower') ?></span>
+                            <span data-followers-label-for="<?= (int)$profile['id'] ?>"><?= pluralize($followerCount, 'Follower') ?></span>
                         </button>
                     </div>
                 </div>
@@ -191,6 +213,7 @@ if ($profile) {
                     <?php foreach ($likedPosts as $likedPost): ?>
                         <?php renderPostCard($likedPost, $currentUser, $bookmarkedIds); ?>
                     <?php endforeach; ?>
+                    <?php renderPager('profile.php?id=' . (int)$profile['id'] . '&tab=likes', $likesPage, $likesPage * 10 < $likesTotal); ?>
                 <?php endif; ?>
             <?php else: ?>
                 <?php if (empty($feed['posts'])): ?>
@@ -231,10 +254,10 @@ if ($profile) {
 
     <!-- Followers modal -->
     <div id="followers-modal" class="modal-overlay" onclick="if (event.target === this) toggleModal('followers-modal')">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="followers-modal-title">
             <div class="modal-head">
-                <h3>Followers</h3>
-                <button type="button" class="modal-close" onclick="toggleModal('followers-modal')">&times;</button>
+                <h3 id="followers-modal-title">Followers</h3>
+                <button type="button" class="modal-close" onclick="toggleModal('followers-modal')" aria-label="Close">&times;</button>
             </div>
             <?php if (empty($followers)): ?>
                 <p class="widget-empty">No followers yet.</p>
@@ -255,16 +278,19 @@ if ($profile) {
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
+                <?php if ($followerCount > count($followers)): ?>
+                    <p class="widget-empty">Showing the <?= count($followers) ?> most recent of <?= $followerCount ?> followers.</p>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
 
     <!-- Following modal -->
     <div id="following-modal" class="modal-overlay" onclick="if (event.target === this) toggleModal('following-modal')">
-        <div class="modal-box">
+        <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="following-modal-title">
             <div class="modal-head">
-                <h3>Following</h3>
-                <button type="button" class="modal-close" onclick="toggleModal('following-modal')">&times;</button>
+                <h3 id="following-modal-title">Following</h3>
+                <button type="button" class="modal-close" onclick="toggleModal('following-modal')" aria-label="Close">&times;</button>
             </div>
             <?php if (empty($following)): ?>
                 <p class="widget-empty">Not following anyone yet.</p>
@@ -285,6 +311,9 @@ if ($profile) {
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
+                <?php if ($followingCount > count($following)): ?>
+                    <p class="widget-empty">Showing the <?= count($following) ?> most recent of <?= $followingCount ?>.</p>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
     </div>
@@ -292,10 +321,10 @@ if ($profile) {
     <!-- Edit profile modal (own profile only) -->
     <?php if ($isOwnProfile): ?>
         <div id="edit-profile-modal" class="modal-overlay" onclick="if (event.target === this) toggleModal('edit-profile-modal')">
-            <div class="modal-box">
+            <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="edit-profile-modal-title">
                 <div class="modal-head">
-                    <h3>Edit Profile</h3>
-                    <button type="button" class="modal-close" onclick="toggleModal('edit-profile-modal')">&times;</button>
+                    <h3 id="edit-profile-modal-title">Edit Profile</h3>
+                    <button type="button" class="modal-close" onclick="toggleModal('edit-profile-modal')" aria-label="Close">&times;</button>
                 </div>
                 <form method="POST" action="profile_action.php">
                     <?= Csrf::field() ?>
