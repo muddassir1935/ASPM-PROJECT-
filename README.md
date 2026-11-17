@@ -8,6 +8,9 @@ A centralized University Microblogging & Announcement Hub built using PHP (OOP) 
 - All code must follow Object-Oriented Programming (OOP) principles.
 - Code should be testable (Unit testing).
 
+## AI-DLC (specs.md)
+This repo runs the AI-Driven Development Lifecycle via [specs.md](https://github.com/fabriqaai/specs.md) (AI-DLC flow, Google Antigravity tooling): agents in `.specsmd/aidlc/agents/`, skills in `.specsmd/aidlc/skills/`, project context in `memory-bank/`. In Antigravity, start with `/specsmd-master-agent` (workflows in `.agent/workflows/`). Agent instructions: `AGENTS.md`. Quick start: `.specsmd/aidlc/quick-start.md`.
+
 ## Setup Instructions
 1. Import `db/schema.sql` into MySQL, then `db/seed.sql` for the demo accounts (password `StrongPass123!`).
 2. Update database credentials in `config/Database.php`.
