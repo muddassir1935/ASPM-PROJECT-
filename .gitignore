@@ -8,3 +8,5 @@
 *.db
 scratch/
 __pycache__/
+*.zip
+redis/

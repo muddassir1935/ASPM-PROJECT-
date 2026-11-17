@@ -24,6 +24,14 @@ units under that intent, and stories at
 `memory-bank/intents/{NNN}-{intent}/units/{UUU}-{unit}/stories/{SSS}-{slug}.md`.
 List them here as they are created:
 
-| Story | Intent / Unit | Bolt | Status |
+| Story | Intent / Unit | Owner | Status |
 |---|---|---|---|
-| _(none yet)_ | | | |
+| `001-aidlc-orchestration.md` | `002-quality-enhancements` / `001-aidlc-governance` | Muddassir Rizwan (23K-0784) | ready |
+| `001-post-image-upload.md` | `002-quality-enhancements` / `002-media-attachments` | Faiz Hussain (23K-2061) | ready |
+| `001-peer-direct-messages.md` | `002-quality-enhancements` / `003-direct-messaging` | Qaim Mehdi (23K-2075) | ready |
+| `001-campus-polls.md` | `002-quality-enhancements` / `004-campus-polls` | Haseeb Asif (23K-0539) | ready |
+| `001-search-filter-facets.md` | `002-quality-enhancements` / `005-faceted-search` | Muhammad Hadi (23K-0755) | ready |
+| `001-theme-persistence-a11y.md` | `002-quality-enhancements` / `006-accessibility-theme` | Yuneeb (23K-0733) | ready |
+| `001-auto-moderation-filter.md` | `002-quality-enhancements` / `007-ai-auto-moderation` | Asad (22K-5147) | ready |
+| `001-unread-count-polling.md` | `002-quality-enhancements` / `008-realtime-notifications` | Saad (22K-5039) | ready |
+| `001-extended-test-benchmarks.md` | `002-quality-enhancements` / `009-testing-benchmarks` | Shahryar (22K-4435) | ready |

@@ -5,7 +5,8 @@ def package_working_software(output_zip="AIR_WorkingSoftware.zip"):
     exclude_dirs = {'.git', 'scratch', '__pycache__', '.pytest_cache'}
     # Deliverable binaries are shipped separately, not bundled inside the zip
     # (the report PDFs alone are ~29 MB); the zip holds source code only.
-    exclude_exts = {'.sqlite', '.sqlite-journal', '.pdf', '.pptx'}
+    # .pdb debug symbol files (~41MB) are excluded to keep zip lean while retaining redis executables.
+    exclude_exts = {'.sqlite', '.sqlite-journal', '.pdf', '.pptx', '.pdb'}
 
     with zipfile.ZipFile(output_zip, 'w', compression=zipfile.ZIP_DEFLATED) as z:
         for root, dirs, files in os.walk('.'):
