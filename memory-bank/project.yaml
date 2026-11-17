@@ -1,0 +1,6 @@
+# CampusConnect — project configuration (specs.md AI-DLC)
+# Brownfield adoption: the product was already built and submitted before AI-DLC
+# was installed. This file + memory-bank/standards/ are the project-init output,
+# seeded from the real, verified repo state on 2026-11-17 (main a3e1232).
+project_type: full-stack-web
+initialized_at: "2026-11-17T04:40:00Z"
