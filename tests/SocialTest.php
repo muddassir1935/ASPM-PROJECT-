@@ -200,6 +200,10 @@ assertTest("renderPager prints nothing for a single page", $c15None === '');
 ob_start(); renderPager('post.php?id=7', 2, true, 'rpage'); $c15Html = ob_get_clean();
 assertTest("renderPager links Previous and Next with the right parameter",
     strpos($c15Html, 'post.php?id=7&amp;rpage=1') !== false && strpos($c15Html, 'post.php?id=7&amp;rpage=3') !== false);
+ob_start(); renderPager('admin.php?page=1#reports', 2, true, 'reports_page'); $c15AnchorPager = ob_get_clean();
+assertTest("renderPager keeps query parameters before report anchor",
+    strpos($c15AnchorPager, 'admin.php?page=1&amp;reports_page=1#reports') !== false
+        && strpos($c15AnchorPager, 'admin.php?page=1&amp;reports_page=3#reports') !== false);
 $c15Notif = new Notification($db);
 assertTest("Notification::countAll counts read and unread",
     $c15Notif->countAll($aliceId) === count($c15Notif->listAll($aliceId, 1000)));

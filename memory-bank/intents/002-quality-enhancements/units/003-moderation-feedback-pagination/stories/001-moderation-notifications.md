@@ -14,9 +14,9 @@ I want to receive clear notification of the moderation decision,
 And as an administrator, I want to paginate through all pending reports beyond the first 50.
 
 ## Acceptance Criteria
-- [ ] Post author receives notification when post is soft-deleted by moderator.
-- [ ] Reporting user receives notification when report is dismissed or actioned.
-- [ ] Admin Reports Queue supports Previous/Next pagination when total pending reports > 20.
+- [x] Post author receives notification when post is soft-deleted by moderator.
+- [x] Reporting user receives notification when report is dismissed or actioned.
+- [x] Admin Reports Queue supports Previous/Next pagination when total pending reports > 20.
 
 ## Estimate
 5 story points

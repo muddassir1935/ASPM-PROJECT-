@@ -9,6 +9,7 @@
  * reports or actioning them via post soft-deletion.
  */
 require_once __DIR__ . '/Post.php';
+require_once __DIR__ . '/Notification.php';
 
 class Report {
     public const REASON_SPAM = 'spam';
@@ -371,7 +372,7 @@ class Report {
         }
 
         $stmt = $this->db->prepare(
-            "SELECT r.*, p.id AS p_id, p.deleted_at
+            "SELECT r.*, p.id AS p_id, p.user_id AS post_author_id, p.deleted_at
              FROM reports r
              JOIN posts p ON r.post_id = p.id
              WHERE r.id = :id
@@ -408,6 +409,13 @@ class Report {
                 ':id' => $reportId,
             ]);
 
+            (new Notification($this->db))->create(
+                (int)$report['reporter_id'],
+                'moderation',
+                null,
+                'Your report has been reviewed by administration.'
+            );
+
             return [
                 'success' => true,
                 'message' => 'Report has been dismissed.',
@@ -418,8 +426,20 @@ class Report {
             $postModel = new Post($this->db);
             $postId = (int)$report['post_id'];
 
+            $reportersStmt = $this->db->prepare(
+                "SELECT reporter_id FROM reports WHERE post_id = :post_id AND status = :status"
+            );
+            $reportersStmt->execute([':post_id' => $postId, ':status' => self::STATUS_PENDING]);
+            $reporterIds = array_unique(array_map('intval', $reportersStmt->fetchAll(PDO::FETCH_COLUMN)));
+
             // Soft-delete the post through the existing post model delete path
             $deleted = $postModel->delete($postId, $reviewerId, true);
+            if (!$deleted) {
+                return [
+                    'success' => false,
+                    'message' => 'The reported post could not be removed.',
+                ];
+            }
 
             // Mark this report (and any other pending reports for the same post) as actioned
             $update = $this->db->prepare(
@@ -433,6 +453,22 @@ class Report {
                 ':post_id' => $postId,
                 ':pending_status' => self::STATUS_PENDING,
             ]);
+
+            $notifications = new Notification($this->db);
+            $notifications->create(
+                (int)$report['post_author_id'],
+                'moderation',
+                null,
+                'Your post was removed by administration for violating campus policies.'
+            );
+            foreach ($reporterIds as $reporterId) {
+                $notifications->create(
+                    $reporterId,
+                    'moderation',
+                    null,
+                    'Your report has been reviewed by administration.'
+                );
+            }
 
             return [
                 'success' => true,

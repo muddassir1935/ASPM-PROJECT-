@@ -190,14 +190,17 @@ function renderPager(string $baseUrl, int $page, bool $hasMore, string $param = 
     if ($page <= 1 && !$hasMore) {
         return;
     }
-    $sep = strpos($baseUrl, '?') === false ? '?' : '&';
+    $hashPosition = strpos($baseUrl, '#');
+    $fragment = $hashPosition === false ? '' : substr($baseUrl, $hashPosition);
+    $url = $hashPosition === false ? $baseUrl : substr($baseUrl, 0, $hashPosition);
+    $sep = strpos($url, '?') === false ? '?' : '&';
     echo '<div class="pager">';
     echo $page > 1
-        ? '<a href="' . htmlspecialchars($baseUrl . $sep . $param . '=' . ($page - 1)) . '">&larr; Previous</a>'
+        ? '<a href="' . htmlspecialchars($url . $sep . $param . '=' . ($page - 1) . $fragment) . '">&larr; Previous</a>'
         : '<span></span>';
     echo '<span class="pager-info">Page ' . $page . '</span>';
     echo $hasMore
-        ? '<a href="' . htmlspecialchars($baseUrl . $sep . $param . '=' . ($page + 1)) . '">Next &rarr;</a>'
+        ? '<a href="' . htmlspecialchars($url . $sep . $param . '=' . ($page + 1) . $fragment) . '">Next &rarr;</a>'
         : '<span></span>';
     echo '</div>';
 }
