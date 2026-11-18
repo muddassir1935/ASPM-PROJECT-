@@ -25,8 +25,8 @@
         setTimeout(function () { box.remove(); }, 4500);
     }
     function ccJson(response) {
-        if (response.status === 401) {
-            throw new Error('Your session has expired. Please log in again.');
+        if (response.status === 401 || response.status === 403) {
+            throw new Error('Your session has expired. Please refresh and log in again.');
         }
         return response.json().catch(function () {
             throw new Error('Something went wrong. Please refresh and try again.');

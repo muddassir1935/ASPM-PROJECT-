@@ -22,6 +22,7 @@ $suites = [
     'RbacTest.php',
     'ReportTest.php',
     'MysqlCompatTest.php',
+    'AjaxFeedbackTest.php',
 ];
 
 $failedSuites = [];

@@ -14,8 +14,8 @@ I want the unread notification badge in the sidebar to vanish the moment I click
 And if my session expires while browsing, I want an alert telling me to log in again rather than silent button failure.
 
 ## Acceptance Criteria
-- [ ] Clicking "Mark all as read" clears the navigation badge count in the DOM without reload.
-- [ ] AJAX failure due to 401/403 triggers a visible floating warning message.
+- [x] Clicking "Mark all as read" clears the navigation badge count in the DOM without reload.
+- [x] AJAX failure due to 401/403 triggers a visible floating warning message.
 
 ## Estimate
 3 story points
