@@ -27,6 +27,7 @@ assertAjaxFeedbackTest(
 assertAjaxFeedbackTest(
     'Mark all as read clears navigation notification badges without reload',
     str_contains($notifications, 'updateUnreadBadges(0)')
+        && str_contains($notifications, "badge.closest('.nav-col-link, .nav-bell')")
         && str_contains($notifications, "navLink.setAttribute('aria-label'")
         && str_contains($notifications, "badge.style.display = 'none'")
 );
