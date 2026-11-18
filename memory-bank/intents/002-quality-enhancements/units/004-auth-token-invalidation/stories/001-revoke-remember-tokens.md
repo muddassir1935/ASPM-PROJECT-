@@ -17,3 +17,6 @@ So that any compromised cookie on a public campus computer can no longer access 
 - [ ] Changing password deletes all rows for that `user_id` from `remember_tokens`.
 - [ ] Admin reset deletes all rows for that `user_id` from `remember_tokens`.
 - [ ] Subsequent request using old cookie redirects to `login.php`.
+
+## Estimate
+3 story points

@@ -25,3 +25,6 @@ So that I am not confused by ghost counts from deleted posts.
   - Invalid `$userId <= 0` gracefully returns `0` without running queries.
   - `toggle()` on soft-deleted post safely returns `null`.
 - Full suite passing: 65/65 in `SocialTest.php`, 412/412 overall test suite green.
+
+## Estimate
+2 story points
