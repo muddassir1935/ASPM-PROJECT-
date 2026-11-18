@@ -1,112 +1,73 @@
-# CampusConnect — Team Task Allocation & AI-DLC Execution Guide
+# CampusConnect — Team Task Allocation & AI-DLC Bug Fixes
 
-**Intent:** `002-quality-enhancements` (AI-DLC Phase: Inception Complete / Construction Ready)  
-**Date:** 17 Nov 2026  
-**Status:** Approved for Team Implementation  
-
----
-
-## Team Roster & Module Assignments
-
-| # | Member Name | Roll Number | Assigned Unit / Feature | Git Branch |
-|---|-------------|-------------|-------------------------|------------|
-| 1 | **Muddassir Rizwan** | 23K-0784 | `001-aidlc-governance` (Architecture & AI-DLC Lead) | `feature/unit-001-aidlc-governance` |
-| 2 | **Faiz Hussain** | 23K-2061 | `002-media-attachments` (Post Image Uploads) | `feature/unit-002-media-attachments` |
-| 3 | **Qaim Mehdi** | 23K-2075 | `003-direct-messaging` (1-on-1 Direct Messaging) | `feature/unit-003-direct-messaging` |
-| 4 | **Haseeb Asif** | 23K-0539 | `004-campus-polls` (Interactive Campus Polls & Voting) | `feature/unit-004-campus-polls` |
-| 5 | **Muhammad Hadi** | 23K-0755 | `005-faceted-search` (Search Filters & Facets) | `feature/unit-005-faceted-search` |
-| 6 | **Yuneeb** | 23K-0733 | `006-accessibility-theme` (A11y WCAG 2.1 AA & DB Theme) | `feature/unit-006-accessibility-theme` |
-| 7 | **Asad** | 22K-5147 | `007-ai-auto-moderation` (Heuristic Content Screening) | `feature/unit-007-ai-auto-moderation` |
-| 8 | **Saad** | 22K-5039 | `008-realtime-notifications` (AJAX Heartbeat & Alerts) | `feature/unit-008-realtime-notifications` |
-| 9 | **Shahryar** | 22K-4435 | `009-testing-benchmarks` (Regression Tests & Benchmarking) | `feature/unit-009-testing-benchmarks` |
+**Intent:** `002-quality-enhancements` (Scope: 100% Bug Fixes & Hardening of Existing Features · Zero New Features)  
+**Date:** 18 Nov 2026  
+**Status:** Prepared for User Review (DO NOT PUSH until user approves)  
 
 ---
 
-## Detailed Task Breakdown per Member
+## Team Roster & Assigned Bug Fixes
 
-### 1. Muddassir Rizwan (23K-0784) — AI-DLC Governance & Architecture
-- **Goal:** Manage the AI-DLC lifecycle, verify status cascading in `memory-bank/`, review PRs against coding standards, and ensure 0 regression across all branches.
-- **Artifacts:**
-  - `memory-bank/intents/002-quality-enhancements/`
-  - `.github/pull_request_template.md`
-  - `memory-bank/standards/decision-index.md`
-
-### 2. Faiz Hussain (23K-2061) — Post Image & Media Attachments
-- **Goal:** Enable users to attach images (PNG, JPG, WebP up to 5MB) to posts with secure MIME verification and responsive card display.
-- **Files to Create/Modify:**
-  - `classes/Media.php`
-  - `post_action.php` (Handle `$_FILES['media']`)
-  - `db/migrate_7_media.sql` (Creates `post_media` table)
-  - `index.php` & `post.php` (Render image thumbnail in feed card)
-
-### 3. Qaim Mehdi (23K-2075) — Peer-to-Peer Direct Messaging (DMs)
-- **Goal:** Provide 1-on-1 private messaging between verified students/faculty.
-- **Files to Create/Modify:**
-  - `classes/DirectMessage.php`
-  - `messages.php` (Conversation list + message view)
-  - `message_action.php` (Send message endpoint with CSRF)
-  - `db/migrate_8_messages.sql` (Creates `messages` table)
-  - `profile.php` (Add "Send Message" button)
-
-### 4. Haseeb Asif (23K-0539) — Interactive Campus Polls & Student Voting
-- **Goal:** Allow post authors to attach 2-to-4 option polls with real-time percentage progress bars.
-- **Files to Create/Modify:**
-  - `classes/Poll.php`
-  - `poll_action.php` (Submit vote endpoint with CSRF and duplicate prevention)
-  - `db/migrate_9_polls.sql` (Creates `polls`, `poll_options`, `poll_votes` tables)
-  - Compose box UI & Post card rendering
-
-### 5. Muhammad Hadi (23K-0755) — Faceted Search & Category Discovery
-- **Goal:** Upgrade `explore.php` with filter chips/tabs (All, Announcements, People, Societies, Hashtags).
-- **Files to Create/Modify:**
-  - `explore.php` (Category filter pill navigation)
-  - `classes/Post.php` (Extend `searchPosts` to support `is_announcement` and date range filters)
-  - `classes/User.php` (Filter by `role` facet)
-
-### 6. Yuneeb (23K-0733) — WCAG 2.1 AA Accessibility & Database Theme Persistence
-- **Goal:** Persist theme preference to DB and ensure accessible keyboard navigation across all modal dialogs.
-- **Files to Create/Modify:**
-  - `db/migrate_10_theme.sql` (`ALTER TABLE users ADD COLUMN theme_preference ...`)
-  - `profile_action.php` (Save theme preference on toggle)
-  - `assets/js/main.js` (Trap focus in Report & Delete modals, handle `Esc` dismissal, restore focus)
-
-### 7. Asad (22K-5147) — Automated Content Moderation (Rule/AI Screening)
-- **Goal:** Automatically screen submitted posts/replies against toxicity heuristics and auto-queue violations in the Admin Moderation Queue.
-- **Files to Create/Modify:**
-  - `classes/AutoModerator.php` (Regex and heuristic scanner)
-  - `post_action.php` & `reply_action.php` (Trigger scan before or upon persist)
-  - `admin.php#reports` (Display automated badge: "System Auto-Mod")
-
-### 8. Saad (22K-5039) — Real-Time Notification Heartbeat & Toast Alerts
-- **Goal:** Periodically poll unread counts and display non-intrusive floating toast notifications when tab is open.
-- **Files to Create/Modify:**
-  - `api/unread_counts.php` (Lightweight JSON endpoint: unread notifications + unread messages)
-  - `assets/js/main.js` (30s polling heartbeat, badge updates, floating toast DOM element)
-
-### 9. Shahryar (22K-4435) — Extended Regression Tests & Redis Benchmarking
-- **Goal:** Build automated test suites for all new units, stress test Redis caching, and ensure 100% test pass rate.
-- **Files to Create/Modify:**
-  - `tests/MediaTest.php`, `tests/DirectMessageTest.php`, `tests/PollTest.php`, `tests/AutoModeratorTest.php`
-  - `benchmark.php` (Redis vs Database latency comparison benchmarks)
-  - `docs/DEPLOYMENT.md` (Update setup guide for all new tables)
+| # | Team Member | Roll Number | Assigned Unit | Dedicated Git Branch | Targeted Existing Bug / Improvement |
+|---|-------------|-------------|---------------|----------------------|--------------------------------------|
+| 1 | **Muddassir Rizwan** | 23K-0784 | `001-aidlc-governance` | `feature/fix-001-aidlc-governance` | AI-DLC lifecycle governance, memory bank sync, PR review gates, ensuring zero new feature bloat |
+| 2 | **Faiz Hussain** | 23K-2061 | `002-bookmark-counter-fix` | `feature/fix-002-bookmark-counter` | Fix `Bookmark::countByUser()` counting soft-deleted posts, fixing counter mismatch ("Your Bookmarks (5)" showing only 3) |
+| 3 | **Qaim Mehdi** | 23K-2075 | `003-moderation-feedback-pagination` | `feature/fix-003-moderation-feedback` | Notify authors when posts are removed by admin, notify reporters upon review, and add pagination to `admin.php#reports` for >50 items |
+| 4 | **Haseeb Asif** | 23K-0539 | `004-auth-token-invalidation` | `feature/fix-004-auth-token-invalidation` | Invalidate persistent `remember_tokens` on password change & admin reset (currently only session rows are destroyed) |
+| 5 | **Muhammad Hadi** | 23K-0755 | `005-explore-search-casing-fix` | `feature/fix-005-explore-search-casing` | Fix user search repetition on Explore page 2+ (`?q=...&page=2`), and handle mixed-casing hashtag lookups across SQL collations |
+| 6 | **Yuneeb** | 23K-0733 | `006-profile-tab-pagination` | `feature/fix-006-profile-tab-pagination` | Fix profile "Likes" and "Replies" tab truncation (hardcoded `LIMIT 50`), add pagination and preserve active tab in query string |
+| 7 | **Asad** | 22K-5147 | `007-login-throttling-security` | `feature/fix-007-login-throttling` | Add progressive delay and temporary 5-minute lockout after 5 consecutive failed login attempts to prevent brute-force attacks |
+| 8 | **Saad** | 22K-5039 | `008-badge-sync-session-ux` | `feature/fix-008-badge-sync-session-ux` | Sync sidebar bell badge immediately on "Mark all as read" via AJAX, and provide friendly feedback on expired session AJAX calls |
+| 9 | **Shahryar** | 22K-4435 | `009-regression-test-suite` | `feature/fix-009-regression-tests` | Write automated regression tests asserting all 8 bug fixes, ensuring 100% pass on SQLite and MySQL test suites |
 
 ---
 
-## AI-DLC Team Workflow (How Each Member Should Work)
+## Detailed Bug Analysis & Solution Architecture
 
-1. **Pull Latest Main:**
-   ```bash
-   git checkout main
-   git pull origin main
-   ```
-2. **Create Feature Branch:**
-   ```bash
-   git checkout -b feature/unit-00X-your-feature
-   ```
-3. **Inspect Your Unit Brief:**
-   Read `memory-bank/intents/002-quality-enhancements/units/00X-your-feature/unit-brief.md` to see your scope, entities, and acceptance criteria.
-4. **Follow the Construction Phase (`/specsmd-construction-agent`):**
-   - Write unit tests first or alongside the feature.
-   - Run `php tests/run_all.php` to verify no existing tests break.
-5. **Open Pull Request:**
-   Submit PR to `main` with summary of criteria satisfied and test output.
+### 1. Muddassir Rizwan (23K-0784) — AI-DLC Quality Gates & Governance
+- **Defect:** Team members might introduce scope creep or bypass memory bank documentation.
+- **Fix:** Establish strict PR review checklist, keep `memory-bank/` artifacts synced with Git commits, and enforce code conventions.
+
+### 2. Faiz Hussain (23K-2061) — Bookmark Counter Mismatch Bug
+- **Defect:** `classes/Bookmark.php::countByUser()` runs `SELECT COUNT(*) FROM bookmarks WHERE user_id = :user_id`. When a bookmarked post is soft-deleted, `getBookmarkedPosts` hides it, but `countByUser()` still counts it. The UI displays "Your Bookmarks (5)" but only 3 cards appear.
+- **Fix:** Update `countByUser()` with `JOIN posts p ON b.post_id = p.id WHERE p.deleted_at IS NULL`. Clean up orphaned bookmark rows or exclude them consistently.
+
+### 3. Qaim Mehdi (23K-2075) — Moderation Notification & Pagination Defect
+- **Defect:** 
+  1. When an admin deletes a reported post in `report_review.php`, the post author receives no notification explaining that their post was removed for policy violation. The reporter also gets no resolution feedback.
+  2. In `admin.php#reports`, `listPending(50, 0)` is hardcoded with no pagination pager.
+- **Fix:** In `Report::review()`, trigger a system notification to the post author ("Your post was removed by administration for violating campus policies.") and to the reporter ("Your report has been reviewed."). Add pager controls to `admin.php#reports`.
+
+### 4. Haseeb Asif (23K-0539) — Remember-Token Security Vulnerability
+- **Defect:** When a user changes their password in `profile_action.php`, `destroySessionsForUser()` deletes database sessions, but does NOT remove records from `remember_tokens`. An attacker with a previously compromised remember cookie can still auto-login.
+- **Fix:** Add `clearRememberTokensForUser($userId)` to `classes/User.php` and invoke it on password change and admin password reset.
+
+### 5. Muhammad Hadi (23K-0755) — Explore Search Repeating Users & Hashtag Casing
+- **Defect:** 
+  1. In `explore.php`, searching for a term returns both matching users and matching posts. On page 2 (`?q=term&page=2`), the same 20 user cards are rendered again at the top of the page.
+  2. Hashtag queries with mixed casing (e.g., `#Hackathon2026` vs `#hackathon2026`) can fail on case-sensitive SQLite searches or duplicate database indexes.
+- **Fix:** Only display `$foundUsers` when `$page === 1`. Normalize hashtag queries to lowercase before querying `post_hashtags`.
+
+### 6. Yuneeb (23K-0733) — Profile Likes & Replies Truncation Bug
+- **Defect:** In `profile.php`, while "Posts" has a Previous/Next pager, switching to the "Likes" or "Replies" tab limits results to 50 items (`LIMIT 50`). Furthermore, clicking pagination links drops the `&tab=likes` or `&tab=replies` URL query parameter.
+- **Fix:** Add pagination support for Likes and Replies tabs on `profile.php`, and ensure `renderPager()` includes `&tab=` so page state is preserved.
+
+### 7. Asad (22K-5147) — Brute-Force Login Rate Limiting
+- **Defect:** An attacker can make unlimited rapid password guesses against `student@nu.edu.pk` in `login.php` with zero throttling.
+- **Fix:** Use `Cache.php` (or in-memory/DB counter) to track failed login attempts per email/IP. After 5 consecutive failures, enforce a 5-minute lockout with a clear error message. Reset counter upon successful login.
+
+### 8. Saad (22K-5039) — AJAX Bell Badge Desync & Session Expiry UX
+- **Defect:** 
+  1. Clicking "Mark all as read" in `notifications.php` marks notifications as read in the DB, but the red unread badge in the left sidebar navigation remains visible until the user manually refreshes the page.
+  2. If a session expires while viewing a page, clicking Like or Bookmark silently fails.
+- **Fix:** Update client-side JS in `assets/js/main.js` to immediately remove or set the sidebar badge count to 0 when "Mark all as read" succeeds. Catch HTTP 401/403 in AJAX handlers and display a friendly notification: "Your session has expired. Please log in again."
+
+### 9. Shahryar (22K-4435) — Automated Regression Test Suite Expansion
+- **Defect:** Currently, tests do not cover the 8 specific bug fixes above, leaving room for future regressions.
+- **Fix:** Add automated test assertions in `tests/` verifying:
+  - Bookmark count accuracy after post soft-deletion.
+  - Remember token revocation on password change.
+  - Moderation action notifications sent to author & reporter.
+  - Login lockout trigger after 5 failed attempts.
+  - Profile tab pagination and state preservation.
+  Ensure `php tests/run_all.php` runs with 100% pass rate.

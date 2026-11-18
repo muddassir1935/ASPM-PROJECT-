@@ -3,29 +3,28 @@ unit: 001-aidlc-governance
 intent: 002-quality-enhancements
 phase: inception
 status: ready
-created: 2026-11-17T11:30:00Z
-updated: 2026-11-17T11:30:00Z
+created: 2026-11-18T09:10:00Z
+updated: 2026-11-18T09:10:00Z
 ---
 
-# Unit Brief: AI-DLC Governance & Architectural Alignment
+# Unit Brief: AI-DLC Governance & Quality Gates
 
 ## Assigned Owner
-**Muddassir Rizwan** (23K-0784) · Branch: `feature/unit-001-aidlc-governance`
+**Muddassir Rizwan** (23K-0784) · Branch: `feature/fix-001-aidlc-governance`
 
 ## Purpose
-Oversee the AI-DLC lifecycle, manage Memory Bank integrity, review Architecture Decision Records (ADRs), and enforce coding standards across all 9 feature branches.
+Govern the AI-DLC bugfix lifecycle, manage Memory Bank synchronization, enforce strict zero-new-feature scope discipline, and review team PRs before merging to main.
 
 ## Scope
 ### In Scope
 - Maintain `memory-bank/` hierarchy (`intents/`, `units/`, `standards/`, `story-index.md`).
-- Validate status cascading (Bolt -> Story -> Unit -> Intent).
-- Review PR merges against AI-DLC conventions and ensure 0 regression in test suite.
-- Establish unified PR checklist in `.github/pull_request_template.md`.
+- Review and approve bugfix PRs against coding standards.
+- Ensure regression test suite runs on every PR with zero failures.
 
 ### Out of Scope
-- Direct implementation of feature business logic (handled by feature units).
+- Implementing individual unit bug fixes (assigned to corresponding members).
 
 ## Assigned Requirements
 | FR | Description | Priority |
 |----|-------------|----------|
-| FR-1 | Maintain AI-DLC governance, memory bank consistency, and architectural standards | Must |
+| FR-1 | Maintain AI-DLC governance, memory bank consistency, and bugfix verification gates | Must |
