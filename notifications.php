@@ -197,6 +197,10 @@ $unreadCount = $notifModel->countUnread($userId);
 
     function updateUnreadBadges(count) {
         document.querySelectorAll('[data-notif-badge]').forEach(function (badge) {
+            var navLink = badge.closest('.nav-bell');
+            if (navLink) {
+                navLink.setAttribute('aria-label', 'Notifications' + (count > 0 ? ', ' + count + ' unread' : ''));
+            }
             if (count > 0) {
                 badge.textContent = count > 99 ? '99+' : count;
                 badge.style.display = 'inline-flex';
