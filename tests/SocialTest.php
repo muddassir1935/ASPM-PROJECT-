@@ -140,6 +140,12 @@ assertTest("Bookmark of unknown post fails", $bookmarkModel->add($aliceId, 99999
 $postModel->delete($bobPost, $bobId, false); // soft-delete
 assertTest("Soft-deleted post drops out of bookmark list",
     $bookmarkModel->countByUser($aliceId) === 0 && $bookmarkModel->getBookmarkedPosts($aliceId) === []);
+assertTest("isBookmarked returns false for soft-deleted post",
+    $bookmarkModel->isBookmarked($aliceId, $bobPost) === false);
+assertTest("countByUser guards against invalid user ID",
+    $bookmarkModel->countByUser(0) === 0 && $bookmarkModel->countByUser(-1) === 0);
+assertTest("Toggle on soft-deleted post fails safely",
+    $bookmarkModel->toggle($aliceId, $bobPost) === null);
 assertTest("Reply to soft-deleted post fails",
     $replyModel->create($aliceId, $bobPost, "Too late") === false);
 

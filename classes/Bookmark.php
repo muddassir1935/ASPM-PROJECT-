@@ -93,7 +93,9 @@ class Bookmark {
             return false;
         }
 
-        $sql = "SELECT COUNT(*) FROM bookmarks WHERE user_id = :user_id AND post_id = :post_id";
+        $sql = "SELECT COUNT(*) FROM bookmarks b
+                JOIN posts p ON p.id = b.post_id
+                WHERE b.user_id = :user_id AND b.post_id = :post_id AND p.deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);
         $stmt->bindParam(':user_id', $userId, PDO::PARAM_INT);
         $stmt->bindParam(':post_id', $postId, PDO::PARAM_INT);
@@ -153,6 +155,10 @@ class Bookmark {
     }
 
     public function countByUser(int $userId): int {
+        if ($userId <= 0) {
+            return 0;
+        }
+
         $sql = "SELECT COUNT(*) FROM bookmarks b
                 JOIN posts p ON p.id = b.post_id
                 WHERE b.user_id = :user_id AND p.deleted_at IS NULL";

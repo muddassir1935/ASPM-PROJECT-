@@ -22,7 +22,7 @@ finished work would be fiction, and this repo does not invent history.
 | Story | Intent / Unit | Owner | Status |
 |---|---|---|---|
 | `001-aidlc-orchestration.md` | `002-quality-enhancements` / `001-aidlc-governance` | Muddassir Rizwan (23K-0784) | ready |
-| `001-bookmark-count-sync.md` | `002-quality-enhancements` / `002-bookmark-counter-fix` | Faiz Hussain (23K-2061) | ready |
+| `001-bookmark-count-sync.md` | `002-quality-enhancements` / `002-bookmark-counter-fix` | Faiz Hussain (23K-2061) | completed |
 | `001-moderation-notifications.md` | `002-quality-enhancements` / `003-moderation-feedback-pagination` | Qaim Mehdi (23K-2075) | ready |
 | `001-revoke-remember-tokens.md` | `002-quality-enhancements` / `004-auth-token-invalidation` | Haseeb Asif (23K-0539) | ready |
 | `001-clean-explore-pagination.md` | `002-quality-enhancements` / `005-explore-search-casing-fix` | Muhammad Hadi (23K-0755) | ready |
