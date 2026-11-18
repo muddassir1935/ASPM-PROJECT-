@@ -17,3 +17,6 @@ So that each team member has clear requirements, unit boundaries, and automated 
 - [ ] Memory Bank Intent `002-quality-enhancements` is fully initialized with 9 unit briefs.
 - [ ] Story Index catalogs all team member deliverables.
 - [ ] Pull request workflow guidelines and verification gates are established.
+
+## Estimate
+2 story points

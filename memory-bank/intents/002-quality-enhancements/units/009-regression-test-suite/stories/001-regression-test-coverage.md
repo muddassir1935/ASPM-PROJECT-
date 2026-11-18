@@ -17,3 +17,6 @@ So that future changes do not re-introduce bookmark count mismatches or remember
 - [ ] Automated tests cover all 8 bug fixes across existing features.
 - [ ] All test suites pass 100% on SQLite and MySQL test environments.
 - [ ] Overall test suite count increases from 412 to 430+.
+
+## Estimate
+5 story points

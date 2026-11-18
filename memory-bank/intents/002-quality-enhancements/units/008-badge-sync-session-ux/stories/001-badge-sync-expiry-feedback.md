@@ -16,3 +16,6 @@ And if my session expires while browsing, I want an alert telling me to log in a
 ## Acceptance Criteria
 - [ ] Clicking "Mark all as read" clears the navigation badge count in the DOM without reload.
 - [ ] AJAX failure due to 401/403 triggers a visible floating warning message.
+
+## Estimate
+3 story points

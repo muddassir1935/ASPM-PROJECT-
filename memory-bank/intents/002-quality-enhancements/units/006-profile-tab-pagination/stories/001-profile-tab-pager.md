@@ -17,3 +17,6 @@ And I want clicking Next/Previous to stay on the Liked Posts tab.
 - [ ] Liked Posts tab paginates 20 items per page with Previous/Next controls.
 - [ ] Replies tab paginates 20 items per page with Previous/Next controls.
 - [ ] Pager links include `&tab=likes` or `&tab=replies` dynamically.
+
+## Estimate
+5 story points

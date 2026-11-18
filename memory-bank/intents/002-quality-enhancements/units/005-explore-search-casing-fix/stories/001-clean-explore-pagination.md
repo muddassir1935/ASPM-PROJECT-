@@ -17,3 +17,6 @@ And I want clicking uppercase hashtags like `#FAST` to match `#fast` posts consi
 - [ ] `$foundUsers` renders only when `$page === 1`.
 - [ ] On page 2+, only matching post cards are rendered with the Previous/Next pager.
 - [ ] Searching `#FAST` or `#Fast` matches posts tagged `#fast` seamlessly on both SQLite and MySQL.
+
+## Estimate
+3 story points

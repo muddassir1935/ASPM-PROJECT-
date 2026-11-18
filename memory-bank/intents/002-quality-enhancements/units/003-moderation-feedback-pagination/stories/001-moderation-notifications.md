@@ -17,3 +17,6 @@ And as an administrator, I want to paginate through all pending reports beyond t
 - [ ] Post author receives notification when post is soft-deleted by moderator.
 - [ ] Reporting user receives notification when report is dismissed or actioned.
 - [ ] Admin Reports Queue supports Previous/Next pagination when total pending reports > 20.
+
+## Estimate
+5 story points
