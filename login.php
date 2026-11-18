@@ -39,10 +39,11 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $db = Database::getInstance()->getConnection();
             $user = new User($db);
-            // Sprint 5 rate-limit: 5 failed attempts per (email, IP) in
-            // 15 minutes locks logins for that pair for 15 minutes.
+            // Rate-limit: 5 failed attempts per (email, IP) in 15 minutes
+            // lock that pair for 5 minutes; failures also get progressive delay.
             $limiter = new LoginRateLimiter($db);
             if ($limiter->isLocked($email)) {
+                http_response_code(429);
                 $minutes = (int)ceil($limiter->lockRemainingSeconds($email) / 60);
                 $error = "Too many failed login attempts. Please try again in {$minutes} minute" . ($minutes === 1 ? '' : 's') . ".";
             } else {
@@ -55,7 +56,15 @@ if($_SERVER['REQUEST_METHOD'] === 'POST') {
                     exit;
                 } else {
                     $limiter->recordFailure($email);
-                    $error = "Invalid email or password. Please try again.";
+                    if ($limiter->isLocked($email)) {
+                        http_response_code(429);
+                        $minutes = (int)ceil($limiter->lockRemainingSeconds($email) / 60);
+                        $error = "Too many failed login attempts. Please try again in {$minutes} minute" . ($minutes === 1 ? '' : 's') . ".";
+                    } else {
+                        $attempts = $limiter->attemptsInWindow($email);
+                        usleep(LoginRateLimiter::delayMicrosecondsForAttempts($attempts));
+                        $error = "Invalid email or password. Please try again.";
+                    }
                 }
             }
         }

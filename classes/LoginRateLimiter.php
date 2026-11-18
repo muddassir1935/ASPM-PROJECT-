@@ -15,7 +15,7 @@
 class LoginRateLimiter {
     public const MAX_ATTEMPTS = 5;
     public const WINDOW_SECONDS = 900;   // 15 minutes
-    public const LOCK_SECONDS = 900;     // 15 minutes
+    public const LOCK_SECONDS = 300;     // 5 minutes
 
     /**
      * Audit C21: per-IP ceiling across ALL emails. Keying only on
@@ -27,6 +27,11 @@ class LoginRateLimiter {
      */
     public const IP_MAX_ATTEMPTS = 20;
     private const IP_WIDE = '*';
+
+    /** Delay failed attempts progressively, capped at one second. */
+    public static function delayMicrosecondsForAttempts(int $attempts): int {
+        return min(max(0, $attempts - 1) * 100000, 1000000);
+    }
 
     private PDO $db;
 

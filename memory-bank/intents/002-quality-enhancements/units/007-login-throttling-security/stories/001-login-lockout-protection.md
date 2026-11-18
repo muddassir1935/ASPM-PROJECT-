@@ -14,9 +14,9 @@ I want failed login attempts to be rate-limited,
 So that malicious scripts cannot brute-force student passwords on the campus network.
 
 ## Acceptance Criteria
-- [ ] 5 consecutive failed logins on an email locks the account for 300 seconds (5 min).
-- [ ] During lockout, login attempts return a descriptive 429-friendly error without DB query.
-- [ ] Valid password on attempt 4 clears the failed counter immediately.
+- [x] 5 consecutive failed logins on an email locks the account for 300 seconds (5 min).
+- [x] During lockout, login attempts return a descriptive 429-friendly error without password verification query.
+- [x] Valid password on attempt 4 clears the failed counter immediately.
 
 ## Estimate
 3 story points

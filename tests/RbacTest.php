@@ -153,7 +153,11 @@ runTest("4 failures: still not locked", $limiter->isLocked($testEmail, $testIp, 
 runTest("4 failures counted in window", $limiter->attemptsInWindow($testEmail, $testIp, $now + 5), 4);
 $limiter->recordFailure($testEmail, $testIp, $now + 6);
 runTest("5th failure locks the pair", $limiter->isLocked($testEmail, $testIp, $now + 7), true);
+runTest("Lock duration is five minutes", LoginRateLimiter::LOCK_SECONDS, 300);
 runTest("Lock has seconds remaining", $limiter->lockRemainingSeconds($testEmail, $testIp, $now + 7) > 0, true);
+runTest("Progressive delay starts at zero", LoginRateLimiter::delayMicrosecondsForAttempts(1), 0);
+runTest("Progressive delay increases after failed attempts", LoginRateLimiter::delayMicrosecondsForAttempts(4), 300000);
+runTest("Progressive delay is capped at one second", LoginRateLimiter::delayMicrosecondsForAttempts(20), 1000000);
 runTest("A different IP is not locked by this pair's failures",
     $limiter->isLocked($testEmail, '192.0.2.99', $now + 7), false);
 runTest("A different email is not locked by this pair's failures",
@@ -185,6 +189,13 @@ runTest("Spraying lock expires after LOCK_SECONDS",
 $limiter->recordSuccess($testEmail, $testIp);
 runTest("Success clears the failure history",
     $limiter->attemptsInWindow($testEmail, $testIp, $now + 22), 0);
+$resetEmail = 'ratelimit_reset@nu.edu.pk';
+for ($i = 1; $i <= 4; $i++) {
+    $limiter->recordFailure($resetEmail, $testIp, $now + $i);
+}
+$limiter->recordSuccess($resetEmail, $testIp);
+runTest("Valid login after four failures clears the counter immediately",
+    $limiter->attemptsInWindow($resetEmail, $testIp, $now + 5), 0);
 
 // ---------------------------------------------------------
 // SECTION 5: ADMIN ROLE ASSIGNMENT (shared test DB)
