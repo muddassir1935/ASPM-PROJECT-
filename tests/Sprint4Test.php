@@ -125,6 +125,8 @@ assertTest("Post creation indexed #campusconnect tag", in_array('campusconnect',
 // Tag query
 $techPosts = $hashtagModel->getPostsByTag($tagA);
 assertTest("getPostsByTag returns tagged posts (excluding deleted)", count($techPosts) === 2);
+$upperTechPosts = $hashtagModel->getPostsByTag(mb_strtoupper($tagA, 'UTF-8'));
+assertTest("getPostsByTag matches mixed-case hashtag lookups", count($upperTechPosts) === 2);
 
 // Update post re-syncs tags
 $newTag = "design_" . $uniq;
