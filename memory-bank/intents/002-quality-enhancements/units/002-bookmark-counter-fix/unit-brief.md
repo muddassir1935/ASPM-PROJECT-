@@ -1,10 +1,10 @@
 ---
 unit: 002-bookmark-counter-fix
 intent: 002-quality-enhancements
-phase: inception
-status: ready
+phase: construction
+status: completed
 created: 2026-11-18T09:10:00Z
-updated: 2026-11-18T09:10:00Z
+updated: 2026-11-18T10:24:00Z
 ---
 
 # Unit Brief: Bookmark Counter Inconsistency & Soft-Delete Filter Fix
