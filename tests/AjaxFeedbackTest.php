@@ -31,6 +31,12 @@ assertAjaxFeedbackTest(
         && str_contains($notifications, "navLink.setAttribute('aria-label'")
         && str_contains($notifications, "badge.style.display = 'none'")
 );
+assertAjaxFeedbackTest(
+    'Notification read actions surface expired-session and failed-request feedback',
+    substr_count($notifications, '.then(ccJson)') === 2
+        && str_contains($notifications, '.catch(ccFail)')
+        && str_contains($notifications, "if (btnElement) { ccFail(err); }")
+);
 
 echo "\nAjaxFeedbackTest: {$passed} passed, {$failed} failed\n";
 if ($failed > 0) {
