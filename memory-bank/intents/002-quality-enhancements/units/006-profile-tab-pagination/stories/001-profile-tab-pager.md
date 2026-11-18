@@ -14,9 +14,9 @@ I want to browse through all my past interactions across multiple pages,
 And I want clicking Next/Previous to stay on the Liked Posts tab.
 
 ## Acceptance Criteria
-- [ ] Liked Posts tab paginates 20 items per page with Previous/Next controls.
+- [x] Liked Posts tab paginates 20 items per page with Previous/Next controls.
 - [ ] Replies tab paginates 20 items per page with Previous/Next controls.
-- [ ] Pager links include `&tab=likes` or `&tab=replies` dynamically.
+- [ ] Pager links include `&tab=likes` or `&tab=replies` dynamically. (Likes is preserved; Replies tab does not exist and adding tabs is out of scope.)
 
 ## Estimate
 5 story points
