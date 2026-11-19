@@ -154,6 +154,39 @@ assertTest("Reviewing already reviewed report is rejected", $reReview['success']
 $reviewedList = $reportModel->listReviewed();
 assertTest("listReviewed includes dismissed and actioned reports", count($reviewedList) >= 2);
 
+// --- SECTION 6: DB-LEVEL CONSTRAINTS (intent 003, unit 008 / EF-5) ---
+echo PHP_EOL . "--- REPORT COLUMN CONSTRAINTS (DB) ---" . PHP_EOL;
+
+// Raw inserts bypass Report::validate(), so only the DB constraint can stop these.
+$invalidReasonRejected = false;
+try {
+    $db->prepare("INSERT INTO reports (reporter_id, post_id, reason, status) VALUES (:r, :p, 'offensive_language', 'pending')")
+        ->execute([':r' => $charlieId, ':p' => $post2Id]);
+} catch (PDOException $e) {
+    $invalidReasonRejected = true;
+}
+assertTest("DB rejects a report reason outside the whitelist", $invalidReasonRejected === true);
+
+$invalidStatusRejected = false;
+try {
+    $db->prepare("INSERT INTO reports (reporter_id, post_id, reason, status) VALUES (:r, :p, 'spam', 'reviewed')")
+        ->execute([':r' => $charlieId, ':p' => $post2Id]);
+} catch (PDOException $e) {
+    $invalidStatusRejected = true;
+}
+assertTest("DB rejects a report status outside pending/dismissed/actioned", $invalidStatusRejected === true);
+
+// 'actioned' is a real stored status (Report::STATUS_ACTIONED) -- it must pass.
+$validActionedAccepted = false;
+try {
+    $db->prepare("INSERT INTO reports (reporter_id, post_id, reason, status) VALUES (:r, :p, 'violence', 'actioned')")
+        ->execute([':r' => $charlieId, ':p' => $post2Id]);
+    $validActionedAccepted = true;
+} catch (PDOException $e) {
+    $validActionedAccepted = false;
+}
+assertTest("DB accepts a report with a whitelisted reason and 'actioned' status", $validActionedAccepted === true);
+
 echo PHP_EOL . "=================================================" . PHP_EOL;
 echo "REPORT TEST SUMMARY: {$passed} / {$total} Passed" . PHP_EOL;
 echo "=================================================" . PHP_EOL;
