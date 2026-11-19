@@ -4,13 +4,13 @@ intent: 003-evaluation-fixes
 phase: construction
 status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-19T12:00:00Z
+updated: 2026-11-19T12:08:00Z
 ---
 
 # Unit Brief: Real Chain of Responsibility for Cache Drivers
 
 ## Assigned Owner
-**Faiz Hussain** (23K-2061) · Branch: `feature/fix-003-oop-foundation`
+**Unassigned** — to be allocated at the planning session · Branch: `feature/fix-003-oop-foundation`
 
 ## Purpose
 Fix the overstated-pattern deduction (−0.5 marks): the report claims "Chain of Responsibility" but `Cache.php` just picks a backend with conditionals. Make the claim true with a real handler chain — or deliberately correct the report instead.
