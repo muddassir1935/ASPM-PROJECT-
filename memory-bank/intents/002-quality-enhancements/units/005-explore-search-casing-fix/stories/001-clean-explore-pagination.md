@@ -2,9 +2,9 @@
 story: 001-clean-explore-pagination
 unit: 005-explore-search-casing-fix
 intent: 002-quality-enhancements
-status: ready
+status: completed
 created: 2026-11-18T09:10:00Z
-updated: 2026-11-18T09:10:00Z
+updated: 2026-11-19T12:23:00Z
 ---
 
 # Story: Clean Explore Pagination & Hashtag Casing Normalization

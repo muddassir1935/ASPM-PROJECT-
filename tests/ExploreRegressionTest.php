@@ -23,7 +23,7 @@ assertExploreRegression(
 );
 assertExploreRegression(
     'User cards render only on page one',
-    preg_match('/if\s*\(\$page\s*===\s*1\)\s*:\s*<h4 class="section-title">\s*People matching.*?foreach\s*\(\$foundUsers\s+as\s+\$foundUser\)/s', $source) === 1
+    preg_match('/if\s*\(\$page\s*===\s*1\)\s*:\s*\?>\s*<h4 class="section-title">\s*People matching.*?foreach\s*\(\$foundUsers\s+as\s+\$foundUser\)/s', $source) === 1
 );
 
 echo "\nExploreRegressionTest: {$passed} passed, {$failed} failed\n";
