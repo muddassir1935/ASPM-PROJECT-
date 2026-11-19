@@ -10,6 +10,7 @@
  */
 require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Post.php';
+require_once __DIR__ . '/Notification.php';
 
 class Report extends Model {
     public const REASON_SPAM = 'spam';
@@ -366,7 +367,7 @@ class Report extends Model {
         }
 
         $stmt = $this->db->prepare(
-            "SELECT r.*, p.id AS p_id, p.deleted_at
+            "SELECT r.*, p.id AS p_id, p.user_id AS post_author_id, p.deleted_at
              FROM reports r
              JOIN posts p ON r.post_id = p.id
              WHERE r.id = :id
@@ -390,6 +391,8 @@ class Report extends Model {
         }
 
         $action = strtolower(trim($action));
+        require_once __DIR__ . '/Notification.php';
+        $notifModel = new Notification($this->db);
 
         if ($action === 'dismiss') {
             $update = $this->db->prepare(
@@ -403,6 +406,17 @@ class Report extends Model {
                 ':id' => $reportId,
             ]);
 
+            $reporterId = (int)$report['reporter_id'];
+            if ($reporterId > 0) {
+                (new Notification($this->db))->create(
+                    $reporterId,
+                    'moderation',
+                    null,
+                    'Your report has been reviewed by administration.',
+                    $reviewerId
+                );
+            }
+
             return [
                 'success' => true,
                 'message' => 'Report has been dismissed.',
@@ -412,9 +426,25 @@ class Report extends Model {
         if ($action === 'action' || $action === 'delete') {
             $postModel = new Post($this->db);
             $postId = (int)$report['post_id'];
+            $postAuthorId = (int)($report['post_author_id'] ?? 0);
+
+            $reportersStmt = $this->db->prepare(
+                "SELECT reporter_id FROM reports WHERE post_id = :post_id AND status = :status"
+            );
+            $reportersStmt->execute([':post_id' => $postId, ':status' => self::STATUS_PENDING]);
+            $reporterIds = array_unique(array_map('intval', $reportersStmt->fetchAll(PDO::FETCH_COLUMN)));
+            if (empty($reporterIds) && (int)$report['reporter_id'] > 0) {
+                $reporterIds = [(int)$report['reporter_id']];
+            }
 
             // Soft-delete the post through the existing post model delete path
             $deleted = $postModel->delete($postId, $reviewerId, true);
+            if (!$deleted) {
+                return [
+                    'success' => false,
+                    'message' => 'The reported post could not be removed.',
+                ];
+            }
 
             // Mark this report (and any other pending reports for the same post) as actioned
             $update = $this->db->prepare(
@@ -429,6 +459,28 @@ class Report extends Model {
                 ':pending_status' => self::STATUS_PENDING,
             ]);
 
+            $notifModel = new Notification($this->db);
+            if ($postAuthorId > 0) {
+                $notifModel->create(
+                    $postAuthorId,
+                    'moderation',
+                    null,
+                    'Your post was removed by administration for violating campus policies.',
+                    $reviewerId
+                );
+            }
+
+            foreach ($reporterIds as $rId) {
+                if ($rId > 0) {
+                    $notifModel->create(
+                        $rId,
+                        'moderation',
+                        null,
+                        'Your report has been reviewed by administration.',
+                        $reviewerId
+                    );
+                }
+            }
             return [
                 'success' => true,
                 'message' => 'Post soft-deleted and report actioned successfully.',

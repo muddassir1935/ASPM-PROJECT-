@@ -10,6 +10,7 @@ require_once __DIR__ . '/../config/Database.php';
 require_once __DIR__ . '/../classes/User.php';
 require_once __DIR__ . '/../classes/Post.php';
 require_once __DIR__ . '/../classes/Report.php';
+require_once __DIR__ . '/../classes/Notification.php';
 require_once __DIR__ . '/../classes/Authorization.php';
 
 $db = Database::getInstance()->getConnection();
@@ -107,6 +108,10 @@ $pending = $reportModel->listPending();
 assertTest("listPending returns pending reports", count($pending) >= 3);
 assertTest("listPending row includes author and reporter names", !empty($pending[0]['post_author_name']) && !empty($pending[0]['reporter_name']));
 assertTest("listPending row includes post_report_count", isset($pending[0]['post_report_count']));
+assertTest("listPending honors limit and offset",
+    count($reportModel->listPending(1, 0)) === 1
+        && count($reportModel->listPending(1, 1)) === 1
+        && (int)$reportModel->listPending(1, 0)[0]['id'] !== (int)$reportModel->listPending(1, 1)[0]['id']);
 
 // --- SECTION 4: RBAC PERMISSIONS ---
 echo PHP_EOL . "--- REPORT RBAC PERMISSIONS ---" . PHP_EOL;
@@ -124,6 +129,10 @@ echo PHP_EOL . "--- ADMIN REVIEW WORKFLOWS (DISMISS & ACTION) ---" . PHP_EOL;
 // 1. Dismiss flow on report3 (post2)
 $dismissResult = $reportModel->review($report3Id, 'dismiss', $maryId);
 assertTest("Admin dismiss review succeeds", $dismissResult['success'] === true);
+$notifications = new Notification($db);
+$bobReportNotes = array_filter($notifications->listAll($bobId, 50),
+    fn($row) => str_contains($row['message'], 'report has been reviewed'));
+assertTest("Dismissed report notifies its reporter", count($bobReportNotes) === 1);
 
 $dismissedRow = $reportModel->getById($report3Id);
 assertTest("Dismissed report has status 'dismissed'", $dismissedRow['status'] === 'dismissed');
@@ -133,6 +142,14 @@ assertTest("Post remains active after report dismissal", $postModel->getById($po
 // 2. Action (delete post) flow on report1 (post1)
 $actionResult = $reportModel->review($report1Id, 'action', $maryId);
 assertTest("Admin action (delete post) review succeeds", $actionResult['success'] === true);
+$authorModerationNotes = array_filter($notifications->listAll($aliceId, 50),
+    fn($row) => str_contains($row['message'], 'removed by administration'));
+assertTest("Actioned post notifies its author", count($authorModerationNotes) === 1);
+$bobReportNotes = array_filter($notifications->listAll($bobId, 50),
+    fn($row) => str_contains($row['message'], 'report has been reviewed'));
+$charlieReportNotes = array_filter($notifications->listAll($charlieId, 50),
+    fn($row) => str_contains($row['message'], 'report has been reviewed'));
+assertTest("Actioned reports notify each reporter", count($bobReportNotes) === 2 && count($charlieReportNotes) === 1);
 
 $actionedRow = $reportModel->getById($report1Id);
 assertTest("Actioned report has status 'actioned'", $actionedRow['status'] === 'actioned');
@@ -154,7 +171,69 @@ assertTest("Reviewing already reviewed report is rejected", $reReview['success']
 $reviewedList = $reportModel->listReviewed();
 assertTest("listReviewed includes dismissed and actioned reports", count($reviewedList) >= 2);
 
-// --- SECTION 6: DB-LEVEL CONSTRAINTS (intent 003, unit 008 / EF-5) ---
+// --- SECTION 6: MODERATION NOTIFICATIONS & PAGINATION (UNIT 003) ---
+echo PHP_EOL . "--- MODERATION NOTIFICATIONS & PAGINATION (UNIT 003) ---" . PHP_EOL;
+
+require_once __DIR__ . '/../classes/Notification.php';
+$notifModel = new Notification($db);
+
+// 1. Author receives notification when post is soft-deleted by moderator
+$aliceNotifs = $notifModel->listAll($aliceId);
+$authorNotified = false;
+foreach ($aliceNotifs as $n) {
+    if ($n['type'] === 'moderation' && strpos($n['message'], 'violating campus policies') !== false) {
+        $authorNotified = true;
+        break;
+    }
+}
+assertTest("Post author receives notification when post is soft-deleted by moderator", $authorNotified === true);
+
+// 2. Reporter receives notification when report is dismissed
+$bobNotifs = $notifModel->listAll($bobId);
+$reporterDismissNotified = false;
+foreach ($bobNotifs as $n) {
+    if ($n['type'] === 'moderation' && strpos($n['message'], 'reviewed') !== false) {
+        $reporterDismissNotified = true;
+        break;
+    }
+}
+assertTest("Reporting user receives notification when report is dismissed", $reporterDismissNotified === true);
+
+// 3. Reporter receives notification when report is actioned
+$charlieNotifs = $notifModel->listAll($charlieId);
+$reporterActionNotified = false;
+foreach ($charlieNotifs as $n) {
+    if ($n['type'] === 'moderation' && strpos($n['message'], 'reviewed') !== false) {
+        $reporterActionNotified = true;
+        break;
+    }
+}
+assertTest("Reporting user receives notification when report is actioned", $reporterActionNotified === true);
+
+// 4. Admin Reports Queue pagination support (> 20 items)
+for ($i = 1; $i <= 22; $i++) {
+    $pId = $postModel->create($aliceId, "Bulk post {$i} {$uniq}");
+    $reportModel->create($bobId, $pId, 'spam', "Bulk report {$i}");
+}
+$pendingTotal = $reportModel->countPending();
+assertTest("Pending report count exceeds 20 items ({$pendingTotal})", $pendingTotal > 20);
+
+require_once __DIR__ . '/../includes/social_widgets.php';
+$page1Clamped = clampPage(1, $pendingTotal, 20);
+$page2Clamped = clampPage(2, $pendingTotal, 20);
+assertTest("clampPage correctly resolves page 1 and page 2 for >20 reports", $page1Clamped === 1 && $page2Clamped === 2);
+
+ob_start();
+renderPager('admin.php', 1, 1 * 20 < $pendingTotal, 'rpage');
+$pagerPage1Html = ob_get_clean();
+assertTest("renderPager renders Next link for page 1 when total > 20", strpos($pagerPage1Html, 'rpage=2') !== false);
+
+ob_start();
+renderPager('admin.php', 2, 2 * 20 < $pendingTotal, 'rpage');
+$pagerPage2Html = ob_get_clean();
+assertTest("renderPager renders Previous link on page 2", strpos($pagerPage2Html, 'rpage=1') !== false);
+
+// --- SECTION 7: DB-LEVEL CONSTRAINTS (intent 003, unit 008 / EF-5) ---
 echo PHP_EOL . "--- REPORT COLUMN CONSTRAINTS (DB) ---" . PHP_EOL;
 
 // Raw inserts bypass Report::validate(), so only the DB constraint can stop these.

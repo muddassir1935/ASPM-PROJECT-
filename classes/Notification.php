@@ -15,6 +15,7 @@ class Notification extends Model {
     public const TYPE_FOLLOW = 'follow';
     public const TYPE_REPLY  = 'reply';
     public const TYPE_LIKE   = 'like';
+    public const TYPE_MODERATION = 'moderation';
 
     /**
      * Types that are toggles (audit C10): like -> unlike -> like, or
