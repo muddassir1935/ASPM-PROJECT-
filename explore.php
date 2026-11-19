@@ -49,7 +49,9 @@ $offset = ($page - 1) * $perPage;
 if ($tagFilter !== '') {
     $foundPosts = $hashtagModel->getPostsByTag($tagFilter, $viewerId, $perPage + 1, $offset);
 } elseif ($query !== '') {
-    $foundUsers = $userModel->searchUsers($query, $viewerId, 20);
+    if ($page === 1) {
+        $foundUsers = $userModel->searchUsers($query, $viewerId, 20);
+    }
     $foundPosts = $postModel->searchPosts($query, $perPage + 1, $offset, $viewerId);
 } else {
     $foundPosts = $postModel->getFeed($perPage + 1, $offset, $viewerId);
@@ -121,29 +123,31 @@ $viewerFollowingIds = $currentUser
                 </div>
                 <a href="explore.php" class="explore-filter-clear">Clear search &times;</a>
             </div>
-            <h4 class="section-title">
-                People matching "<?= htmlspecialchars($query) ?>"
-            </h4>
-            <?php if (empty($foundUsers)): ?>
-                <p class="result-note">No people found.</p>
-            <?php else: ?>
-                <div class="list-card">
-                    <?php foreach ($foundUsers as $foundUser): ?>
-                        <?php
-                            $uInitial = strtoupper(mb_substr(trim($foundUser['name']), 0, 1, 'UTF-8'));
-                            $uIsFollowing = isset($viewerFollowingIds[(int)$foundUser['id']]);
-                        ?>
-                        <div class="user-row">
-                            <a href="profile.php?id=<?= (int)$foundUser['id'] ?>" class="user-row-link">
-                                <span class="avatar-sm<?= avatarToneClass((int)$foundUser['id'], (string)($foundUser['role'] ?? '')) ?>"><?= htmlspecialchars($uInitial) ?></span>
-                                <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($foundUser['role'] ?? 'student')) ?> &bull; <?= (int)$foundUser['follower_count'] ?> <?= pluralize((int)$foundUser['follower_count'], 'follower') ?></span></span>
-                            </a>
-                            <?php if ($currentUser): ?>
-                                <button type="button" class="btn-follow<?= $uIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$foundUser['id'] ?>"><?= $uIsFollowing ? 'Following' : 'Follow' ?></button>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
+            <?php if ($page === 1): ?>
+                <h4 class="section-title">
+                    People matching "<?= htmlspecialchars($query) ?>"
+                </h4>
+                <?php if (empty($foundUsers)): ?>
+                    <p class="result-note">No people found.</p>
+                <?php else: ?>
+                    <div class="list-card">
+                        <?php foreach ($foundUsers as $foundUser): ?>
+                            <?php
+                                $uInitial = strtoupper(mb_substr(trim($foundUser['name']), 0, 1, 'UTF-8'));
+                                $uIsFollowing = isset($viewerFollowingIds[(int)$foundUser['id']]);
+                            ?>
+                            <div class="user-row">
+                                <a href="profile.php?id=<?= (int)$foundUser['id'] ?>" class="user-row-link">
+                                    <span class="avatar-sm<?= avatarToneClass((int)$foundUser['id'], (string)($foundUser['role'] ?? '')) ?>"><?= htmlspecialchars($uInitial) ?></span>
+                                    <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($foundUser['role'] ?? 'student')) ?> &bull; <?= (int)$foundUser['follower_count'] ?> <?= pluralize((int)$foundUser['follower_count'], 'follower') ?></span></span>
+                                </a>
+                                <?php if ($currentUser): ?>
+                                    <button type="button" class="btn-follow<?= $uIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$foundUser['id'] ?>"><?= $uIsFollowing ? 'Following' : 'Follow' ?></button>
+                                <?php endif; ?>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
 
             <h4 class="section-title">
