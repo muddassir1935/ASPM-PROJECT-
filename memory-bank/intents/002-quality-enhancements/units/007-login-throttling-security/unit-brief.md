@@ -1,10 +1,10 @@
 ---
 unit: 007-login-throttling-security
 intent: 002-quality-enhancements
-phase: inception
-status: ready
+phase: construction
+status: completed
 created: 2026-11-18T09:10:00Z
-updated: 2026-11-18T09:10:00Z
+updated: 2026-11-19T12:35:00Z
 ---
 
 # Unit Brief: Brute-Force Login Throttling & Progressive Backoff

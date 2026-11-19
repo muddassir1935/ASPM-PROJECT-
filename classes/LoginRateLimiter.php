@@ -17,7 +17,7 @@ require_once __DIR__ . '/Model.php';
 class LoginRateLimiter extends Model {
     public const MAX_ATTEMPTS = 5;
     public const WINDOW_SECONDS = 900;   // 15 minutes
-    public const LOCK_SECONDS = 900;     // 15 minutes
+    public const LOCK_SECONDS = 300;     // 5 minutes
 
     /**
      * Audit C21: per-IP ceiling across ALL emails. Keying only on
@@ -159,5 +159,10 @@ class LoginRateLimiter extends Model {
             return 0;
         }
         return (int)$row['attempts'];
+    }
+
+    /** Delay failed attempts progressively, capped at one second. */
+    public static function delayMicrosecondsForAttempts(int $attempts): int {
+        return min(max(0, $attempts - 1) * 100000, 1000000);
     }
 }
