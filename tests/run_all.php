@@ -21,6 +21,7 @@ $suites = [
     'Sprint4Test.php',
     'RbacTest.php',
     'ReportTest.php',
+    'ProfilePaginationTest.php',
     'MysqlCompatTest.php',
     'ExploreRegressionTest.php',
 ];

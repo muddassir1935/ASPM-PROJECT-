@@ -54,6 +54,7 @@ $bookmarkedIds = [];
 // the Posts tab (the tab link is hidden for them below too).
 $activeTab = ($_GET['tab'] ?? 'posts') === 'likes' && $isOwnProfile ? 'likes' : 'posts';
 $likesTotal = 0;
+$likesPerPage = 20;
 $likedPosts = [];
 
 if ($profile) {
@@ -77,8 +78,8 @@ if ($profile) {
 
     if ($activeTab === 'likes') {
         // Audit C15: paginate the Likes tab instead of stopping at 50.
-        $likesPage = clampPage((int)($_GET['page'] ?? 1), $likesTotal, 10);
-        $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], 10, ($likesPage - 1) * 10, $currentUser ? (int)$currentUser['id'] : 0);
+        $likesPage = clampPage((int)($_GET['page'] ?? 1), $likesTotal, $likesPerPage);
+        $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], $likesPerPage, ($likesPage - 1) * $likesPerPage, $currentUser ? (int)$currentUser['id'] : 0);
     }
 
     if ($currentUser) {
@@ -213,7 +214,7 @@ if ($profile) {
                     <?php foreach ($likedPosts as $likedPost): ?>
                         <?php renderPostCard($likedPost, $currentUser, $bookmarkedIds); ?>
                     <?php endforeach; ?>
-                    <?php renderPager('profile.php?id=' . (int)$profile['id'] . '&tab=likes', $likesPage, $likesPage * 10 < $likesTotal); ?>
+                    <?php renderPager('profile.php?id=' . (int)$profile['id'] . '&tab=likes', $likesPage, $likesPage * $likesPerPage < $likesTotal); ?>
                 <?php endif; ?>
             <?php else: ?>
                 <?php if (empty($feed['posts'])): ?>
