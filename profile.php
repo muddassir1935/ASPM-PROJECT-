@@ -13,6 +13,7 @@ require_once 'classes/PostController.php';
 require_once 'classes/Follow.php';
 require_once 'classes/Bookmark.php';
 require_once 'classes/Like.php';
+require_once 'classes/Reply.php';
 require_once 'includes/social_widgets.php';
 require_once 'classes/Auth.php';
 
@@ -52,10 +53,22 @@ $bookmarkedIds = [];
 // Sprint 5 final fix (L9): the Likes tab is the owner's private list —
 // anyone could open ?tab=likes on any profile. Non-owners fall back to
 // the Posts tab (the tab link is hidden for them below too).
-$activeTab = ($_GET['tab'] ?? 'posts') === 'likes' && $isOwnProfile ? 'likes' : 'posts';
+// Intent 002 unit 006: the Replies tab is public, like Posts, so it is
+// open on any profile.
+$requestedTab = $_GET['tab'] ?? 'posts';
+if ($requestedTab === 'likes' && $isOwnProfile) {
+    $activeTab = 'likes';
+} elseif ($requestedTab === 'replies') {
+    $activeTab = 'replies';
+} else {
+    $activeTab = 'posts';
+}
 $likesTotal = 0;
 $likesPerPage = 20;
 $likedPosts = [];
+$repliesTotal = 0;
+$repliesPerPage = 20;
+$userReplies = [];
 
 if ($profile) {
     $followModel = new Follow($db);
@@ -63,6 +76,8 @@ if ($profile) {
     $followers = $followModel->getFollowers((int)$profile['id'], 100);
     $following = $followModel->getFollowing((int)$profile['id'], 100);
     $likesTotal = $likeModel->countByUser((int)$profile['id']);
+    $replyModel = new Reply($db);
+    $repliesTotal = $replyModel->countByUser((int)$profile['id']);
     // Sprint 5 final fix (security M3): fetch the viewer's following-set
     // ONCE — the modals below used to call isFollowing() per row (N+1).
     $viewerFollowingIds = $currentUser
@@ -80,6 +95,11 @@ if ($profile) {
         // Audit C15: paginate the Likes tab instead of stopping at 50.
         $likesPage = clampPage((int)($_GET['page'] ?? 1), $likesTotal, $likesPerPage);
         $likedPosts = $likeModel->getLikedPosts((int)$profile['id'], $likesPerPage, ($likesPage - 1) * $likesPerPage, $currentUser ? (int)$currentUser['id'] : 0);
+    }
+
+    if ($activeTab === 'replies') {
+        $repliesPage = clampPage((int)($_GET['page'] ?? 1), $repliesTotal, $repliesPerPage);
+        $userReplies = $replyModel->getRepliesByUser((int)$profile['id'], $repliesPerPage, ($repliesPage - 1) * $repliesPerPage);
     }
 
     if ($currentUser) {
@@ -193,10 +213,13 @@ if ($profile) {
                 </div>
             </div>
 
-            <!-- Profile Tabs (Posts / Likes) -->
+            <!-- Profile Tabs (Posts / Replies / Likes) -->
             <div class="profile-tabs-header">
                 <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=posts" class="profile-tab<?= $activeTab === 'posts' ? ' active' : '' ?>">
                     <span class="profile-tab-label">Posts (<?= (int)$feed['total'] ?>)</span>
+                </a>
+                <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=replies" class="profile-tab<?= $activeTab === 'replies' ? ' active' : '' ?>">
+                    <span class="profile-tab-label">Replies (<?= (int)$repliesTotal ?>)</span>
                 </a>
                 <?php if ($isOwnProfile): ?>
                 <a href="profile.php?id=<?= (int)$profile['id'] ?>&tab=likes" class="profile-tab<?= $activeTab === 'likes' ? ' active' : '' ?>">
@@ -215,6 +238,26 @@ if ($profile) {
                         <?php renderPostCard($likedPost, $currentUser, $bookmarkedIds); ?>
                     <?php endforeach; ?>
                     <?php renderPager('profile.php?id=' . (int)$profile['id'] . '&tab=likes', $likesPage, $likesPage * $likesPerPage < $likesTotal); ?>
+                <?php endif; ?>
+            <?php elseif ($activeTab === 'replies'): ?>
+                <?php if (empty($userReplies)): ?>
+                    <div class="empty-state">
+                        <p class="empty-text">No replies yet.</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($userReplies as $userReply): ?>
+                        <div class="reply-card">
+                            <span class="avatar-sm<?= avatarToneClass((int)$userReply['user_id'], (string)($userReply['author_role'] ?? '')) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($userReply['author_name']), 0, 1, 'UTF-8'))) ?></span>
+                            <div class="reply-body">
+                                <div class="reply-head">
+                                    <a class="reply-author" href="post.php?id=<?= (int)$userReply['post_id'] ?>">Replying to a post</a>
+                                    <span class="reply-time">&middot; <?= htmlspecialchars($userReply['time_ago']) ?></span>
+                                </div>
+                                <p class="reply-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($userReply['content'])) ?></p>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php renderPager('profile.php?id=' . (int)$profile['id'] . '&tab=replies', $repliesPage, $repliesPage * $repliesPerPage < $repliesTotal); ?>
                 <?php endif; ?>
             <?php else: ?>
                 <?php if (empty($feed['posts'])): ?>

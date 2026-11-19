@@ -164,6 +164,56 @@ class Reply extends Model {
         return $stmt->execute();
     }
 
+    /**
+     * A user's replies, newest first, for the profile Replies tab
+     * (intent 002, unit 006). Same shape as Like::getLikedPosts():
+     * skips soft-deleted replies and replies on soft-deleted posts.
+     */
+    public function getRepliesByUser(int $userId, int $limit = 20, int $offset = 0): array {
+        if ($userId <= 0) {
+            return [];
+        }
+
+        $sql = "SELECT r.id, r.post_id, r.user_id, r.content, r.created_at, r.updated_at,
+                       u.name AS author_name, u.role AS author_role
+                FROM replies r
+                JOIN posts p ON r.post_id = p.id
+                JOIN users u ON r.user_id = u.id
+                WHERE r.user_id = :user_id AND r.deleted_at IS NULL AND p.deleted_at IS NULL
+                ORDER BY r.created_at DESC, r.id DESC
+                LIMIT :limit OFFSET :offset";
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        $stmt->execute();
+
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as &$row) {
+            $row['time_ago'] = Post::formatTimeAgo($row['created_at']);
+        }
+        return $rows;
+    }
+
+    /**
+     * Total visible replies by a user (not deleted, parent post not deleted).
+     */
+    public function countByUser(int $userId): int {
+        if ($userId <= 0) {
+            return 0;
+        }
+
+        $sql = "SELECT COUNT(*) FROM replies r
+                JOIN posts p ON r.post_id = p.id
+                WHERE r.user_id = :user_id AND r.deleted_at IS NULL AND p.deleted_at IS NULL";
+        $stmt = $this->db->prepare($sql);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return (int)$stmt->fetchColumn();
+    }
+
     public function countByPost(int $postId): int {
         $sql = "SELECT COUNT(*) FROM replies WHERE post_id = :post_id AND deleted_at IS NULL";
         $stmt = $this->db->prepare($sql);

@@ -2,9 +2,9 @@
 story: 001-profile-tab-pager
 unit: 006-profile-tab-pagination
 intent: 002-quality-enhancements
-status: ready
+status: completed
 created: 2026-11-18T09:10:00Z
-updated: 2026-11-18T09:10:00Z
+updated: 2026-11-19T15:45:00Z
 ---
 
 # Story: Profile Tab Pagination & State Preservation
@@ -15,8 +15,13 @@ And I want clicking Next/Previous to stay on the Liked Posts tab.
 
 ## Acceptance Criteria
 - [x] Liked Posts tab paginates 20 items per page with Previous/Next controls.
-- [ ] Replies tab paginates 20 items per page with Previous/Next controls.
-- [ ] Pager links include `&tab=likes` or `&tab=replies` dynamically. (Likes is preserved; Replies tab does not exist and adding tabs is out of scope.)
+- [x] Replies tab paginates 20 items per page with Previous/Next controls.
+- [x] Pager links include `&tab=likes` or `&tab=replies` dynamically. (No Replies tab existed; Muddassir approved building it on 19 Nov 2026 as the one exception to the fixes-only rule. Both tabs now keep their tab when paging.)
 
 ## Estimate
 5 story points
+
+## Completion Notes
+- Likes tab pagination: done earlier (PR #24).
+- Replies tab (branch `feature/fix-006-replies-tab`): `Reply::getRepliesByUser()` / `Reply::countByUser()` (newest first, excludes soft-deleted replies and replies on soft-deleted posts); `profile.php` shows a public Replies tab with 20 per page, `clampPage`, empty state "No replies yet.", and `renderPager(...&tab=replies)`.
+- `tests/ProfileRepliesTest.php` (16 tests) added to `tests/run_all.php`; full suite green.
