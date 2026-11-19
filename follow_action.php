@@ -2,58 +2,14 @@
 /**
  * AJAX Follow Toggle (Sprint 3, WBS 3.2).
  *
- * POST user_id -> JSON { success, following, followers_count, message }.
+ * POST user_id -> JSON { success, following, followers_count, viewer_id, viewer_following_count, message }.
  * Requires a logged-in user and a valid CSRF token (Sprint 5).
+ *
+ * Thin entry point (intent 003, unit 004-controllers-social): all request
+ * handling lives in SocialController::handleFollow().
  */
 require_once 'config/Database.php';
-require_once 'classes/Auth.php';
-require_once 'classes/Follow.php';
-require_once 'classes/Csrf.php';
+require_once 'classes/SocialController.php';
 
-header('Content-Type: application/json');
-
-if (!Auth::isLoggedIn()) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Login required.']);
-    exit;
-}
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'POST required.']);
-    exit;
-}
-
-// Sprint 5 CSRF: the footer JS sends csrf_token with every toggle.
-if (!Csrf::validatePost()) {
-    http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Security token expired. Please refresh and try again.']);
-    exit;
-}
-
-$currentUser = Auth::user();
-$targetId = (int)($_POST['user_id'] ?? 0);
-
-if ($targetId <= 0 || $targetId === (int)$currentUser['id']) {
-    echo json_encode(['success' => false, 'message' => 'Invalid user.']);
-    exit;
-}
-
-$db = Database::getInstance()->getConnection();
-$followModel = new Follow($db);
-$newState = $followModel->toggle((int)$currentUser['id'], $targetId);
-
-if ($newState === null) {
-    echo json_encode(['success' => false, 'message' => 'Could not update follow.']);
-    exit;
-}
-
-echo json_encode([
-    'success' => true,
-    'following' => $newState,
-    'followers_count' => $followModel->countFollowers($targetId),
-    // Audit F7: the viewer's own Following count changes too.
-    'viewer_id' => (int)$currentUser['id'],
-    'viewer_following_count' => $followModel->countFollowing((int)$currentUser['id']),
-    'message' => $newState ? 'Following.' : 'Unfollowed.'
-]);
+$controller = SocialController::fromConnection(Database::getInstance()->getConnection());
+SocialController::sendJson($controller->handleFollow($_SERVER['REQUEST_METHOD'], $_POST));
