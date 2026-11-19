@@ -30,11 +30,6 @@ class LoginRateLimiter extends Model {
     public const IP_MAX_ATTEMPTS = 20;
     private const IP_WIDE = '*';
 
-    /** Delay failed attempts progressively, capped at one second. */
-    public static function delayMicrosecondsForAttempts(int $attempts): int {
-        return min(max(0, $attempts - 1) * 100000, 1000000);
-    }
-
     public function __construct(PDO $db) {
         parent::__construct($db);
         $this->ensureTable();
@@ -164,5 +159,10 @@ class LoginRateLimiter extends Model {
             return 0;
         }
         return (int)$row['attempts'];
+    }
+
+    /** Delay failed attempts progressively, capped at one second. */
+    public static function delayMicrosecondsForAttempts(int $attempts): int {
+        return min(max(0, $attempts - 1) * 100000, 1000000);
     }
 }
