@@ -2,30 +2,30 @@
 /**
  * Class Cache
  *
- * High-performance Caching Layer with Redis & Graceful Fallback (Sprint 4, WBS 4.3).
+ * High-performance Caching Layer with Redis & Graceful Fallback (Sprint 4, WBS 4.3;
+ * refactored in Intent 003 Units 001 & 002 to a real Chain of Responsibility over
+ * CacheDriverInterface).
  *
- * Backend chain, tried in order on first use:
- *   1. phpredis extension (class Redis) against a reachable server,
- *   2. TinyRedisClient (WBS 4.3.1) — a pure-PHP RESP socket client, so a real
- *      Redis server works even when the phpredis extension is not installed,
- *   3. in-process memory fallback — the app always runs, even with no Redis.
+ * Handler chain, linked in order on construction:
+ *   1. PhpRedisCacheDriver  — phpredis C extension against a reachable server,
+ *   2. TinyRedisCacheDriver — TinyRedisClient pure-PHP RESP socket client,
+ *   3. MemoryCacheDriver    — in-process memory fallback (always available).
  *
- * Server address defaults to 127.0.0.1:6379 and can be overridden with the
- * CC_REDIS_HOST / CC_REDIS_PORT environment variables.
+ * Each handler tries its own backend and delegates to the next handler in the
+ * chain when unavailable or on runtime failure — no string-switched if/else
+ * dispatch in Cache.
  */
-require_once __DIR__ . '/TinyRedisClient.php';
+require_once __DIR__ . '/CacheDriverInterface.php';
+require_once __DIR__ . '/PhpRedisCacheDriver.php';
+require_once __DIR__ . '/TinyRedisCacheDriver.php';
+require_once __DIR__ . '/MemoryCacheDriver.php';
 
 class Cache {
     private static ?Cache $instance = null;
-    /** @var \Redis|null phpredis client when in use */
-    private $redis = null;
-    private ?TinyRedisClient $tiny = null;
-    /** @var string 'phpredis' | 'tinyredis' | 'memory' */
-    private string $backend = 'memory';
-    private array $memoryCache = [];
+    private CacheDriverInterface $chainHead;
 
-    private function __construct() {
-        $this->initRedis();
+    public function __construct(?CacheDriverInterface $chainHead = null) {
+        $this->chainHead = $chainHead ?? $this->buildDefaultChain();
     }
 
     public static function getInstance(): Cache {
@@ -44,280 +44,103 @@ class Cache {
     }
 
     /**
-     * Namespace for every Redis key (audit C17). Without it the app's keys
-     * ("feed_...", "like_count_...") shared one flat keyspace with anything
-     * else on the same Redis server, deleteByPrefix('feed_') could remove
-     * another app's keys, and flush() ran FLUSHDB on the whole database.
-     * Override with CC_CACHE_PREFIX (e.g. per environment).
+     * Namespace for every Redis key (audit C17). Override with CC_CACHE_PREFIX.
      */
-    private function ns(string $key): string {
+    private function namespacePrefix(): string {
         $prefix = getenv('CC_CACHE_PREFIX');
-        return ($prefix !== false && $prefix !== '' ? $prefix : 'campusconnect:') . $key;
+        return ($prefix !== false && $prefix !== '') ? $prefix : 'campusconnect:';
     }
 
     /**
-     * Attempt connection to Redis with short timeout to prevent slow request stalls.
-     * Tries the phpredis extension first, then the TinyRedisClient socket client.
+     * Assemble the default Chain of Responsibility:
+     *   PhpRedisCacheDriver -> TinyRedisCacheDriver -> MemoryCacheDriver
      */
-    private function initRedis(): void {
-        if (class_exists('Redis')) {
-            try {
-                $r = new Redis();
-                // 300ms connection timeout
-                $connected = @$r->connect($this->redisHost(), $this->redisPort(), 0.3);
-                if ($connected && @$r->ping()) {
-                    $this->redis = $r;
-                    $this->backend = 'phpredis';
-                    return;
-                }
-            } catch (Throwable $e) {
-                // Fall through to the socket client
-                $this->redis = null;
-            }
-        }
+    private function buildDefaultChain(): CacheDriverInterface {
+        $host = $this->redisHost();
+        $port = $this->redisPort();
+        $ns = $this->namespacePrefix();
 
-        try {
-            $tiny = new TinyRedisClient($this->redisHost(), $this->redisPort(), 0.3);
-            if ($tiny->ping()) {
-                $this->tiny = $tiny;
-                $this->backend = 'tinyredis';
-            }
-        } catch (Throwable $e) {
-            // Redis is optional; fallback is silent and seamless
-            $this->tiny = null;
-            $this->backend = 'memory';
-        }
+        $phpRedis = new PhpRedisCacheDriver($host, $port, 0.3, $ns);
+        $tinyRedis = new TinyRedisCacheDriver($host, $port, 0.3, $ns);
+        $memory = new MemoryCacheDriver();
+
+        $phpRedis->setNext($tinyRedis)->setNext($memory);
+        return $phpRedis;
     }
 
+    /** Expose the head of the driver chain for inspection / testing. */
+    public function getDriver(): CacheDriverInterface {
+        return $this->chainHead;
+    }
+
+    /** True when a real Redis driver in the chain is active (not pure memory fallback). */
     public function isAvailable(): bool {
-        return $this->backend !== 'memory';
+        return $this->getBackendName() !== 'memory';
     }
 
     public function getDriverName(): string {
         return $this->isAvailable() ? 'Redis' : 'MemoryFallback';
     }
 
-    /** Which concrete backend serves requests: 'phpredis', 'tinyredis' or 'memory'. */
+    /** Which concrete backend in the chain is actively serving: 'phpredis', 'tinyredis' or 'memory'. */
     public function getBackendName(): string {
-        return $this->backend;
-    }
-
-    // ---- Raw backend primitives (values are raw strings at this layer) ----
-
-    private function rawGet(string $key): ?string {
-        $key = $this->ns($key);
-        try {
-            if ($this->backend === 'phpredis' && $this->redis) {
-                $val = $this->redis->get($key);
-                return $val === false ? null : (string)$val;
-            }
-            if ($this->backend === 'tinyredis' && $this->tiny) {
-                return $this->tiny->get($key);
-            }
-        } catch (Throwable $e) {
-            // fall through: treated as a cache miss
-        }
-        return null;
-    }
-
-    private function rawSet(string $key, string $value, int $ttl): bool {
-        $key = $this->ns($key);
-        try {
-            if ($this->backend === 'phpredis' && $this->redis) {
-                return $ttl > 0
-                    ? (bool)$this->redis->setex($key, $ttl, $value)
-                    : (bool)$this->redis->set($key, $value);
-            }
-            if ($this->backend === 'tinyredis' && $this->tiny) {
-                return $ttl > 0
-                    ? $this->tiny->setex($key, $ttl, $value)
-                    : $this->tiny->set($key, $value);
-            }
-        } catch (Throwable $e) {
-            // fall through to memory
-        }
-        return false;
-    }
-
-    /** Delete keys; $keys are full, already-namespaced Redis keys. */
-    private function rawDel(array $keys): int {
-        if (empty($keys)) {
-            return 0;
-        }
-        try {
-            if ($this->backend === 'phpredis' && $this->redis) {
-                return (int)$this->redis->del($keys);
-            }
-            if ($this->backend === 'tinyredis' && $this->tiny) {
-                return $this->tiny->del($keys);
-            }
-        } catch (Throwable $e) {
-            // ignore
-        }
-        return 0;
-    }
-
-    private function rawIncr(string $key): ?int {
-        $key = $this->ns($key);
-        try {
-            if ($this->backend === 'phpredis' && $this->redis) {
-                $val = $this->redis->incr($key);
-                return $val === false ? null : (int)$val;
-            }
-            if ($this->backend === 'tinyredis' && $this->tiny) {
-                return $this->tiny->incr($key);
-            }
-        } catch (Throwable $e) {
-            // ignore
-        }
-        return null;
-    }
-
-    /**
-     * All live keys starting with $prefix (inside this app's namespace),
-     * via SCAN (KEYS fallback). Returns full namespaced keys for rawDel().
-     */
-    private function rawKeysByPrefix(string $prefix): array {
-        // Escape glob metacharacters so a prefix matches literally.
-        $pattern = addcslashes($this->ns($prefix), '*?[]\\') . '*';
-        try {
-            if ($this->backend === 'phpredis' && $this->redis) {
-                $keys = [];
-                $iterator = null;
-                while (($batch = $this->redis->scan($iterator, $pattern, 100)) !== false) {
-                    foreach ($batch as $k) {
-                        $keys[] = $k;
-                    }
-                    if ($iterator === 0) {
-                        break;
-                    }
-                }
-                if (!empty($keys)) {
-                    return $keys;
-                }
-                $fallback = $this->redis->keys($pattern);
-                return is_array($fallback) ? $fallback : [];
-            }
-            if ($this->backend === 'tinyredis' && $this->tiny) {
-                $keys = [];
-                $cursor = 0;
-                do {
-                    $step = $this->tiny->scan($cursor, $pattern, 100);
-                    if ($step === null) {
-                        return $this->tiny->keys($pattern);
-                    }
-                    [$cursor, $batch] = $step;
-                    foreach ($batch as $k) {
-                        $keys[] = $k;
-                    }
-                } while ($cursor !== 0);
-                return $keys;
-            }
-        } catch (Throwable $e) {
-            // ignore
-        }
-        return [];
+        return $this->chainHead->getBackendName();
     }
 
     // ---- Public API (values of any serializable type) ----
 
     /**
-     * Retrieve an item from cache. Returns false or null if missing.
+     * Retrieve an item from cache. Returns null if missing.
      */
     public function get(string $key) {
-        if ($this->isAvailable()) {
-            $val = $this->rawGet($key);
-            if ($val !== null) {
-                // Audit C17: cached values are plain arrays/scalars; never
-                // instantiate objects from cache data.
-                return unserialize($val, ['allowed_classes' => false]);
-            }
-            // Miss (or backend hiccup): check memory before giving up
+        $raw = $this->chainHead->get($key);
+        if ($raw === null) {
+            return null;
         }
-
-        if (isset($this->memoryCache[$key])) {
-            $item = $this->memoryCache[$key];
-            if ($item['expires_at'] === 0 || $item['expires_at'] >= time()) {
-                return $item['value'];
-            }
-            unset($this->memoryCache[$key]);
+        // Audit C17: cached values are plain arrays/scalars; never
+        // instantiate objects from cache data.
+        $val = @unserialize($raw, ['allowed_classes' => false]);
+        if ($val === false && $raw !== serialize(false)) {
+            return null;
         }
-
-        return null;
+        return $val;
     }
 
     /**
      * Store an item in cache with a TTL (seconds). Default 300s (5 mins).
      */
     public function set(string $key, $value, int $ttl = 300): bool {
-        if ($this->isAvailable() && $this->rawSet($key, serialize($value), $ttl)) {
-            return true;
-        }
-
-        $this->memoryCache[$key] = [
-            'value' => $value,
-            'expires_at' => $ttl > 0 ? time() + $ttl : 0
-        ];
-        return true;
+        return $this->chainHead->set($key, serialize($value), $ttl);
     }
 
     /**
-     * Delete an item from cache.
+     * Delete an item from cache across the chain.
      */
     public function delete(string $key): bool {
-        unset($this->memoryCache[$key]);
-        $this->rawDel([$this->ns($key)]);
-        return true;
+        return $this->chainHead->delete($key);
     }
 
     /**
      * Delete all keys starting with a given prefix (e.g. "feed_").
      */
     public function deleteByPrefix(string $prefix): void {
-        foreach (array_keys($this->memoryCache) as $k) {
-            if (strpos($k, $prefix) === 0) {
-                unset($this->memoryCache[$k]);
-            }
-        }
-
-        if ($this->isAvailable()) {
-            $keys = $this->rawKeysByPrefix($prefix);
-            if (!empty($keys)) {
-                $this->rawDel($keys);
-            }
-        }
+        $this->chainHead->deleteByPrefix($prefix);
     }
 
     // ---- Cached counters (WBS 4.3 counter caching) ----
     // Counters are stored as plain integer strings (not serialize()d values)
-    // so Redis INCR can maintain them atomically. A counter that is not
-    // cached reads as null = "unknown", so a cold cache can never produce
-    // a count that disagrees with the database.
+    // so Redis INCR can maintain them atomically.
 
     public function getCounter(string $key): ?int {
-        if ($this->isAvailable()) {
-            $raw = $this->rawGet($key);
-            if ($raw !== null) {
-                return is_numeric($raw) ? (int)$raw : null;
-            }
+        $raw = $this->chainHead->get($key);
+        if ($raw === null || !is_numeric($raw)) {
+            return null;
         }
-        if (isset($this->memoryCache[$key])) {
-            $item = $this->memoryCache[$key];
-            if (($item['expires_at'] === 0 || $item['expires_at'] >= time()) && is_int($item['value'])) {
-                return $item['value'];
-            }
-        }
-        return null;
+        return (int)$raw;
     }
 
     public function setCounter(string $key, int $value, int $ttl = 300): void {
-        if ($this->isAvailable() && $this->rawSet($key, (string)$value, $ttl)) {
-            return;
-        }
-        $this->memoryCache[$key] = [
-            'value' => $value,
-            'expires_at' => $ttl > 0 ? time() + $ttl : 0
-        ];
+        $this->chainHead->set($key, (string)$value, $ttl);
     }
 
     /**
@@ -325,18 +148,7 @@ class Cache {
      * Returns the new value, or null when the counter is not cached.
      */
     public function incrementCounter(string $key): ?int {
-        if ($this->isAvailable()) {
-            if ($this->rawGet($key) === null) {
-                return null;
-            }
-            return $this->rawIncr($key);
-        }
-        $current = $this->getCounter($key);
-        if ($current === null) {
-            return null;
-        }
-        $this->memoryCache[$key]['value'] = $current + 1;
-        return $current + 1;
+        return $this->chainHead->increment($key);
     }
 
     /**
@@ -354,18 +166,10 @@ class Cache {
     }
 
     /**
-     * Clear all cache entries.
+     * Clear all cache entries in this app's namespace.
      */
     public function flush(): bool {
-        $this->memoryCache = [];
-        // Audit C17: only this app's namespaced keys — never FLUSHDB, which
-        // wiped every key in a Redis database shared with other apps.
-        if ($this->isAvailable()) {
-            $keys = $this->rawKeysByPrefix('');
-            if (!empty($keys)) {
-                $this->rawDel($keys);
-            }
-        }
+        $this->chainHead->deleteByPrefix('');
         return true;
     }
 }
