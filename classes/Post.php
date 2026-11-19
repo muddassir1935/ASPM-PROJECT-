@@ -6,23 +6,13 @@
  * data validation, soft deletes, and feed generation.
  * Follows OOP design principles and uses PDO prepared statements for security.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Hashtag.php';
 require_once __DIR__ . '/Cache.php';
 
-class Post {
-    private PDO $db;
-
+class Post extends Model {
     const MAX_LENGTH = 280;
     const MIN_LENGTH = 1;
-
-    /**
-     * Post constructor.
-     * 
-     * @param PDO $dbConnection Injected PDO database connection
-     */
-    public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
-    }
 
     /**
      * Validate post content against character bounds and clean whitespace.

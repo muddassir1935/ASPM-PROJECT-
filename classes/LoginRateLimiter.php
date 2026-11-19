@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/Model.php';
+
 /**
  * Class LoginRateLimiter — login brute-force protection (Sprint 5).
  *
@@ -12,7 +14,7 @@
  * $now is injectable (defaults to time()) so tests can move the clock
  * past a lock without sleeping.
  */
-class LoginRateLimiter {
+class LoginRateLimiter extends Model {
     public const MAX_ATTEMPTS = 5;
     public const WINDOW_SECONDS = 900;   // 15 minutes
     public const LOCK_SECONDS = 900;     // 15 minutes
@@ -28,10 +30,8 @@ class LoginRateLimiter {
     public const IP_MAX_ATTEMPTS = 20;
     private const IP_WIDE = '*';
 
-    private PDO $db;
-
     public function __construct(PDO $db) {
-        $this->db = $db;
+        parent::__construct($db);
         $this->ensureTable();
     }
 

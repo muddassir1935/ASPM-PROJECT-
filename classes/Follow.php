@@ -7,16 +7,11 @@
  * Uses PDO prepared statements throughout; the (follower_id, followed_id)
  * pair is unique so a follow is idempotent.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Cache.php';
 require_once __DIR__ . '/Post.php';
 
-class Follow {
-    private PDO $db;
-
-    public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
-    }
-
+class Follow extends Model {
     /**
      * Follow a user. Idempotent: following someone twice still counts once.
      * Returns false for invalid ids or self-follows.

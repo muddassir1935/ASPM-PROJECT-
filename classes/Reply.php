@@ -8,18 +8,13 @@
  * Threading is one level deep: replies render chronologically under
  * their parent post on the post detail page.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Cache.php';
 require_once __DIR__ . '/Post.php';
 
-class Reply {
-    private PDO $db;
-
+class Reply extends Model {
     public const MAX_LENGTH = 280;
     public const MIN_LENGTH = 1;
-
-    public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
-    }
 
     public function validateContent(string $content): array {
         $clean = trim($content);

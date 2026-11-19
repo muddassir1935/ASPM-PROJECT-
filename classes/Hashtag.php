@@ -6,15 +6,10 @@
  * Extracts, normalizes, indexes hashtags from post content,
  * renders clickable links, and provides trending hashtag aggregation.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Post.php';
 
-class Hashtag {
-    private PDO $db;
-
-    public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
-    }
-
+class Hashtag extends Model {
     /**
      * Extract hashtag names from text (without '#').
      * Returns deduplicated, lowercased tags (1 to 50 chars).

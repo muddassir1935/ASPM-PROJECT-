@@ -1,6 +1,7 @@
 <?php
-class User {
-    private $db;
+require_once __DIR__ . '/Model.php';
+
+class User extends Model {
 
     /**
      * Designed profile cover styles (Sprint 3 cover picker).
@@ -12,10 +13,6 @@ class User {
 
     /** Argon2id hash of a throwaway string, verified for unknown emails (audit C12). */
     private const TIMING_DUMMY_HASH = '$argon2id$v=19$m=65536,t=4,p=1$NmVzWUF0OHVrRHFTdGJjYg$iD2KljUx2XsAIK/QpF2+ClyEBU+N3c2ICkQRKXR/MoE';
-
-    public function __construct($dbConnection) {
-        $this->db = $dbConnection;
-    }
 
     /**
      * Whitelist a cover style value; anything unknown falls back
