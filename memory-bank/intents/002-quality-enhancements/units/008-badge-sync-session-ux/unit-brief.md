@@ -1,10 +1,10 @@
 ---
 unit: 008-badge-sync-session-ux
 intent: 002-quality-enhancements
-phase: inception
-status: ready
+phase: construction
+status: completed
 created: 2026-11-18T09:10:00Z
-updated: 2026-11-18T09:10:00Z
+updated: 2026-11-19T12:41:00Z
 ---
 
 # Unit Brief: Header Badge Sync & AJAX Session Expiry UX

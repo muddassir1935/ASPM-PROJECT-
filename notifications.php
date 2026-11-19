@@ -154,7 +154,7 @@ $unreadCount = $notifModel->countUnread($userId);
             body: 'action=mark_read&id=' + encodeURIComponent(id)
                 + '&csrf_token=' + encodeURIComponent(csrfToken)
         })
-        .then(function (r) { return r.json(); })
+        .then(ccJson)
         .then(function (data) {
             if (data.success) {
                 var card = document.querySelector('.notif-card[data-notif-id="' + id + '"]');
@@ -168,7 +168,11 @@ $unreadCount = $notifModel->countUnread($userId);
                 updateUnreadBadges(data.unread_count);
             }
         })
-        .catch(function () { /* page may be unloading; the request still completes */ });
+        .catch(function (err) {
+            // A notification link navigates away, so only surface failures
+            // for the in-place mark-read button.
+            if (btnElement) { ccFail(err); }
+        });
     }
 
     var markAllBtn = document.getElementById('btn-mark-all-read');
@@ -181,7 +185,7 @@ $unreadCount = $notifModel->countUnread($userId);
                 body: 'action=mark_all_read'
                     + '&csrf_token=' + encodeURIComponent(csrfToken)
             })
-            .then(function (r) { return r.json(); })
+            .then(ccJson)
             .then(function (data) {
                 if (data.success) {
                     document.querySelectorAll('.notif-card.is-unread').forEach(function (card) {
@@ -193,8 +197,11 @@ $unreadCount = $notifModel->countUnread($userId);
                     });
                     markAllBtn.remove();
                     updateUnreadBadges(0);
+                } else {
+                    ccNotify(data.message || 'Could not mark notifications as read. Please try again.');
                 }
             })
+            .catch(ccFail)
             .finally(function () {
                 markAllBtn.disabled = false;
             });
@@ -203,6 +210,10 @@ $unreadCount = $notifModel->countUnread($userId);
 
     function updateUnreadBadges(count) {
         document.querySelectorAll('[data-notif-badge]').forEach(function (badge) {
+            var navLink = badge.closest('.nav-col-link, .nav-bell');
+            if (navLink) {
+                navLink.setAttribute('aria-label', 'Notifications' + (count > 0 ? ', ' + count + ' unread' : ''));
+            }
             if (count > 0) {
                 badge.textContent = count > 99 ? '99+' : count;
                 badge.style.display = 'inline-flex';
