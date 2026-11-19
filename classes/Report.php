@@ -8,9 +8,10 @@
  * optional context, and allows system admins to review the queue, dismissing
  * reports or actioning them via post soft-deletion.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Post.php';
 
-class Report {
+class Report extends Model {
     public const REASON_SPAM = 'spam';
     public const REASON_HARASSMENT = 'harassment';
     public const REASON_MISINFORMATION = 'misinformation';
@@ -41,12 +42,6 @@ class Report {
     public const STATUS_ACTIONED = 'actioned';
 
     public const MAX_DETAIL_LENGTH = 500;
-
-    private PDO $db;
-
-    public function __construct(PDO $db) {
-        $this->db = $db;
-    }
 
     /**
      * Check if a reason string is in the fixed whitelist.

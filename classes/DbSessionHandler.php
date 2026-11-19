@@ -1,4 +1,6 @@
 <?php
+require_once __DIR__ . '/Model.php';
+
 /**
  * Class DbSessionHandler
  *
@@ -17,12 +19,11 @@
  * function so session data is written before the PDO object is
  * destroyed at request shutdown.
  */
-class DbSessionHandler implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
-    private PDO $db;
+class DbSessionHandler extends Model implements SessionHandlerInterface, SessionUpdateTimestampHandlerInterface {
     private string $driver;
 
     public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
+        parent::__construct($dbConnection);
         $this->driver = (string)$dbConnection->getAttribute(PDO::ATTR_DRIVER_NAME);
     }
 

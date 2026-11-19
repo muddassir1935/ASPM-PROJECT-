@@ -6,16 +6,11 @@
  * Supports idempotent add/remove, toggle, counts, and fetching liked posts.
  * Soft-deleted posts are never returned in like feeds.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Cache.php';
 require_once __DIR__ . '/Post.php';
 
-class Like {
-    private PDO $db;
-
-    public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
-    }
-
+class Like extends Model {
     /**
      * Like a post (idempotent). Post must exist and not be soft-deleted.
      */

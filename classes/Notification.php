@@ -7,10 +7,10 @@
  * Supports real-time unread counts, pagination, and bulk/individual read marking.
  * Enforces suppression of self-action notifications.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Post.php';
 
-class Notification {
-    private PDO $db;
+class Notification extends Model {
 
     public const TYPE_FOLLOW = 'follow';
     public const TYPE_REPLY  = 'reply';
@@ -33,10 +33,6 @@ class Notification {
      */
     private const VISIBLE_SQL = "NOT (n.type IN ('like', 'reply') AND EXISTS (
             SELECT 1 FROM posts dp WHERE dp.id = n.reference_id AND dp.deleted_at IS NOT NULL))";
-
-    public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
-    }
 
     /**
      * Create a notification.

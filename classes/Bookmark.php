@@ -6,15 +6,10 @@
  * A bookmark is one row per (user, post) pair; saving twice still
  * counts once. Soft-deleted posts never appear in a bookmark list.
  */
+require_once __DIR__ . '/Model.php';
 require_once __DIR__ . '/Cache.php';
 
-class Bookmark {
-    private PDO $db;
-
-    public function __construct(PDO $dbConnection) {
-        $this->db = $dbConnection;
-    }
-
+class Bookmark extends Model {
     /**
      * Save a post. Idempotent; the post must exist and be visible.
      */
