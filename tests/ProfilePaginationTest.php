@@ -26,7 +26,7 @@ assertProfilePagination(
 );
 assertProfilePagination(
     'Profile Likes pager preserves its active tab',
-    str_contains($source, "'profile.php?id=' . (int)$profile['id'] . '&tab=likes'")
+    str_contains($source, "'profile.php?id=' . (int)\$profile['id'] . '&tab=likes'")
 );
 
 echo "\nProfilePaginationTest: {$passed} passed, {$failed} failed\n";
