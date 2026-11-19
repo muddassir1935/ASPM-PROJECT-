@@ -1,16 +1,16 @@
 ---
 unit: 001-oop-foundation
 intent: 003-evaluation-fixes
-phase: inception
-status: ready
+phase: construction
+status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-18T08:08:17Z
+updated: 2026-11-19T12:00:00Z
 ---
 
 # Unit Brief: Base Model Class & Custom Interfaces
 
 ## Assigned Owner
-**Unassigned** — to be allocated at the planning session · Branch: `feature/fix-003-oop-foundation`
+**Faiz Hussain** (23K-2061) · Branch: `feature/fix-003-oop-foundation`
 
 ## Purpose
 Fix Sir's biggest OOP deduction (−2 marks): 18 real classes, none extends another, no custom interfaces. Introduce a shared `Model` base class and the design's own interfaces, starting with the cache drivers.

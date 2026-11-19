@@ -2,9 +2,9 @@
 story: 001-model-base-interfaces
 unit: 001-oop-foundation
 intent: 003-evaluation-fixes
-status: ready
+status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-18T08:00:00Z
+updated: 2026-11-19T12:00:00Z
 ---
 
 # Story: Model Classes Share a Base Class and Custom Interfaces
@@ -14,10 +14,10 @@ I want the model classes to share a common base class and the design to define i
 So that the codebase demonstrates inheritance and polymorphism instead of 18 unrelated classes.
 
 ## Acceptance Criteria
-- [ ] A `Model` base class holds the PDO connection and shared helpers; the ~10 model classes extend it.
-- [ ] At least one custom interface exists and is used — `CacheDriverInterface` (get/set/delete) implemented by the Redis and in-memory drivers.
-- [ ] No behaviour change: full suite green (412+ tests) before and after.
-- [ ] Report §3 updated to describe the hierarchy honestly (no overstated pattern names).
+- [x] A `Model` base class holds the PDO connection and shared helpers; the ~10 model classes extend it (all 11 PDO domain classes: `User`, `Post`, `Bookmark`, `Follow`, `Hashtag`, `Like`, `Reply`, `Notification`, `Report`, `LoginRateLimiter`, `DbSessionHandler`).
+- [x] At least one custom interface exists and is used — `CacheDriverInterface` (get/set/delete/deleteByPrefix/increment/setNext/getNext) implemented by `PhpRedisCacheDriver`, `TinyRedisCacheDriver`, and `MemoryCacheDriver`.
+- [x] No behaviour change: full suite green (412+ tests) before and after.
+- [ ] Report §3 updated to describe the hierarchy honestly (no overstated pattern names) — *report files live outside this repo; hierarchy details provided to Muddassir for Report §3 update*.
 
 ## Estimate
 8 story points · Priority: Must

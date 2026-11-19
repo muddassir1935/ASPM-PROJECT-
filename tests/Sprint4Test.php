@@ -290,6 +290,81 @@ $allTime = array_column($hashtagModel->getTrending(500, 3650), 'tag');
 assertTest("It still counts in a wide window", in_array($oldTag, $allTime, true));
 assertTest("Recent tags are trending", in_array($tagA, $recentTags, true));
 
+// --- Intent 003 Units 001 & 002: Model Inheritance & Cache Chain of Responsibility ---
+echo PHP_EOL . "--- OOP FOUNDATION & CACHE CHAIN (Intent 003 Units 001 & 002) ---" . PHP_EOL;
+require_once __DIR__ . '/../classes/Model.php';
+require_once __DIR__ . '/../classes/Notification.php';
+require_once __DIR__ . '/../classes/Report.php';
+require_once __DIR__ . '/../classes/LoginRateLimiter.php';
+require_once __DIR__ . '/../classes/DbSessionHandler.php';
+
+$modelClasses = [
+    'User', 'Post', 'Bookmark', 'Follow', 'Hashtag', 'Like',
+    'Reply', 'Notification', 'Report', 'LoginRateLimiter', 'DbSessionHandler'
+];
+$allExtendModel = true;
+foreach ($modelClasses as $cls) {
+    if (!is_subclass_of($cls, Model::class)) {
+        $allExtendModel = false;
+        break;
+    }
+}
+assertTest("All 11 domain model classes extend abstract Model base class",
+    $allExtendModel && (new ReflectionClass(Model::class))->isAbstract());
+
+// Probe Model base class protected helpers (run, fetchRow, fetchRows, fetchValue, findById)
+$probeModel = new class($db) extends Model {
+    public function probeFindUser(int $id): ?array {
+        return $this->findById('users', $id);
+    }
+    public function probeCountUsers(): int {
+        return (int)$this->fetchValue("SELECT COUNT(*) FROM users");
+    }
+    public function probeListUsers(int $limit): array {
+        return $this->fetchRows("SELECT id, email FROM users LIMIT :lim", [':lim' => $limit]);
+    }
+};
+$probedUser = $probeModel->probeFindUser($liamId);
+assertTest("Model::findById and fetchRow retrieve existing row by primary key",
+    $probedUser !== null && (int)$probedUser['id'] === $liamId && $probeModel->probeFindUser(0) === null);
+assertTest("Model::fetchValue and fetchRows execute parameterized queries",
+    $probeModel->probeCountUsers() >= 3 && count($probeModel->probeListUsers(2)) === 2);
+
+assertTest("Cache drivers implement CacheDriverInterface",
+    is_subclass_of(PhpRedisCacheDriver::class, CacheDriverInterface::class)
+    && is_subclass_of(TinyRedisCacheDriver::class, CacheDriverInterface::class)
+    && is_subclass_of(MemoryCacheDriver::class, CacheDriverInterface::class));
+
+// Verify default chain topology: PhpRedisCacheDriver -> TinyRedisCacheDriver -> MemoryCacheDriver
+$headDriver = $cache->getDriver();
+$secondDriver = $headDriver ? $headDriver->getNext() : null;
+$thirdDriver = $secondDriver ? $secondDriver->getNext() : null;
+assertTest("Default Cache chain links PhpRedis -> TinyRedis -> Memory",
+    $headDriver instanceof PhpRedisCacheDriver
+    && $secondDriver instanceof TinyRedisCacheDriver
+    && $thirdDriver instanceof MemoryCacheDriver
+    && $thirdDriver->getNext() === null);
+
+// Build an explicit unreachable-Redis chain and prove fallback to MemoryCacheDriver
+$deadTiny = new TinyRedisCacheDriver('127.0.0.1', 6398, 0.05, 'cc_test:');
+$memTail = new MemoryCacheDriver();
+$deadTiny->setNext($memTail);
+$fallbackCache = new Cache($deadTiny);
+assertTest("Unreachable TinyRedisCacheDriver delegates to MemoryCacheDriver in chain",
+    $deadTiny->isAvailable() === false
+    && $fallbackCache->getBackendName() === 'memory'
+    && $fallbackCache->getDriverName() === 'MemoryFallback');
+assertTest("Chain fallback get/set/increment/delete work end-to-end when Redis is down",
+    $fallbackCache->set('chain_k', ['ok' => true], 60) === true
+    && $fallbackCache->get('chain_k') === ['ok' => true]
+    && $fallbackCache->getCounter('chain_cnt') === null
+    && (function () use ($fallbackCache) {
+        $fallbackCache->setCounter('chain_cnt', 10, 60);
+        return $fallbackCache->incrementCounter('chain_cnt') === 11;
+    })()
+    && $fallbackCache->delete('chain_k') === true
+    && $fallbackCache->get('chain_k') === null);
+
 echo PHP_EOL . "=== SPRINT 4 TEST RESULTS: {$passed} / {$total} PASSED ===" . PHP_EOL;
 if ($passed === $total) {
     echo ">>> ALL TESTS PASSED SUCCESSFULLY! <<<" . PHP_EOL;
