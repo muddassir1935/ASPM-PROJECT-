@@ -9,6 +9,7 @@
  * reports or actioning them via post soft-deletion.
  */
 require_once __DIR__ . '/Post.php';
+require_once __DIR__ . '/Notification.php';
 
 class Report {
     public const REASON_SPAM = 'spam';
@@ -410,14 +411,13 @@ class Report {
                 ':id' => $reportId,
             ]);
 
-            // Notify reporting user that their report was reviewed
             $reporterId = (int)$report['reporter_id'];
             if ($reporterId > 0) {
-                $notifModel->create(
+                (new Notification($this->db))->create(
                     $reporterId,
                     'moderation',
-                    (int)$report['post_id'],
-                    'Your report has been reviewed.',
+                    null,
+                    'Your report has been reviewed by administration.',
                     $reviewerId
                 );
             }
@@ -433,21 +433,23 @@ class Report {
             $postId = (int)$report['post_id'];
             $postAuthorId = (int)($report['post_author_id'] ?? 0);
 
-            // Fetch all reporters who filed pending reports against this post
-            $repStmt = $this->db->prepare(
-                "SELECT DISTINCT reporter_id FROM reports WHERE post_id = :post_id AND status = :pending_status"
+            $reportersStmt = $this->db->prepare(
+                "SELECT reporter_id FROM reports WHERE post_id = :post_id AND status = :status"
             );
-            $repStmt->execute([
-                ':post_id' => $postId,
-                ':pending_status' => self::STATUS_PENDING,
-            ]);
-            $reporters = $repStmt->fetchAll(PDO::FETCH_COLUMN);
-            if (empty($reporters) && (int)$report['reporter_id'] > 0) {
-                $reporters = [(int)$report['reporter_id']];
+            $reportersStmt->execute([':post_id' => $postId, ':status' => self::STATUS_PENDING]);
+            $reporterIds = array_unique(array_map('intval', $reportersStmt->fetchAll(PDO::FETCH_COLUMN)));
+            if (empty($reporterIds) && (int)$report['reporter_id'] > 0) {
+                $reporterIds = [(int)$report['reporter_id']];
             }
 
             // Soft-delete the post through the existing post model delete path
             $deleted = $postModel->delete($postId, $reviewerId, true);
+            if (!$deleted) {
+                return [
+                    'success' => false,
+                    'message' => 'The reported post could not be removed.',
+                ];
+            }
 
             // Mark this report (and any other pending reports for the same post) as actioned
             $update = $this->db->prepare(
@@ -462,31 +464,28 @@ class Report {
                 ':pending_status' => self::STATUS_PENDING,
             ]);
 
-            // 1. Notify post author that their post was removed for policy violation
+            $notifModel = new Notification($this->db);
             if ($postAuthorId > 0) {
                 $notifModel->create(
                     $postAuthorId,
                     'moderation',
-                    $postId,
+                    null,
                     'Your post was removed by administration for violating campus policies.',
                     $reviewerId
                 );
             }
 
-            // 2. Notify all reporting users that their report was reviewed
-            foreach ($reporters as $rId) {
-                $rId = (int)$rId;
+            foreach ($reporterIds as $rId) {
                 if ($rId > 0) {
                     $notifModel->create(
                         $rId,
                         'moderation',
-                        $postId,
-                        'Your report has been reviewed.',
+                        null,
+                        'Your report has been reviewed by administration.',
                         $reviewerId
                     );
                 }
             }
-
             return [
                 'success' => true,
                 'message' => 'Post soft-deleted and report actioned successfully.',
