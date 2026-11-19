@@ -1,0 +1,21 @@
+-- Migration: constrain reports.reason + reports.status (intent 003, unit 008 / EF-5)
+-- CampusConnect - Agile Software Project Management
+-- Fixes Sir's DB-1 deduction (-0.5): reports.reason (VARCHAR) and
+-- reports.status (VARCHAR) accepted any text.
+--
+-- Run in phpMyAdmin (or: mysql -u root campusconnect < db/migrate_sprint5_reports_constraints_mysql.sql).
+-- Fresh installs do not need this file: db/schema.sql already has the ENUMs.
+--
+-- Status values are pending / dismissed / actioned -- the values the code
+-- actually writes (see classes/Report.php: STATUS_PENDING, STATUS_DISMISSED,
+-- STATUS_ACTIONED). 'reviewed' is NOT a stored status; it only appears in
+-- method names (listReviewed) covering dismissed + actioned rows.
+-- Reason values are the Report::REASONS whitelist.
+--
+-- NOTE: the MODIFY fails under MySQL strict mode if existing rows hold a
+-- value outside the new ENUM. That cannot happen through the app (Report::
+-- validate() enforces the reason whitelist, and status is only ever set to
+-- the three constants above), but check first if the table was ever written
+-- to by hand: SELECT DISTINCT reason, status FROM reports;
+ALTER TABLE reports MODIFY reason ENUM('spam','harassment','misinformation','inappropriate','violence','other') NOT NULL;
+ALTER TABLE reports MODIFY status ENUM('pending','dismissed','actioned') NOT NULL DEFAULT 'pending';
