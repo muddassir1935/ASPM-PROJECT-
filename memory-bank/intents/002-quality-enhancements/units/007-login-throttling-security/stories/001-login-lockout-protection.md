@@ -2,9 +2,9 @@
 story: 001-login-lockout-protection
 unit: 007-login-throttling-security
 intent: 002-quality-enhancements
-status: ready
+status: completed
 created: 2026-11-18T09:10:00Z
-updated: 2026-11-18T09:10:00Z
+updated: 2026-11-19T12:35:00Z
 ---
 
 # Story: Brute-Force Login Lockout & Throttle Protection

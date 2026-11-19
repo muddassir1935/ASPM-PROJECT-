@@ -166,9 +166,9 @@ runTest("Lock expires after LOCK_SECONDS",
     $limiter->isLocked($testEmail, $testIp, $now + LoginRateLimiter::LOCK_SECONDS + 10), false);
 runTest("Attempts reset once the window passes",
     $limiter->attemptsInWindow($testEmail, $testIp, $now + LoginRateLimiter::WINDOW_SECONDS + 10), 0);
-$limiter->recordFailure($testEmail, $testIp, $now + LoginRateLimiter::LOCK_SECONDS + 100);
+$limiter->recordFailure($testEmail, $testIp, $now + LoginRateLimiter::WINDOW_SECONDS + 100);
 runTest("Failure after lock + window expiry starts a fresh count (not locked)",
-    $limiter->isLocked($testEmail, $testIp, $now + LoginRateLimiter::LOCK_SECONDS + 101), false);
+    $limiter->isLocked($testEmail, $testIp, $now + LoginRateLimiter::WINDOW_SECONDS + 101), false);
 
 // Audit C21: IP-wide ceiling against password spraying
 $sprayIp = '198.51.100.7';
