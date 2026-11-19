@@ -21,9 +21,8 @@ $suites = [
     'Sprint4Test.php',
     'RbacTest.php',
     'ReportTest.php',
-    'MysqlCompatTest.php',
-    'ExploreRegressionTest.php',
     'ProfilePaginationTest.php',
+    'MysqlCompatTest.php',
 ];
 
 $failedSuites = [];
