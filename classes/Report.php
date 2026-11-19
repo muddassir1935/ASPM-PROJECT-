@@ -371,7 +371,7 @@ class Report {
         }
 
         $stmt = $this->db->prepare(
-            "SELECT r.*, p.id AS p_id, p.deleted_at
+            "SELECT r.*, p.id AS p_id, p.user_id AS post_author_id, p.deleted_at
              FROM reports r
              JOIN posts p ON r.post_id = p.id
              WHERE r.id = :id
@@ -395,6 +395,8 @@ class Report {
         }
 
         $action = strtolower(trim($action));
+        require_once __DIR__ . '/Notification.php';
+        $notifModel = new Notification($this->db);
 
         if ($action === 'dismiss') {
             $update = $this->db->prepare(
@@ -408,6 +410,18 @@ class Report {
                 ':id' => $reportId,
             ]);
 
+            // Notify reporting user that their report was reviewed
+            $reporterId = (int)$report['reporter_id'];
+            if ($reporterId > 0) {
+                $notifModel->create(
+                    $reporterId,
+                    'moderation',
+                    (int)$report['post_id'],
+                    'Your report has been reviewed.',
+                    $reviewerId
+                );
+            }
+
             return [
                 'success' => true,
                 'message' => 'Report has been dismissed.',
@@ -417,6 +431,20 @@ class Report {
         if ($action === 'action' || $action === 'delete') {
             $postModel = new Post($this->db);
             $postId = (int)$report['post_id'];
+            $postAuthorId = (int)($report['post_author_id'] ?? 0);
+
+            // Fetch all reporters who filed pending reports against this post
+            $repStmt = $this->db->prepare(
+                "SELECT DISTINCT reporter_id FROM reports WHERE post_id = :post_id AND status = :pending_status"
+            );
+            $repStmt->execute([
+                ':post_id' => $postId,
+                ':pending_status' => self::STATUS_PENDING,
+            ]);
+            $reporters = $repStmt->fetchAll(PDO::FETCH_COLUMN);
+            if (empty($reporters) && (int)$report['reporter_id'] > 0) {
+                $reporters = [(int)$report['reporter_id']];
+            }
 
             // Soft-delete the post through the existing post model delete path
             $deleted = $postModel->delete($postId, $reviewerId, true);
@@ -433,6 +461,31 @@ class Report {
                 ':post_id' => $postId,
                 ':pending_status' => self::STATUS_PENDING,
             ]);
+
+            // 1. Notify post author that their post was removed for policy violation
+            if ($postAuthorId > 0) {
+                $notifModel->create(
+                    $postAuthorId,
+                    'moderation',
+                    $postId,
+                    'Your post was removed by administration for violating campus policies.',
+                    $reviewerId
+                );
+            }
+
+            // 2. Notify all reporting users that their report was reviewed
+            foreach ($reporters as $rId) {
+                $rId = (int)$rId;
+                if ($rId > 0) {
+                    $notifModel->create(
+                        $rId,
+                        'moderation',
+                        $postId,
+                        'Your report has been reviewed.',
+                        $reviewerId
+                    );
+                }
+            }
 
             return [
                 'success' => true,

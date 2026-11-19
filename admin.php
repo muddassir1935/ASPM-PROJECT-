@@ -61,8 +61,11 @@ $recentPosts = $postModel->getFeed(20, 0, $currentUserId, true);
 
 // Reports queue: user flags waiting for administrator review.
 $reportModel = new Report($db);
-$pendingReports = $reportModel->listPending(50);
+$reportsPerPage = 20;
 $totalPendingReports = $reportModel->countPending();
+$reportsPage = clampPage((int)($_GET['rpage'] ?? 1), $totalPendingReports, $reportsPerPage);
+$reportsOffset = ($reportsPage - 1) * $reportsPerPage;
+$pendingReports = $reportModel->listPending($reportsPerPage, $reportsOffset);
 $reviewedReports = $reportModel->listReviewed(20);
 ?>
 
@@ -282,6 +285,11 @@ $reviewedReports = $reportModel->listReviewed(20);
                 </div>
             <?php endforeach; ?>
         <?php endif; ?>
+
+        <?php
+            $reportsBaseUrl = 'admin.php' . ($search !== '' ? '?q=' . urlencode($search) : '');
+            renderPager($reportsBaseUrl, $reportsPage, $reportsPage * $reportsPerPage < $totalPendingReports, 'rpage');
+        ?>
 
         <?php if (!empty($reviewedReports)): ?>
             <details style="margin-top: 16px; padding: 12px 16px; border-top: 1px solid var(--line);">
