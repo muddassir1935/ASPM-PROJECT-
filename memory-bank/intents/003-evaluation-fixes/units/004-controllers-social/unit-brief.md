@@ -2,15 +2,15 @@
 unit: 004-controllers-social
 intent: 003-evaluation-fixes
 phase: inception
-status: ready
+status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-18T08:08:17Z
+updated: 2026-11-19T15:30:00Z
 ---
 
 # Unit Brief: Controllers for Post + Social Actions
 
 ## Assigned Owner
-**Unassigned** — to be allocated at the planning session · Branch: `feature/fix-003-controllers-social`
+Yuneeb · Branch: `feature/fix-003-controllers-social`
 
 ## Purpose
 Fix the procedural-pages deduction (−1 mark, part 2 of 3): move post, like, follow, reply and bookmark request handling into controllers.
