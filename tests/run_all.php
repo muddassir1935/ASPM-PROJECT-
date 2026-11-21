@@ -17,6 +17,7 @@ $suites = [
     'PostTest.php',
     'SocialTest.php',
     'SocialControllerTest.php',
+    'AdminControllerTest.php',
     'NotificationTest.php',
     'SessionTest.php',
     'Sprint4Test.php',

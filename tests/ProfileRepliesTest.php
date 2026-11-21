@@ -80,7 +80,7 @@ assertProfileReplies('Invalid user id gives an empty list and zero count',
 assertProfileReplies('User with no replies gets an empty list', $replyModel->getRepliesByUser($omarId + 1000) === []);
 
 // profile.php wiring (mirrors the Likes tab checks in ProfilePaginationTest).
-$source = file_get_contents(__DIR__ . '/../profile.php');
+$source = str_replace("\r\n", "\n", file_get_contents(__DIR__ . '/../profile.php'));
 assertProfileReplies('Replies tab is selectable on any profile (not owner-only)',
     str_contains($source, "} elseif (\$requestedTab === 'replies') {\n    \$activeTab = 'replies';"));
 assertProfileReplies('Replies tab uses 20-item pages for count, query, and pager',
