@@ -152,7 +152,8 @@ class Database {
                     is_read INTEGER DEFAULT 0,
                     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                    FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE
+                    FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (reference_id) REFERENCES posts(id) ON DELETE CASCADE
                 );
 
                 -- Sprint 5 RBAC: login brute-force protection. One row per
