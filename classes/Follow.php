@@ -47,7 +47,7 @@ class Follow extends Model {
                     $followerName = $uStmt->fetchColumn() ?: 'Someone';
 
                     $notif = new Notification($this->db);
-                    $notif->create($followedId, Notification::TYPE_FOLLOW, $followerId, "{$followerName} started following you.", $followerId);
+                    $notif->create($followedId, Notification::TYPE_FOLLOW, null, "{$followerName} started following you.", $followerId);
                 } catch (Throwable $t) {
                     error_log("Follow notification error: " . $t->getMessage());
                 }

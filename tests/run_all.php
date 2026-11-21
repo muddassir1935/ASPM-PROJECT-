@@ -25,6 +25,7 @@ $suites = [
     'ReportTest.php',
     'ProfilePaginationTest.php',
     'ProfileRepliesTest.php',
+    'SchemaGeneratorTest.php',
     'MysqlCompatTest.php',
     'ExploreRegressionTest.php',
 ];

@@ -59,9 +59,17 @@ class Notification extends Model {
         $cleanType = mb_substr(trim($type), 0, 32, 'UTF-8');
         $cleanMessage = mb_substr(trim($message), 0, 255, 'UTF-8');
 
-        if ($actorId !== null && $referenceId !== null
-            && in_array($cleanType, self::DEDUPE_TYPES, true)
-            && $this->exists($userId, (int)$actorId, $cleanType, (int)$referenceId)) {
+        // Polymorphic reference scoping (Unit 009 / EF-6):
+        // notifications.reference_id has a foreign key to posts(id) ON DELETE CASCADE.
+        // Post-type notifications ('like', 'reply') store the post ID in reference_id.
+        // Non-post notifications (e.g. 'follow') reference users via actor_id,
+        // so reference_id is kept NULL for non-post types to avoid FK violations against posts.
+        $scopedReferenceId = in_array($cleanType, [self::TYPE_LIKE, self::TYPE_REPLY], true)
+            ? ($referenceId !== null && (int)$referenceId > 0 ? (int)$referenceId : null)
+            : null;
+
+        if ($actorId !== null && in_array($cleanType, self::DEDUPE_TYPES, true)
+            && $this->exists($userId, (int)$actorId, $cleanType, $scopedReferenceId)) {
             return false; // already notified about this exact action
         }
 
@@ -77,8 +85,8 @@ class Notification extends Model {
                 $stmt->bindValue(':actor_id', null, PDO::PARAM_NULL);
             }
             $stmt->bindParam(':type', $cleanType, PDO::PARAM_STR);
-            if ($referenceId !== null) {
-                $stmt->bindValue(':reference_id', (int)$referenceId, PDO::PARAM_INT);
+            if ($scopedReferenceId !== null) {
+                $stmt->bindValue(':reference_id', $scopedReferenceId, PDO::PARAM_INT);
             } else {
                 $stmt->bindValue(':reference_id', null, PDO::PARAM_NULL);
             }
@@ -95,16 +103,24 @@ class Notification extends Model {
     }
 
     /** Is there already a notification for this exact (recipient, actor, type, reference)? */
-    private function exists(int $userId, int $actorId, string $type, int $referenceId): bool {
-        $stmt = $this->db->prepare(
-            "SELECT 1 FROM notifications
-             WHERE user_id = :user_id AND actor_id = :actor_id AND type = :type AND reference_id = :reference_id
-             LIMIT 1"
-        );
+    private function exists(int $userId, int $actorId, string $type, ?int $referenceId): bool {
+        if ($referenceId !== null) {
+            $stmt = $this->db->prepare(
+                "SELECT 1 FROM notifications
+                 WHERE user_id = :user_id AND actor_id = :actor_id AND type = :type AND reference_id = :reference_id
+                 LIMIT 1"
+            );
+            $stmt->bindValue(':reference_id', $referenceId, PDO::PARAM_INT);
+        } else {
+            $stmt = $this->db->prepare(
+                "SELECT 1 FROM notifications
+                 WHERE user_id = :user_id AND actor_id = :actor_id AND type = :type
+                 LIMIT 1"
+            );
+        }
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $stmt->bindValue(':actor_id', $actorId, PDO::PARAM_INT);
         $stmt->bindValue(':type', $type, PDO::PARAM_STR);
-        $stmt->bindValue(':reference_id', $referenceId, PDO::PARAM_INT);
         $stmt->execute();
         return (bool)$stmt->fetchColumn();
     }
