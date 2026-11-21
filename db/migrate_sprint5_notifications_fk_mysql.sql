@@ -8,6 +8,13 @@
 --
 -- NOTE: Scoped to post-type notifications ('like', 'reply'). For follow notifications,
 -- reference_id is NULL and the follower user reference is captured via actor_id -> users(id).
+-- Existing follow notifications store the follower's USER id in reference_id,
+-- which would violate the new FK. Clear non-post references first:
+UPDATE notifications
+SET reference_id = NULL
+WHERE type NOT IN ('like', 'reply')
+  AND reference_id IS NOT NULL;
+
 -- Clean up any orphaned post references before applying:
 DELETE FROM notifications
 WHERE type IN ('like', 'reply')
