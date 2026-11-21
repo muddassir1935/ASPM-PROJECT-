@@ -104,10 +104,16 @@ $r = $adminCtrl->handleAdminAction('POST', $okToken + ['action' => 'reset_passwo
 assertAdminCtrl("Admin reset on non-existent user returns User not found",
     $r['result'] === ['success' => false, 'message' => 'User not found.']);
 
-// 7. Successful password reset
+// 7. Successful password reset (also revokes the target's sessions)
+$db->prepare("INSERT INTO sessions (id, user_id, data, last_activity) VALUES (:sid, :uid, 'x', :now)")
+    ->execute(['sid' => "admintest_{$uniq}", 'uid' => $tomId, 'now' => time()]);
 $r = $adminCtrl->handleAdminAction('POST', $okToken + ['action' => 'reset_password', 'user_id' => $tomId]);
 assertAdminCtrl("Admin successfully resets target user password and gets temporary password",
     $r['result']['success'] === true && str_contains($r['result']['message'], 'Temporary password for Target Tom'));
+$tomSessionsStmt = $db->prepare("SELECT COUNT(*) FROM sessions WHERE user_id = :uid");
+$tomSessionsStmt->execute(['uid' => $tomId]);
+assertAdminCtrl("Admin reset revokes the target user's sessions",
+    (int)$tomSessionsStmt->fetchColumn() === 0);
 
 echo PHP_EOL . "--- ROLE ASSIGNMENT VIA ADMIN CONTROLLER ---" . PHP_EOL;
 
