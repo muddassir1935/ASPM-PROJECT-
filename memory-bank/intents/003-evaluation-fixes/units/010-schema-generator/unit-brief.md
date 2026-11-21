@@ -2,15 +2,15 @@
 unit: 010-schema-generator
 intent: 003-evaluation-fixes
 phase: inception
-status: ready
+status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-18T08:08:17Z
+updated: 2026-11-22T00:35:00Z
 ---
 
 # Unit Brief: Single Source of Truth for the SQLite Schema
 
 ## Assigned Owner
-**Unassigned** — to be allocated at the planning session · Branch: `feature/fix-003-schema-generator`
+**Qaim Mehdi** · Branch: `feature/fix-003-db-fk-reference`
 
 ## Purpose
 Fix the duplicated-schema deduction (−0.5 marks): the SQLite schema is hand-copied in `config/Database.php` (12 CREATE TABLEs, ~lines 61–180) and can drift from `db/schema.sql`. Generate it from the MySQL schema instead.
