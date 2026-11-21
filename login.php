@@ -1,75 +1,26 @@
 <?php 
+/**
+ * Login Page (Thin Entry Point — intent 003, unit 003-controllers-auth).
+ *
+ * Delegates request handling to AuthController::handleLogin() and renders
+ * the login view.
+ */
 require_once 'config/Database.php';
-require_once 'classes/User.php';
-require_once 'classes/Auth.php';
-require_once 'classes/Csrf.php';
-require_once 'classes/LoginRateLimiter.php';
+require_once 'classes/AuthController.php';
 
-// Sprint 5 final fix (N-10): a logged-in user has no business on the login
-// form — send them to the feed instead of showing a second login.
-if (Auth::isLoggedIn()) {
-    header("Location: index.php");
+$controller = AuthController::fromConnection(Database::getInstance()->getConnection());
+$response = $controller->handleLogin($_SERVER['REQUEST_METHOD'], $_POST, $_GET);
+
+if ($response['redirect'] !== null) {
+    header('Location: ' . $response['redirect']);
     exit;
 }
-
-$error = "";
-$success = "";
-
-if (isset($_GET['registered'])) {
-    $success = "Registration successful! Please login with your credentials.";
-}
-if (isset($_GET['logged_out'])) {
-    $success = "You have been safely logged out.";
+if ($response['status'] !== 200) {
+    http_response_code($response['status']);
 }
 
-if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Sprint 5 CSRF: the login form carries a token too.
-    if (!Csrf::validatePost()) {
-        $error = "Security token expired. Please try again.";
-    } else {
-        $email = trim($_POST['email'] ?? '');
-        // Passwords are never trimmed: a leading/trailing space is part of
-        // the password, and trimming here but not at signup would lock users out.
-        $password = (string)($_POST['password'] ?? '');
-
-        if(empty($email) || empty($password)) {
-            $error = "Please fill in all fields.";
-        } elseif (!User::isCampusEmail($email)) {
-            $error = "Access restricted: Please enter your official FAST-NUCES campus email (@nu.edu.pk).";
-        } else {
-            $db = Database::getInstance()->getConnection();
-            $user = new User($db);
-            // Rate-limit: 5 failed attempts per (email, IP) in 15 minutes
-            // lock that pair for 5 minutes; failures also get progressive delay.
-            $limiter = new LoginRateLimiter($db);
-            if ($limiter->isLocked($email)) {
-                http_response_code(429);
-                $minutes = (int)ceil($limiter->lockRemainingSeconds($email) / 60);
-                $error = "Too many failed login attempts. Please try again in {$minutes} minute" . ($minutes === 1 ? '' : 's') . ".";
-            } else {
-                $userData = $user->verifyPassword($email, $password);
-
-                if($userData) {
-                    $limiter->recordSuccess($email);
-                    Auth::login($userData);
-                    header("Location: index.php");
-                    exit;
-                } else {
-                    $limiter->recordFailure($email);
-                    if ($limiter->isLocked($email)) {
-                        http_response_code(429);
-                        $minutes = (int)ceil($limiter->lockRemainingSeconds($email) / 60);
-                        $error = "Too many failed login attempts. Please try again in {$minutes} minute" . ($minutes === 1 ? '' : 's') . ".";
-                    } else {
-                        $attempts = $limiter->attemptsInWindow($email);
-                        usleep(LoginRateLimiter::delayMicrosecondsForAttempts($attempts));
-                        $error = "Invalid email or password. Please try again.";
-                    }
-                }
-            }
-        }
-    }
-}
+$error = $response['error'];
+$success = $response['success'];
 
 require_once 'includes/header.php'; 
 ?>

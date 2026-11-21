@@ -1,54 +1,22 @@
 <?php 
+/**
+ * Signup Page (Thin Entry Point — intent 003, unit 003-controllers-auth).
+ *
+ * Delegates registration handling to AuthController::handleRegister() and
+ * renders the signup view.
+ */
 require_once 'config/Database.php';
-require_once 'classes/User.php';
-require_once 'classes/Auth.php';
-require_once 'classes/Csrf.php';
+require_once 'classes/AuthController.php';
 
-// Audit C19: like login.php, a signed-in user has no business on the
-// signup form (it would create a second account while logged in).
-if (Auth::isLoggedIn()) {
-    header("Location: index.php");
+$controller = AuthController::fromConnection(Database::getInstance()->getConnection());
+$response = $controller->handleRegister($_SERVER['REQUEST_METHOD'], $_POST);
+
+if ($response['redirect'] !== null) {
+    header('Location: ' . $response['redirect']);
     exit;
 }
 
-$error = "";
-
-if($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Sprint 5 CSRF: the signup form carries a token too.
-    if (!Csrf::validatePost()) {
-        $error = "Security token expired. Please try again.";
-    } else {
-        $name = trim($_POST['name'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        // Passwords are never trimmed: a leading/trailing space is part of
-        // the password (must match login.php, which does not trim either).
-        $password = (string)($_POST['password'] ?? '');
-
-        if(empty($name) || empty($email) || empty($password)) {
-            $error = "All fields are required.";
-        } elseif (!User::isCampusEmail($email)) {
-            $error = "Access restricted: Registration is exclusively for FAST-NUCES campus emails (@nu.edu.pk).";
-        } elseif (!User::isValidPassword($password)) {
-            // Audit C18: one shared policy (User::isValidPassword) instead of
-            // a copy that lacked the 128-char cap — an over-long password
-            // used to get the generic "Registration failed" message.
-            $error = "Password must be 8–128 chars, with 1 uppercase, 1 lowercase, 1 number, and 1 special char.";
-        } else {
-            $db = Database::getInstance()->getConnection();
-            $user = new User($db);
-
-            if($user->register($name, $email, $password)) {
-                header("Location: login.php?registered=1");
-                exit;
-            } else {
-                // Sprint 5 final fix (M6): register() fails for bad input
-                // AND for a duplicate email — claiming "already registered"
-                // for every failure was both wrong and enumerable.
-                $error = "Registration failed. Please check your details and try again.";
-            }
-        }
-    }
-}
+$error = $response['error'];
 
 require_once 'includes/header.php'; 
 ?>
