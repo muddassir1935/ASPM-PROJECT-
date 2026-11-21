@@ -22,6 +22,7 @@ $suites = [
     'SessionTest.php',
     'Sprint4Test.php',
     'AjaxFeedbackTest.php',
+    'AdminControllerTest.php',
     'RbacTest.php',
     'ReportTest.php',
     'ProfilePaginationTest.php',

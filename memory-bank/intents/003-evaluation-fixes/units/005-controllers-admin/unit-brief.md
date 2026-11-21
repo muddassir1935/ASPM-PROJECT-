@@ -2,9 +2,9 @@
 unit: 005-controllers-admin
 intent: 003-evaluation-fixes
 phase: inception
-status: ready
+status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-18T08:08:17Z
+updated: 2026-11-22T00:45:00Z
 ---
 
 # Unit Brief: Controllers for Admin + Moderation Actions
