@@ -1,7 +1,8 @@
 # CampusConnect — Agent Instructions (AGENTS.md)
 
 CampusConnect is a university microblogging & announcement hub (ASPM course project,
-Group Code AIR: Muddassir Rizwan, Faiz Hussain, Qaim Mehdi). PHP 8 OOP + MySQL/PDO,
+Group Code AIR: Muddassir Rizwan, Faiz Hussain, Qaim Mehdi, Haseeb Asif,
+Muhammad Hadi, Yuneeb, Asad, Saad, Shahryar). PHP 8 OOP + MySQL/PDO,
 no framework, no build step. Posts are 280-character "chirps".
 
 ## AI-DLC workflow (specs.md)
@@ -42,7 +43,9 @@ The project is DONE and submitted (16 Nov 2026, frozen build `424390e`: 22-page
 report, 12-slide deck, release zip). The repo is in the **Operations** phase. New
 work follows the AI-DLC flow from a fresh intent — do not rewrite history into bolts.
 The five sprints are recorded as completed units in
-`memory-bank/intents/001-campusconnect/units.md`.
+`memory-bank/intents/001-campusconnect/units.md`. Since submission, the
+extended-period evaluation fixes landed (PRs #16–#34, main `06c9421`, 602 tests);
+the report was updated to 28 pages for the 24 Nov re-evaluation.
 
 ## Repo rules (enforced)
 
@@ -51,14 +54,14 @@ The five sprints are recorded as completed units in
   iteration.
 - OOP, classes in `classes/`. PDO prepared statements only. `password_hash` /
   `password_verify` for passwords. `htmlspecialchars` on output. CSRF token on every
-  state-changing form/AJAX call. Permission checks via `Auth::can()` /
-  `Authorization::can()` — never compare roles directly.
+  state-changing form/AJAX call. Permission checks via `$auth->can()` /
+  `$authorization->can()` (injected instances) — never compare roles directly.
 - Roles: `student`, `society_admin`, `system_admin` (14 permissions in
   `classes/Authorization.php`). Never change a role except through the admin panel —
   never a raw DB UPDATE as the app path.
 - Every new behaviour gets tests. Full suite must stay green:
-  `php tests/run_all.php` (412 tests: 398 on throwaway SQLite + 14 MySQL, skipped
-  when MySQL is down).
+  `php tests/run_all.php` (602 tests on throwaway SQLite + 14 MySQL, skipped
+  when MySQL is down, green in CI).
 - Sync before work on this shared repo: fetch, read new commits/authors, branches,
   open PRs — never duplicate or overwrite a teammate's work.
 - `.htaccess` / `router.php` protect `db/`, `tests/`, `config/`, `classes/`, `docs/`.
