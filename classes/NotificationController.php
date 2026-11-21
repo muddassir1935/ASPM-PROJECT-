@@ -16,15 +16,30 @@ require_once __DIR__ . '/Csrf.php';
 class NotificationController extends Model {
     private Notification $notifModel;
     private ?array $currentUser;
+    private Auth $auth;
+    private Csrf $csrf;
 
-    public function __construct(PDO $db, ?Notification $notifModel = null, ?array $currentUser = null) {
+    public function __construct(
+        PDO $db,
+        ?Notification $notifModel = null,
+        ?array $currentUser = null,
+        ?Auth $auth = null,
+        ?Csrf $csrf = null
+    ) {
         parent::__construct($db);
         $this->notifModel = $notifModel ?? new Notification($db);
-        $this->currentUser = $currentUser ?? Auth::user();
+        $this->csrf = $csrf ?? new Csrf();
+        $this->auth = $auth ?? new Auth(null, $this->csrf);
+        $this->currentUser = $currentUser ?? $this->auth->user();
     }
 
-    public static function fromConnection(PDO $db, ?array $currentUser = null): self {
-        return new self($db, null, $currentUser);
+    public static function fromConnection(
+        PDO $db,
+        ?array $currentUser = null,
+        ?Auth $auth = null,
+        ?Csrf $csrf = null
+    ): self {
+        return new self($db, null, $currentUser, $auth, $csrf);
     }
 
     /**
@@ -58,7 +73,7 @@ class NotificationController extends Model {
         }
 
         if ($method === 'POST') {
-            if (!Csrf::validate($input['csrf_token'] ?? null)) {
+            if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
                 return [
                     'status' => 403,
                     'body' => ['success' => false, 'message' => 'Security token expired. Please refresh and try again.']

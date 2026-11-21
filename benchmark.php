@@ -36,14 +36,16 @@ $isCli = (php_sapi_name() === 'cli');
 if (!$isCli) {
     require_once __DIR__ . '/classes/Auth.php';
     require_once __DIR__ . '/classes/Authorization.php';
-    $benchUser = Auth::user();
+    $authorization = new Authorization();
+    $auth = new Auth($authorization);
+    $benchUser = $auth->user();
     if (!$benchUser) {
         header('Location: login.php');
         exit;
     }
     // Audit F13: ask RBAC (same permission as the admin panel) instead of
     // comparing the role string inline.
-    if (!Auth::can('user.manage')) {
+    if (!$auth->can('user.manage')) {
         http_response_code(403);
         exit('Benchmark is available to system administrators only.');
     }

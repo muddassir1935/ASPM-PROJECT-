@@ -22,11 +22,15 @@ require_once 'classes/Post.php';
 require_once 'classes/Report.php';
 require_once 'classes/Csrf.php';
 
-if (!Auth::isLoggedIn()) {
+$authorization = new Authorization();
+$csrf = new Csrf();
+$auth = new Auth($authorization, $csrf);
+
+if (!$auth->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
-if (!Auth::can('user.manage')) {
+if (!$auth->can('user.manage')) {
     if (session_status() === PHP_SESSION_NONE) {
         session_start();
     }
@@ -143,7 +147,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                             <span class="admin-self-pill">This is you</span>
                         <?php else: ?>
                             <form method="POST" action="admin_action.php" class="admin-role-form" onsubmit="return confirm(<?= htmlspecialchars(json_encode('Change ' . $row['name'] . '’s role? Their sessions will be signed out.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE), ENT_QUOTES) ?>);">
-                                <?= Csrf::field() ?>
+                                <?= $csrf->field() ?>
                                 <input type="hidden" name="action" value="assign_role">
                                 <input type="hidden" name="user_id" value="<?= (int)$row['id'] ?>">
                                 <select name="role" class="admin-role-select" aria-label="Role for <?= htmlspecialchars($row['name']) ?>">
@@ -154,7 +158,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                                 <button type="submit" class="admin-btn-action">Update</button>
                             </form>
                             <form method="POST" action="admin_action.php" onsubmit="return confirm(<?= htmlspecialchars(json_encode('Reset ' . $row['name'] . '’s password? A temporary password will be shown once.', JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE), ENT_QUOTES) ?>);" style="margin: 0;">
-                                <?= Csrf::field() ?>
+                                <?= $csrf->field() ?>
                                 <input type="hidden" name="action" value="reset_password">
                                 <input type="hidden" name="user_id" value="<?= (int)$row['id'] ?>">
                                 <button type="submit" class="admin-btn-reset" title="Reset password">
@@ -204,7 +208,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                             <a class="action-reply" href="post.php?id=<?= (int)$modPost['id'] ?>" style="color: var(--accent); text-decoration: none; font-weight: 600; font-size: 0.88rem;">View post &rarr;</a>
                             <span class="spacer"></span>
                             <form method="POST" action="post_action.php" class="inline-form js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin: 0;">
-                                <?= Csrf::field() ?>
+                                <?= $csrf->field() ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="post_id" value="<?= (int)$modPost['id'] ?>">
                                 <input type="hidden" name="return" value="admin.php">
@@ -245,7 +249,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                         </div>
                         <div style="display: flex; gap: 8px;">
                             <form method="POST" action="report_review.php" style="margin:0;">
-                                <?= Csrf::field() ?>
+                                <?= $csrf->field() ?>
                                 <input type="hidden" name="action" value="dismiss">
                                 <input type="hidden" name="report_id" value="<?= (int)$report['id'] ?>">
                                 <button type="submit" class="admin-btn-action" style="background: transparent; border: 1px solid var(--line); color: var(--ink); padding: 5px 12px; font-size: 0.82rem; border-radius: 9999px; cursor: pointer;">
@@ -253,7 +257,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                                 </button>
                             </form>
                             <form method="POST" action="report_review.php" class="inline-form js-confirm-delete" data-confirm-title="Delete Reported Post" data-confirm-message="Are you sure you want to delete this post? The post will be soft-deleted and all pending reports for it will be marked actioned." data-confirm-btn="Delete Post" style="margin:0;">
-                                <?= Csrf::field() ?>
+                                <?= $csrf->field() ?>
                                 <input type="hidden" name="action" value="action">
                                 <input type="hidden" name="report_id" value="<?= (int)$report['id'] ?>">
                                 <button type="submit" class="admin-mod-delete-btn" style="padding: 5px 12px; font-size: 0.82rem;">

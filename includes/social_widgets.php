@@ -37,8 +37,15 @@ function renderLeftNav(string $active): void {
         'bookmarks' => ['bookmarks.php', 'Bookmarks', '<svg ' . $svgAttrs . '><path d="M7 3.5h10V20l-5-3.8L7 20Z"/></svg>', 0],
         'profile' => [$viewerId ? 'profile.php?id=' . $viewerId : 'login.php', 'Profile', '<svg ' . $svgAttrs . '><circle cx="12" cy="8" r="3.6"/><path d="M5 20c.8-3.4 3.6-5 7-5s6.2 1.6 7 5"/></svg>', 0],
     ];
+    $auth = isset($GLOBALS['auth']) && $GLOBALS['auth'] instanceof Auth
+        ? $GLOBALS['auth']
+        : (class_exists('Auth') ? new Auth() : null);
+    $csrf = isset($GLOBALS['csrf']) && $GLOBALS['csrf'] instanceof Csrf
+        ? $GLOBALS['csrf']
+        : (class_exists('Csrf') ? new Csrf($auth) : null);
+
     // Sprint 5 RBAC: system admins get the Admin Panel in the left nav.
-    if (class_exists('Auth') && Auth::can('user.manage')) {
+    if ($auth && $auth->can('user.manage')) {
         $links['admin'] = ['admin.php', 'Admin', '<svg ' . $svgAttrs . '><path d="M12 3 5 6v5c0 4.5 3 8.2 7 10 4-1.8 7-5.5 7-10V6Z"/><path d="M9 12l2 2 4-4.5"/></svg>', 0];
     }
     echo '<nav class="col-nav" aria-label="Section">';
@@ -67,7 +74,7 @@ function renderLeftNav(string $active): void {
         $emailParts = explode('@', $u['email'] ?? '');
         $uHandle = '@' . ($emailParts[0] ?? 'user');
 
-        $isAdmin = class_exists('Auth') && Auth::can('user.manage');
+        $isAdmin = $auth && $auth->can('user.manage');
 
         echo '<div class="nav-user-dock" id="nav-user-dock">';
         echo '<button type="button" class="nav-user-pill" id="nav-user-pill-btn" aria-haspopup="true" aria-expanded="false" title="Account options for ' . htmlspecialchars($u['name'] ?? '') . '">';
@@ -103,8 +110,8 @@ function renderLeftNav(string $active): void {
         echo '<div class="nav-user-dropdown-divider"></div>';
 
         echo '<form method="POST" action="logout.php" style="margin:0; width:100%;">';
-        if (class_exists('Csrf')) {
-            echo Csrf::field();
+        if ($csrf) {
+            echo $csrf->field();
         }
         echo '<button type="submit" class="nav-user-dropdown-item item-danger" role="menuitem">';
         echo '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>';
@@ -237,9 +244,15 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     if ($isAnnouncement) {
         echo '<div class="announce-line">' . $megaSvg . 'Announcement</div>';
     }
+    $auth = isset($GLOBALS['auth']) && $GLOBALS['auth'] instanceof Auth
+        ? $GLOBALS['auth']
+        : (class_exists('Auth') ? new Auth() : null);
+    $csrf = isset($GLOBALS['csrf']) && $GLOBALS['csrf'] instanceof Csrf
+        ? $GLOBALS['csrf']
+        : (class_exists('Csrf') ? new Csrf($auth) : null);
     $isOwner = $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
-    $canDeleteAny = $currentUser && class_exists('Auth') && Auth::can('post.delete_any');
-    $canReport = $currentUser && !$isOwner && class_exists('Auth') && Auth::can('report.create');
+    $canDeleteAny = $currentUser && $auth && $auth->can('post.delete_any');
+    $canReport = $currentUser && !$isOwner && $auth && $auth->can('report.create');
     $safeRedirect = isset($GLOBALS['safeRedirect']) && $GLOBALS['safeRedirect'] instanceof SafeRedirect
         ? $GLOBALS['safeRedirect']
         : new SafeRedirect();
@@ -287,7 +300,7 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
         }
         if ($isOwner || $canDeleteAny) {
             echo '<form method="POST" action="post_action.php" class="js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin:0;">'
-                . Csrf::field()
+                . ($csrf ? $csrf->field() : '')
                 . $safeRedirect->field()
                 . '<input type="hidden" name="action" value="delete">'
                 . '<input type="hidden" name="post_id" value="' . $postId . '">'
@@ -336,7 +349,7 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     echo '</div>';
     if ($isOwner) {
         echo '<form id="post-edit-' . $postId . '" method="POST" action="post_action.php" class="edit-form" style="display: none;">'
-            . Csrf::field()
+            . ($csrf ? $csrf->field() : '')
             . $safeRedirect->field()
             . '<input type="hidden" name="action" value="update">'
             . '<input type="hidden" name="post_id" value="' . $postId . '">'

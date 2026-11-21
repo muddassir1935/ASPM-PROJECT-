@@ -29,21 +29,38 @@ class AdminController extends Model {
     private DbSessionHandler $sessionHandler;
     private ?array $currentUser;
     private Authorization $authorization;
+    private Csrf $csrf;
+    private Auth $auth;
 
-    public function __construct(PDO $db, ?User $userModel = null, ?Report $reportModel = null,
-                                ?DbSessionHandler $sessionHandler = null, ?array $currentUser = null,
-                                ?Authorization $authorization = null) {
+    public function __construct(
+        PDO $db,
+        ?User $userModel = null,
+        ?Report $reportModel = null,
+        ?DbSessionHandler $sessionHandler = null,
+        ?array $currentUser = null,
+        ?Authorization $authorization = null,
+        ?Csrf $csrf = null,
+        ?Auth $auth = null
+    ) {
         parent::__construct($db);
         $this->authorization = $authorization ?? new Authorization();
+        $this->csrf = $csrf ?? new Csrf();
+        $this->auth = $auth ?? new Auth($this->authorization, $this->csrf);
         $this->userModel = $userModel ?? new User($db, $this->authorization);
         $this->reportModel = $reportModel ?? new Report($db);
         $this->sessionHandler = $sessionHandler ?? new DbSessionHandler($db);
-        $this->currentUser = $currentUser ?? Auth::user();
+        $this->currentUser = $currentUser ?? $this->auth->user();
     }
 
     /** Factory method: construct controller from PDO and optional user */
-    public static function fromConnection(PDO $db, ?array $currentUser = null): self {
-        return new self($db, null, null, null, $currentUser);
+    public static function fromConnection(
+        PDO $db,
+        ?array $currentUser = null,
+        ?Authorization $authorization = null,
+        ?Csrf $csrf = null,
+        ?Auth $auth = null
+    ): self {
+        return new self($db, null, null, null, $currentUser, $authorization, $csrf, $auth);
     }
 
     /**
@@ -73,7 +90,7 @@ class AdminController extends Model {
             ];
         }
 
-        if (!Csrf::validate($input['csrf_token'] ?? null)) {
+        if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
             return [
                 'result' => ['success' => false, 'message' => 'Security token expired. Please try again.'],
                 'redirect' => 'admin.php'
@@ -119,7 +136,7 @@ class AdminController extends Model {
             ];
         }
 
-        if (!Csrf::validate($input['csrf_token'] ?? null)) {
+        if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
             return [
                 'result' => ['success' => false, 'message' => 'Security token expired. Please try again.'],
                 'redirect' => $redirect
@@ -171,7 +188,7 @@ class AdminController extends Model {
             ];
         }
 
-        if (!Csrf::validate($input['csrf_token'] ?? null)) {
+        if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
             return [
                 'result' => ['success' => false, 'message' => 'Security token expired. Please try again.'],
                 'redirect' => 'admin.php#reports'
@@ -193,7 +210,7 @@ class AdminController extends Model {
      * Forward notification actions to NotificationController.
      */
     public function handleNotification(string $method, array $query, array $input): array {
-        $notifController = new NotificationController($this->db, null, $this->currentUser);
+        $notifController = new NotificationController($this->db, null, $this->currentUser, $this->auth, $this->csrf);
         return $notifController->handle($method, $query, $input);
     }
 

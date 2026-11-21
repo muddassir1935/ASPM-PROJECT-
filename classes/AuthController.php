@@ -24,24 +24,36 @@ class AuthController extends Model {
     private LoginRateLimiter $limiter;
     private ?array $currentUser;
     private bool $applyDelay;
+    private Auth $auth;
+    private Csrf $csrf;
 
     public function __construct(
         PDO $db,
         ?User $userModel = null,
         ?LoginRateLimiter $limiter = null,
         ?array $currentUser = null,
-        bool $applyDelay = true
+        bool $applyDelay = true,
+        ?Auth $auth = null,
+        ?Csrf $csrf = null
     ) {
         parent::__construct($db);
         $this->userModel = $userModel ?? new User($db);
         $this->limiter = $limiter ?? new LoginRateLimiter($db);
         $this->currentUser = $currentUser;
         $this->applyDelay = $applyDelay;
+        $this->csrf = $csrf ?? new Csrf();
+        $this->auth = $auth ?? new Auth(null, $this->csrf);
     }
 
     /** Build an AuthController with default models on a PDO connection. */
-    public static function fromConnection(PDO $db, ?array $currentUser = null, bool $applyDelay = true): self {
-        return new self($db, new User($db), new LoginRateLimiter($db), $currentUser, $applyDelay);
+    public static function fromConnection(
+        PDO $db,
+        ?array $currentUser = null,
+        bool $applyDelay = true,
+        ?Auth $auth = null,
+        ?Csrf $csrf = null
+    ): self {
+        return new self($db, new User($db), new LoginRateLimiter($db), $currentUser, $applyDelay, $auth, $csrf);
     }
 
     /**
@@ -72,7 +84,7 @@ class AuthController extends Model {
         }
 
         if ($method === 'POST') {
-            if (!Csrf::validate($post['csrf_token'] ?? null)) {
+            if (!$this->csrf->validate($post['csrf_token'] ?? null)) {
                 $error = 'Security token expired. Please try again.';
             } else {
                 $email = trim((string)($post['email'] ?? ''));
@@ -92,7 +104,7 @@ class AuthController extends Model {
 
                     if ($userData) {
                         $this->limiter->recordSuccess($email);
-                        Auth::login($userData);
+                        $this->auth->login($userData);
                         return [
                             'redirect' => 'index.php',
                             'status' => 200,
@@ -142,7 +154,7 @@ class AuthController extends Model {
         $error = '';
 
         if ($method === 'POST') {
-            if (!Csrf::validate($post['csrf_token'] ?? null)) {
+            if (!$this->csrf->validate($post['csrf_token'] ?? null)) {
                 $error = 'Security token expired. Please try again.';
             } else {
                 $name = trim((string)($post['name'] ?? ''));
@@ -180,8 +192,8 @@ class AuthController extends Model {
      *   ['redirect' => string, 'logged_out' => bool]
      */
     public function handleLogout(string $method, array $post): array {
-        if ($method === 'POST' && Csrf::validate($post['csrf_token'] ?? null)) {
-            Auth::logout();
+        if ($method === 'POST' && $this->csrf->validate($post['csrf_token'] ?? null)) {
+            $this->auth->logout();
             return [
                 'redirect' => 'login.php?logged_out=1',
                 'logged_out' => true
@@ -198,6 +210,6 @@ class AuthController extends Model {
         if ($this->currentUser !== null) {
             return !empty($this->currentUser['id']);
         }
-        return (bool)Auth::isLoggedIn();
+        return $this->auth->isLoggedIn();
     }
 }

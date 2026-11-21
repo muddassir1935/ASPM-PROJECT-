@@ -25,8 +25,16 @@ if(file_exists(__DIR__ . '/../classes/Authorization.php')) {
 if(file_exists(__DIR__ . '/../classes/Csrf.php')) {
     require_once __DIR__ . '/../classes/Csrf.php';
 }
-$authorization = class_exists('Authorization') ? new Authorization() : null;
-$currentUser = class_exists('Auth') ? Auth::user() : null;
+$authorization = isset($authorization) && $authorization instanceof Authorization
+    ? $authorization
+    : (class_exists('Authorization') ? new Authorization() : null);
+$csrf = isset($csrf) && $csrf instanceof Csrf
+    ? $csrf
+    : (class_exists('Csrf') ? new Csrf() : null);
+$auth = isset($auth) && $auth instanceof Auth
+    ? $auth
+    : (class_exists('Auth') ? new Auth($authorization, $csrf) : null);
+$currentUser = $auth ? $auth->user() : null;
 
 // Sprint 5 (H3): if MySQL is down the app runs on the SQLite fallback —
 // a DIFFERENT database with its own users and posts. Say so visibly
@@ -86,9 +94,9 @@ if (!function_exists('brandMarkSvg')) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CampusConnect — University Microblogging Platform</title>
-    <?php if ($currentUser && class_exists('Csrf')): ?>
+    <?php if ($currentUser && $csrf): ?>
     <!-- Sprint 5 CSRF: AJAX POSTs (like/follow/bookmark/notifications) read the token from here. -->
-    <meta name="csrf-token" content="<?= htmlspecialchars(Csrf::token(), ENT_QUOTES, 'UTF-8') ?>">
+    <meta name="csrf-token" content="<?= htmlspecialchars($csrf->token(), ENT_QUOTES, 'UTF-8') ?>">
     <?php endif; ?>
     <!-- Google Fonts: Bricolage Grotesque for display/headings,
          Public Sans for body and UI (Sprint 5 UI polish). -->
@@ -4402,13 +4410,13 @@ if (!function_exists('brandMarkSvg')) {
                         <span class="user-name"><?= htmlspecialchars($currentUser['name']) ?></span>
                     </span>
                 </li>
-                <?php if (class_exists('Auth') && Auth::can('user.manage')): ?>
+                <?php if ($auth && $auth->can('user.manage')): ?>
                     <li><a href="admin.php" class="nav-link">Admin</a></li>
                 <?php endif; ?>
                 <li>
                     <!-- Sprint 5: logout is a POST with a CSRF token, like every other state change. -->
                     <form method="POST" action="logout.php" class="inline-form">
-                        <?= class_exists('Csrf') ? Csrf::field() : '' ?>
+                        <?= $csrf ? $csrf->field() : '' ?>
                         <button type="submit" class="nav-link nav-link-logout" style="background: none; border: none; font: inherit; cursor: pointer;">Logout</button>
                     </form>
                 </li>

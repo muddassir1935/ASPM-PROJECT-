@@ -21,22 +21,33 @@ class ProfileController extends Model {
     private User $userModel;
     private DbSessionHandler $sessionHandler;
     private ?array $currentUser;
+    private Auth $auth;
+    private Csrf $csrf;
 
     public function __construct(
         PDO $db,
         ?User $userModel = null,
         ?DbSessionHandler $sessionHandler = null,
-        ?array $currentUser = null
+        ?array $currentUser = null,
+        ?Auth $auth = null,
+        ?Csrf $csrf = null
     ) {
         parent::__construct($db);
         $this->userModel = $userModel ?? new User($db);
         $this->sessionHandler = $sessionHandler ?? new DbSessionHandler($db);
-        $this->currentUser = $currentUser ?? Auth::user();
+        $this->csrf = $csrf ?? new Csrf();
+        $this->auth = $auth ?? new Auth(null, $this->csrf);
+        $this->currentUser = $currentUser ?? $this->auth->user();
     }
 
     /** Build a ProfileController with default models on a PDO connection. */
-    public static function fromConnection(PDO $db, ?array $currentUser = null): self {
-        return new self($db, new User($db), new DbSessionHandler($db), $currentUser);
+    public static function fromConnection(
+        PDO $db,
+        ?array $currentUser = null,
+        ?Auth $auth = null,
+        ?Csrf $csrf = null
+    ): self {
+        return new self($db, new User($db), new DbSessionHandler($db), $currentUser, $auth, $csrf);
     }
 
     /**
@@ -59,7 +70,7 @@ class ProfileController extends Model {
         $result = ['success' => false, 'message' => 'Invalid request.'];
 
         if ($method === 'POST') {
-            if (!Csrf::validate($input['csrf_token'] ?? null)) {
+            if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
                 $result = ['success' => false, 'message' => 'Security token expired. Please try again.'];
             } else {
                 $action = (string)($input['action'] ?? 'update_profile');

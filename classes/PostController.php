@@ -13,18 +13,26 @@ class PostController {
     private Post $postModel;
     private ?array $currentUser;
     private Authorization $authorization;
+    private Auth $auth;
 
     /**
      * PostController constructor.
      * 
      * @param Post $postModel Injected Post model instance
-     * @param array|null $currentUser Optional user array (defaults to Auth->user())
+     * @param array|null $currentUser Optional user array (defaults to $auth->user())
      * @param Authorization|null $authorization Optional injected Authorization instance
+     * @param Auth|null $auth Optional injected Auth instance
      */
-    public function __construct(Post $postModel, ?array $currentUser = null, ?Authorization $authorization = null) {
+    public function __construct(
+        Post $postModel,
+        ?array $currentUser = null,
+        ?Authorization $authorization = null,
+        ?Auth $auth = null
+    ) {
         $this->postModel = $postModel;
         $this->authorization = $authorization ?? new Authorization();
-        $this->currentUser = $currentUser ?? Auth::user();
+        $this->auth = $auth ?? new Auth($this->authorization);
+        $this->currentUser = $currentUser ?? $this->auth->user();
     }
 
     /**

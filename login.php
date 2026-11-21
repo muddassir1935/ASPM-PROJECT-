@@ -59,7 +59,7 @@ require_once 'includes/header.php';
         <?php endif; ?>
 
         <form method="POST" action="login.php" autocomplete="off">
-            <?= Csrf::field() ?>
+            <?= $csrf->field() ?>
             <div class="form-group">
                 <label class="form-label" for="email">Campus Email</label>
                 <input 

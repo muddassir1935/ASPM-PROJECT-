@@ -1,14 +1,16 @@
 <?php
 /**
- * Class Csrf — CSRF protection (Sprint 5 security hardening, WBS 5.3.3).
+ * Class Csrf — CSRF protection (Sprint 5 security hardening, WBS 5.3.3;
+ * converted to an instantiable injectable object in Intent 003,
+ * unit 006-helpers-objects, EF-4a).
  *
  * One random token per session, stored server-side in $_SESSION and
  * compared with hash_equals(). Every state-changing form carries it as
- * a hidden field (Csrf::field()) and every AJAX POST sends it as
+ * a hidden field ($csrf->field()) and every AJAX POST sends it as
  * `csrf_token` (read from the <meta name="csrf-token"> tag that
  * includes/header.php emits for logged-in users).
  *
- * The token is rotated on login (Auth::login calls Csrf::rotate()) so a
+ * The token is rotated on login ($auth->login calls $csrf->rotate()) so a
  * token issued before authentication cannot be reused after it.
  * Validation failure is a hard reject: the action handler must refuse
  * the request, never fall through to the state change.
@@ -16,7 +18,13 @@
 class Csrf {
     private const SESSION_KEY = 'csrf_token';
 
-    private static function startSession(): void {
+    private ?Auth $auth;
+
+    public function __construct(?Auth $auth = null) {
+        $this->auth = $auth;
+    }
+
+    private function startSession(): void {
         if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
             // The app stores sessions in the database (see Auth), and the
             // CSRF token lives in that same session — so the DB handler
@@ -27,12 +35,11 @@ class Csrf {
             $authFile = __DIR__ . '/Auth.php';
             if (file_exists($authFile)) {
                 require_once $authFile;
-                if (method_exists('Auth', 'registerDbSessionHandler')) {
-                    Auth::registerDbSessionHandler();
-                }
-                // Sprint 5 (H6): same hardened cookie params as Auth.
-                if (method_exists('Auth', 'hardenSessionCookie')) {
-                    Auth::hardenSessionCookie();
+                $authInstance = $this->auth ?? (class_exists('Auth') ? new Auth(null, $this) : null);
+                if ($authInstance !== null) {
+                    $authInstance->registerDbSessionHandler();
+                    // Sprint 5 (H6): same hardened cookie params as Auth.
+                    $authInstance->hardenSessionCookie();
                 }
             }
             session_start();
@@ -40,8 +47,8 @@ class Csrf {
     }
 
     /** Current session token, creating one if needed. */
-    public static function token(): string {
-        self::startSession();
+    public function token(): string {
+        $this->startSession();
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return '';
         }
@@ -52,28 +59,28 @@ class Csrf {
     }
 
     /** Issue a fresh token, invalidating the previous one. */
-    public static function rotate(): void {
-        self::startSession();
+    public function rotate(): void {
+        $this->startSession();
         if (session_status() === PHP_SESSION_ACTIVE) {
             $_SESSION[self::SESSION_KEY] = bin2hex(random_bytes(32));
         }
     }
 
     /** Hidden <input> carrying the token, for POST forms. */
-    public static function field(): string {
+    public function field(): string {
         return '<input type="hidden" name="csrf_token" value="'
-            . htmlspecialchars(self::token(), ENT_QUOTES, 'UTF-8') . '">';
+            . htmlspecialchars($this->token(), ENT_QUOTES, 'UTF-8') . '">';
     }
 
     /**
      * Is this submitted token the session token?
      * Empty / non-string / missing tokens are rejected.
      */
-    public static function validate($submitted): bool {
+    public function validate($submitted): bool {
         if (!is_string($submitted) || $submitted === '') {
             return false;
         }
-        self::startSession();
+        $this->startSession();
         if (session_status() !== PHP_SESSION_ACTIVE) {
             return false;
         }
@@ -85,7 +92,7 @@ class Csrf {
     }
 
     /** Validate the token from the current POST body. */
-    public static function validatePost(): bool {
-        return self::validate($_POST['csrf_token'] ?? null);
+    public function validatePost(): bool {
+        return $this->validate($_POST['csrf_token'] ?? null);
     }
 }

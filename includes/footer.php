@@ -427,7 +427,14 @@
         <p class="report-modal-subtitle">Help us understand the issue. What violates campus policies in this post?</p>
         
         <form id="report-post-form" method="POST" action="report_action.php">
-            <?php if (class_exists('Csrf')) { echo Csrf::field(); } ?>
+            <?php
+            $footerCsrf = isset($csrf) && $csrf instanceof Csrf
+                ? $csrf
+                : (class_exists('Csrf') ? new Csrf() : null);
+            if ($footerCsrf) {
+                echo $footerCsrf->field();
+            }
+            ?>
             <input type="hidden" name="post_id" id="report-post-id-input" value="0">
             <input type="hidden" name="return" id="report-return-input" value="index.php">
 
