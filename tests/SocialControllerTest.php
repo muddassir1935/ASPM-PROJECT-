@@ -18,7 +18,8 @@ require_once __DIR__ . '/../classes/SocialController.php';
 
 // Start the session BEFORE any output (CLI quirk, see RbacTest): once
 // headers_sent() is true, Csrf can no longer start the session.
-$csrf = Csrf::token();
+$csrfHelper = new Csrf();
+$csrf = $csrfHelper->token();
 
 $passed = 0;
 $total = 0;

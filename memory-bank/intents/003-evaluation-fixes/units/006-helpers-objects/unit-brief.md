@@ -1,10 +1,10 @@
 ---
 unit: 006-helpers-objects
 intent: 003-evaluation-fixes
-phase: inception
-status: ready
+phase: construction
+status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-18T08:08:17Z
+updated: 2026-11-21T20:30:00Z
 ---
 
 # Unit Brief: Static Helpers Become Injectable Objects
