@@ -4004,12 +4004,21 @@ if (!function_exists('brandMarkSvg')) {
 
         @media (max-width: 720px) {
             .layout-3col {
-                grid-template-columns: 1fr;
+                /* minmax(0, 1fr), not bare 1fr: a bare 1fr track sizes to
+                   the widest min-content inside .col-main, which pushed the
+                   grid to 430px on a 390px viewport (and justify-content:
+                   center then shifted it 20px left). Same pattern as the
+                   desktop and 1080px rules. */
+                grid-template-columns: minmax(0, 1fr);
             }
             .col-nav {
                 height: auto;
                 flex-direction: row;
                 justify-content: space-around;
+                /* The desktop column rule sets gap: 6px; carried into the
+                   row it adds 36px on top of space-around's own spacing
+                   and pushes the user dock 2px past a 390px viewport. */
+                gap: 0;
                 position: sticky;
                 top: 52px;
                 z-index: 40;
@@ -4048,6 +4057,9 @@ if (!function_exists('brandMarkSvg')) {
                 border-left: none;
                 border-right: none;
                 min-height: 0;
+                /* Let the column shrink below its content's min-width so
+                   the minmax(0, 1fr) track above can actually hold 390px. */
+                min-width: 0;
             }
             .col-head, .feed-header-sticky {
                 top: 99px;
