@@ -2,7 +2,7 @@
 
 **Intent:** `002-quality-enhancements` (Scope: 100% Bug Fixes & Hardening of Existing Features · Zero New Features)  
 **Date:** 18 Nov 2026  
-**Status:** Prepared for User Review (DO NOT PUSH until user approves)  
+**Status:** In main since 17 Nov 2026. Units 001–003, 005–008 merged; unit 004 closed as not-applicable after investigation (22 Nov — no remember-me feature exists, see its brief); unit 009 covered by the existing suite (22 Nov — 601 tests, see its brief).
 
 ---
 
@@ -41,6 +41,7 @@
 ### 4. Haseeb Asif (23K-0539) — Remember-Token Security Vulnerability
 - **Defect:** When a user changes their password in `profile_action.php`, `destroySessionsForUser()` deletes database sessions, but does NOT remove records from `remember_tokens`. An attacker with a previously compromised remember cookie can still auto-login.
 - **Fix:** Add `clearRememberTokensForUser($userId)` to `classes/User.php` and invoke it on password change and admin password reset.
+- **Outcome (22 Nov 2026):** Investigation found no `remember_tokens` table in the schema and no remember-me cookie feature in the app — the defect does not exist. Password change already revokes other sessions; admin reset revokes all sessions. Unit closed as not-applicable (see the unit brief).
 
 ### 5. Muhammad Hadi (23K-0755) — Explore Search Repeating Users & Hashtag Casing
 - **Defect:** 
@@ -71,3 +72,4 @@
   - Login lockout trigger after 5 failed attempts.
   - Profile tab pagination and state preservation.
   Ensure `php tests/run_all.php` runs with 100% pass rate.
+- **Outcome (22 Nov 2026):** Every fix shipped with its own tests — the suite is at 601 tests, 100% green on SQLite (local) and MySQL (CI). No duplicate regression file was added; see the unit brief for the check-by-check mapping.
