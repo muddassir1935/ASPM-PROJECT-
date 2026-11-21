@@ -9,7 +9,7 @@
  * thin entry points that call one method here and send the result.
  *
  * Same pattern as PostController: models are injected, the current user
- * defaults to Auth::user(), and every method returns a plain array so it can
+ * defaults to $auth->user(), and every method returns a plain array so it can
  * be tested without a web server. Response bodies are byte-for-byte the
  * ones the pages produced before the refactor.
  *

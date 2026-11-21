@@ -53,7 +53,7 @@ $ok = ['csrf_token' => $csrf];
 
 echo "--- GUARDS (same codes and messages as before) ---" . PHP_EOL;
 
-// Logged out: no session user, so Auth::user() is null.
+// Logged out: no session user, so $auth->user() is null.
 $guest = SocialController::fromConnection($db);
 foreach (['handleLike', 'handleFollow', 'handleBookmark'] as $m) {
     $r = $guest->$m('POST', $ok + ['post_id' => $postId, 'user_id' => $danId]);

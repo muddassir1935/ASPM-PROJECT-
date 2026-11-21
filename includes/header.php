@@ -39,7 +39,7 @@ $currentUser = $auth ? $auth->user() : null;
 // Sprint 5 (H3): if MySQL is down the app runs on the SQLite fallback —
 // a DIFFERENT database with its own users and posts. Say so visibly
 // instead of failing logins with a bare "Invalid email or password".
-// (Auth::user() above already opened the connection, so this is free.)
+// ($auth->user() above already opened the connection, so this is free.)
 $isDbFallback = false;
 try {
     if (class_exists('Database')) {

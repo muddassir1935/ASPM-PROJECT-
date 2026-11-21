@@ -7,7 +7,7 @@
  *
  * Replaces procedural handling in admin_action.php, report_action.php, and report_review.php.
  * Follows the same pattern as SocialController and PostController:
- * models and dependencies are injected, current user defaults to Auth::user(),
+ * models and dependencies are injected, current user defaults to $auth->user(),
  * and request handler methods return structured response arrays for testing without a web server.
  *
  * Response structures:
