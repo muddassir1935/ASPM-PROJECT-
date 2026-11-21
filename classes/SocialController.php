@@ -9,7 +9,7 @@
  * thin entry points that call one method here and send the result.
  *
  * Same pattern as PostController: models are injected, the current user
- * defaults to Auth::user(), and every method returns a plain array so it can
+ * defaults to $auth->user(), and every method returns a plain array so it can
  * be tested without a web server. Response bodies are byte-for-byte the
  * ones the pages produced before the refactor.
  *
@@ -32,19 +32,48 @@ class SocialController {
     private Bookmark $bookmarkModel;
     private Reply $replyModel;
     private ?array $currentUser;
+    private Authorization $authorization;
+    private Csrf $csrf;
+    private Auth $auth;
 
-    public function __construct(Like $likeModel, Follow $followModel, Bookmark $bookmarkModel,
-                                Reply $replyModel, ?array $currentUser = null) {
+    public function __construct(
+        Like $likeModel,
+        Follow $followModel,
+        Bookmark $bookmarkModel,
+        Reply $replyModel,
+        ?array $currentUser = null,
+        ?Authorization $authorization = null,
+        ?Csrf $csrf = null,
+        ?Auth $auth = null
+    ) {
         $this->likeModel = $likeModel;
         $this->followModel = $followModel;
         $this->bookmarkModel = $bookmarkModel;
         $this->replyModel = $replyModel;
-        $this->currentUser = $currentUser ?? Auth::user();
+        $this->authorization = $authorization ?? new Authorization();
+        $this->csrf = $csrf ?? new Csrf();
+        $this->auth = $auth ?? new Auth($this->authorization, $this->csrf);
+        $this->currentUser = $currentUser ?? $this->auth->user();
     }
 
     /** Build a controller with all four models on one PDO connection. */
-    public static function fromConnection(PDO $db, ?array $currentUser = null): self {
-        return new self(new Like($db), new Follow($db), new Bookmark($db), new Reply($db), $currentUser);
+    public static function fromConnection(
+        PDO $db,
+        ?array $currentUser = null,
+        ?Authorization $authorization = null,
+        ?Csrf $csrf = null,
+        ?Auth $auth = null
+    ): self {
+        return new self(
+            new Like($db),
+            new Follow($db),
+            new Bookmark($db),
+            new Reply($db),
+            $currentUser,
+            $authorization,
+            $csrf,
+            $auth
+        );
     }
 
     /**
@@ -146,7 +175,7 @@ class SocialController {
         $returnPostId = 0;
 
         if ($method === 'POST') {
-            if (!Csrf::validate($input['csrf_token'] ?? null)) {
+            if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
                 // Sprint 5 CSRF: refuse the request when the token is missing or wrong.
                 $result = ['success' => false, 'message' => 'Security token expired. Please try again.'];
                 $returnPostId = (int)($input['return_post_id'] ?? $input['post_id'] ?? 0);
@@ -216,7 +245,7 @@ class SocialController {
             return $this->json(['success' => false, 'message' => 'POST required.'], 405);
         }
         // Sprint 5 CSRF: the footer JS sends csrf_token with every toggle.
-        if (!Csrf::validate($input['csrf_token'] ?? null)) {
+        if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
             return $this->json(['success' => false, 'message' => 'Security token expired. Please refresh and try again.'], 403);
         }
         return null;
@@ -244,6 +273,6 @@ class SocialController {
 
     /** Does the current user's role hold $permission? */
     private function can(string $permission): bool {
-        return Authorization::can($this->currentUser['role'] ?? 'student', $permission);
+        return $this->authorization->can($this->currentUser['role'] ?? 'student', $permission);
     }
 }

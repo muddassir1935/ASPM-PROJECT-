@@ -19,10 +19,11 @@ require_once __DIR__ . '/../classes/DbSessionHandler.php';
 
 // Start the session BEFORE any output: in this VM's PHP CLI,
 // headers_sent() becomes true after the first echo, and both
-// Csrf::token() and Auth::startSession() then skip session_start().
+// $csrf->token() and $auth->startSession() then skip session_start().
 // (In a web request headers are not sent yet at this point, so the
 // app itself is unaffected — this is a CLI test-runner quirk only.)
-Csrf::token();
+$csrfHelper = new Csrf();
+$csrfHelper->token();
 
 echo "=================================================\n";
 echo "   RBAC + Security Hardening Test Suite (Sprint 5)\n";
@@ -49,6 +50,7 @@ function runTest($testName, $actualResult, $expectedResult) {
 // ---------------------------------------------------------
 echo "--- PERMISSION MATRIX (role x permission) ---\n";
 
+$authz = new Authorization();
 $matrix = [
     // permission => [student, society_admin, system_admin]
     'post.create' => [true, true, true],
@@ -66,17 +68,17 @@ $matrix = [
 $roles = ['student', 'society_admin', 'system_admin'];
 foreach ($matrix as $permission => $expected) {
     foreach ($roles as $i => $role) {
-        runTest("Authorization::can('{$role}', '{$permission}')",
-            Authorization::can($role, $permission), $expected[$i]);
+        runTest("Authorization->can('{$role}', '{$permission}')",
+            $authz->can($role, $permission), $expected[$i]);
     }
 }
 
 runTest("Unknown permission is denied (fail closed)",
-    Authorization::can('system_admin', 'does.not.exist'), false);
+    $authz->can('system_admin', 'does.not.exist'), false);
 runTest("Logged-out / unknown role falls back to student permissions",
-    Authorization::can('nobody', 'post.delete_any'), false);
+    $authz->can('nobody', 'post.delete_any'), false);
 runTest("Unknown role can still create posts (student fallback)",
-    Authorization::can('nobody', 'post.create'), true);
+    $authz->can('nobody', 'post.create'), true);
 
 // ---------------------------------------------------------
 // SECTION 2: ROLE NORMALIZATION
@@ -84,39 +86,42 @@ runTest("Unknown role can still create posts (student fallback)",
 echo "\n--- ROLE NORMALIZATION ---\n";
 
 runTest("Legacy 'admin' normalizes to system_admin",
-    Authorization::normalizeRole('admin'), 'system_admin');
+    $authz->normalizeRole('admin'), 'system_admin');
 runTest("Legacy 'society' normalizes to society_admin",
-    Authorization::normalizeRole('society'), 'society_admin');
+    $authz->normalizeRole('society'), 'society_admin');
 runTest("Unknown role normalizes to student (least privilege)",
-    Authorization::normalizeRole('superuser'), 'student');
+    $authz->normalizeRole('superuser'), 'student');
 runTest("Empty role normalizes to student",
-    Authorization::normalizeRole(''), 'student');
+    $authz->normalizeRole(''), 'student');
 runTest("isValidRole accepts the three current roles",
-    Authorization::isValidRole('society_admin'), true);
+    $authz->isValidRole('society_admin'), true);
 runTest("isValidRole rejects legacy 'admin' for assignment",
-    Authorization::isValidRole('admin'), false);
+    $authz->isValidRole('admin'), false);
 runTest("isValidRole rejects unknown roles",
-    Authorization::isValidRole('root'), false);
+    $authz->isValidRole('root'), false);
 runTest("permissionsFor('system_admin') holds all 14 permissions",
-    count(Authorization::permissionsFor('system_admin')), 14);
+    count($authz->permissionsFor('system_admin')), 14);
 runTest("system_admin can reset passwords, student cannot",
-    Authorization::can('system_admin', 'user.reset_password') === true
-        && Authorization::can('student', 'user.reset_password') === false
-        && Authorization::can('society_admin', 'user.reset_password') === false,
+    $authz->can('system_admin', 'user.reset_password') === true
+        && $authz->can('student', 'user.reset_password') === false
+        && $authz->can('society_admin', 'user.reset_password') === false,
     true);
 runTest("permissionsFor('student') holds 6 permissions",
-    count(Authorization::permissionsFor('student')), 6);
+    count($authz->permissionsFor('student')), 6);
 runTest("displayLabel('system_admin') is 'System Admin'",
-    Authorization::displayLabel('system_admin'), 'System Admin');
+    $authz->displayLabel('system_admin'), 'System Admin');
 
 // ---------------------------------------------------------
 // SECTION 3: CSRF TOKENS
 // ---------------------------------------------------------
 echo "\n--- CSRF TOKENS ---\n";
 
-$token = Csrf::token();
-runTest("Csrf::token() returns a non-empty token", $token !== '', true);
-runTest("The issued token validates", Csrf::validate($token), true);
+$token = $csrfHelper->token();
+runTest("Csrf->token() returns a non-empty token", $token !== '', true);
+runTest("The issued token validates", $csrfHelper->validate($token), true);
+$injectedCsrf = new Csrf();
+runTest("Injected Csrf instance issues and validates token",
+    $injectedCsrf->validate($injectedCsrf->token()), true);
 // Regression guard for the Sprint 5 live bug: the CSRF token lives in
 // the DB-backed session, so Csrf must register the DB handler before
 // session_start() — otherwise a POST handler that validates the token
@@ -124,14 +129,14 @@ runTest("The issued token validates", Csrf::validate($token), true);
 // every valid token (signup/login were broken by exactly this).
 runTest("Csrf session uses the DB-backed handler",
     ini_get('session.save_handler'), 'user');
-runTest("A wrong token is rejected", Csrf::validate($token . 'x'), false);
-runTest("An empty token is rejected", Csrf::validate(''), false);
-runTest("A null token is rejected", Csrf::validate(null), false);
-runTest("Csrf::field() embeds the current token",
-    strpos(Csrf::field(), htmlspecialchars($token, ENT_QUOTES, 'UTF-8')) !== false, true);
-Csrf::rotate();
-runTest("After rotation the old token is rejected", Csrf::validate($token), false);
-runTest("After rotation the new token validates", Csrf::validate(Csrf::token()), true);
+runTest("A wrong token is rejected", $csrfHelper->validate($token . 'x'), false);
+runTest("An empty token is rejected", $csrfHelper->validate(''), false);
+runTest("A null token is rejected", $csrfHelper->validate(null), false);
+runTest("Csrf->field() embeds the current token",
+    strpos($csrfHelper->field(), htmlspecialchars($token, ENT_QUOTES, 'UTF-8')) !== false, true);
+$csrfHelper->rotate();
+runTest("After rotation the old token is rejected", $csrfHelper->validate($token), false);
+runTest("After rotation the new token validates", $csrfHelper->validate($csrfHelper->token()), true);
 
 // ---------------------------------------------------------
 // SECTION 4: LOGIN RATE LIMITER (in-memory SQLite)
@@ -223,7 +228,7 @@ $adminsBefore = $userModel->countSystemAdmins();
 runTest("setRole promotes a student to society_admin",
     $userModel->setRole($societyId, 'society_admin'), true);
 runTest("Promoted role reads back as society_admin",
-    Authorization::normalizeRole($userModel->getById($societyId)['role']), 'society_admin');
+    $authz->normalizeRole($userModel->getById($societyId)['role']), 'society_admin');
 runTest("setRole rejects legacy 'admin'",
     $userModel->setRole($studentId, 'admin'), false);
 runTest("setRole rejects unknown roles",
@@ -245,26 +250,27 @@ runTest("listUsers search with no match returns empty",
     $userModel->listUsers("no-such-user-{$uniq}"), []);
 
 // ---------------------------------------------------------
-// SECTION 6: AUTH::can() FOR LOGGED-IN USERS
+// SECTION 6: AUTH->can() FOR LOGGED-IN USERS
 // ---------------------------------------------------------
-echo "\n--- AUTH::can() (live session) ---\n";
+echo "\n--- AUTH->can() (live session) ---\n";
 
-Auth::login($student);
+$authHelper = new Auth($authz, $csrfHelper);
+$authHelper->login($student);
 runTest("Student session cannot delete any post",
-    Auth::can('post.delete_any'), false);
+    $authHelper->can('post.delete_any'), false);
 runTest("Student session can create posts",
-    Auth::can('post.create'), true);
+    $authHelper->can('post.create'), true);
 runTest("Student session cannot manage users",
-    Auth::can('user.manage'), false);
+    $authHelper->can('user.manage'), false);
 // Re-fetch: $admin was loaded before the setRole promotion above,
 // so its in-memory role is stale — the live DB row is system_admin.
 $admin = $userModel->verifyPassword("rbac_admin_{$uniq}@nu.edu.pk", $password);
-Auth::login($admin);
+$authHelper->login($admin);
 runTest("System admin session can delete any post",
-    Auth::can('post.delete_any'), true);
+    $authHelper->can('post.delete_any'), true);
 runTest("System admin session can assign roles",
-    Auth::can('role.assign'), true);
-Auth::logout();
+    $authHelper->can('role.assign'), true);
+$authHelper->logout();
 
 // ---------------------------------------------------------
 // SECTION 7: SOCIETY ANNOUNCEMENTS
@@ -364,6 +370,39 @@ foreach ([$studentAnn['post_id'] ?? 0, $societyAnn['post_id'] ?? 0, $normalPost[
 }
 $db->exec("DELETE FROM users WHERE id IN ({$studentId}, {$societyId}, {$adminId})");
 $db->exec("DELETE FROM login_attempts WHERE email LIKE 'rbac\_%' ESCAPE '\\'");
+
+// ---------------------------------------------------------
+// SECTION 10: INJECTABLE HELPER OBJECTS (Intent 003 Unit 006 / EF-4a)
+// ---------------------------------------------------------
+echo "\n--- INJECTABLE HELPER OBJECTS (Intent 003 Unit 006) ---\n";
+require_once __DIR__ . '/../classes/SafeRedirect.php';
+require_once __DIR__ . '/../classes/SocialController.php';
+require_once __DIR__ . '/../classes/AuthController.php';
+require_once __DIR__ . '/../classes/ProfileController.php';
+require_once __DIR__ . '/../classes/AdminController.php';
+
+$injectedAuthz = new Authorization();
+$injectedRedirect = new SafeRedirect();
+
+runTest("Injected Authorization instance enforces permission matrix",
+    $injectedAuthz->can(Authorization::ROLE_SYSTEM_ADMIN, 'user.manage')
+    && !$injectedAuthz->can(Authorization::ROLE_STUDENT, 'user.manage'), true);
+runTest("Injected SafeRedirect instance resolves safe local target",
+    $injectedRedirect->target('explore.php?q=oop') === 'explore.php?q=oop'
+    && $injectedRedirect->target('https://evil.example/') === 'index.php', true);
+
+$helperClasses = [Auth::class, Csrf::class, Authorization::class, SafeRedirect::class];
+$staticMethodCount = 0;
+foreach ($helperClasses as $hCls) {
+    $ref = new ReflectionClass($hCls);
+    foreach ($ref->getMethods(ReflectionMethod::IS_PUBLIC) as $m) {
+        if ($m->isStatic()) {
+            $staticMethodCount++;
+        }
+    }
+}
+runTest("Auth, Csrf, Authorization, and SafeRedirect have 0 public static methods",
+    $staticMethodCount, 0);
 
 // ---------------------------------------------------------
 echo "\n=================================================\n";

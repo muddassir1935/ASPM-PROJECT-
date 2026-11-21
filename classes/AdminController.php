@@ -7,7 +7,7 @@
  *
  * Replaces procedural handling in admin_action.php, report_action.php, and report_review.php.
  * Follows the same pattern as SocialController and PostController:
- * models and dependencies are injected, current user defaults to Auth::user(),
+ * models and dependencies are injected, current user defaults to $auth->user(),
  * and request handler methods return structured response arrays for testing without a web server.
  *
  * Response structures:
@@ -28,19 +28,39 @@ class AdminController extends Model {
     private Report $reportModel;
     private DbSessionHandler $sessionHandler;
     private ?array $currentUser;
+    private Authorization $authorization;
+    private Csrf $csrf;
+    private Auth $auth;
 
-    public function __construct(PDO $db, ?User $userModel = null, ?Report $reportModel = null,
-                                ?DbSessionHandler $sessionHandler = null, ?array $currentUser = null) {
+    public function __construct(
+        PDO $db,
+        ?User $userModel = null,
+        ?Report $reportModel = null,
+        ?DbSessionHandler $sessionHandler = null,
+        ?array $currentUser = null,
+        ?Authorization $authorization = null,
+        ?Csrf $csrf = null,
+        ?Auth $auth = null
+    ) {
         parent::__construct($db);
-        $this->userModel = $userModel ?? new User($db);
+        $this->authorization = $authorization ?? new Authorization();
+        $this->csrf = $csrf ?? new Csrf();
+        $this->auth = $auth ?? new Auth($this->authorization, $this->csrf);
+        $this->userModel = $userModel ?? new User($db, $this->authorization);
         $this->reportModel = $reportModel ?? new Report($db);
         $this->sessionHandler = $sessionHandler ?? new DbSessionHandler($db);
-        $this->currentUser = $currentUser ?? Auth::user();
+        $this->currentUser = $currentUser ?? $this->auth->user();
     }
 
     /** Factory method: construct controller from PDO and optional user */
-    public static function fromConnection(PDO $db, ?array $currentUser = null): self {
-        return new self($db, null, null, null, $currentUser);
+    public static function fromConnection(
+        PDO $db,
+        ?array $currentUser = null,
+        ?Authorization $authorization = null,
+        ?Csrf $csrf = null,
+        ?Auth $auth = null
+    ): self {
+        return new self($db, null, null, null, $currentUser, $authorization, $csrf, $auth);
     }
 
     /**
@@ -70,7 +90,7 @@ class AdminController extends Model {
             ];
         }
 
-        if (!Csrf::validate($input['csrf_token'] ?? null)) {
+        if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
             return [
                 'result' => ['success' => false, 'message' => 'Security token expired. Please try again.'],
                 'redirect' => 'admin.php'
@@ -116,7 +136,7 @@ class AdminController extends Model {
             ];
         }
 
-        if (!Csrf::validate($input['csrf_token'] ?? null)) {
+        if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
             return [
                 'result' => ['success' => false, 'message' => 'Security token expired. Please try again.'],
                 'redirect' => $redirect
@@ -168,7 +188,7 @@ class AdminController extends Model {
             ];
         }
 
-        if (!Csrf::validate($input['csrf_token'] ?? null)) {
+        if (!$this->csrf->validate($input['csrf_token'] ?? null)) {
             return [
                 'result' => ['success' => false, 'message' => 'Security token expired. Please try again.'],
                 'redirect' => 'admin.php#reports'
@@ -190,7 +210,7 @@ class AdminController extends Model {
      * Forward notification actions to NotificationController.
      */
     public function handleNotification(string $method, array $query, array $input): array {
-        $notifController = new NotificationController($this->db, null, $this->currentUser);
+        $notifController = new NotificationController($this->db, null, $this->currentUser, $this->auth, $this->csrf);
         return $notifController->handle($method, $query, $input);
     }
 
@@ -249,12 +269,12 @@ class AdminController extends Model {
             return ['success' => false, 'message' => 'You cannot change your own role.'];
         }
 
-        if (!Authorization::isValidRole($newRole)) {
+        if (!$this->authorization->isValidRole($newRole)) {
             return ['success' => false, 'message' => 'Invalid role selected.'];
         }
 
         if (
-            Authorization::normalizeRole($target['role']) === Authorization::ROLE_SYSTEM_ADMIN
+            $this->authorization->normalizeRole($target['role']) === Authorization::ROLE_SYSTEM_ADMIN
             && $newRole !== Authorization::ROLE_SYSTEM_ADMIN
             && $this->userModel->countSystemAdmins() <= 1
         ) {
@@ -266,7 +286,7 @@ class AdminController extends Model {
             $this->sessionHandler->destroySessionsForUser($targetId);
             return [
                 'success' => true,
-                'message' => $target['name'] . ' is now ' . Authorization::displayLabel($newRole) . '. Their sessions have been signed out.',
+                'message' => $target['name'] . ' is now ' . $this->authorization->displayLabel($newRole) . '. Their sessions have been signed out.',
             ];
         }
 
@@ -292,6 +312,6 @@ class AdminController extends Model {
     }
 
     private function can(string $permission): bool {
-        return Authorization::can($this->currentUser['role'] ?? 'student', $permission);
+        return $this->authorization->can($this->currentUser['role'] ?? 'student', $permission);
     }
 }

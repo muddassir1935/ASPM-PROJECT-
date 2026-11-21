@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/Authorization.php';
+require_once __DIR__ . '/Csrf.php';
 
 // Audit C3: action handlers (post_action.php, like_action.php, ...) never
 // include includes/header.php, which is where display_errors used to be
@@ -12,6 +13,12 @@ if (PHP_SAPI !== 'cli') {
     ini_set('log_errors', '1');
 }
 
+/**
+ * Class Auth
+ *
+ * Authentication and session lifecycle service (converted to an instantiable
+ * injectable object in Intent 003, unit 006-helpers-objects, EF-4a).
+ */
 class Auth {
     /** Idle sessions are logged out after 30 minutes of inactivity. */
     public const IDLE_TIMEOUT_SECONDS = 1800;
@@ -19,6 +26,14 @@ class Auth {
     private static bool $dbSessionHandlerRegistered = false;
     private static ?DbSessionHandler $dbSessionHandler = null;
     private static bool $roleRefreshed = false;
+
+    private Authorization $authorization;
+    private Csrf $csrf;
+
+    public function __construct(?Authorization $authorization = null, ?Csrf $csrf = null) {
+        $this->authorization = $authorization ?? new Authorization();
+        $this->csrf = $csrf ?? new Csrf($this);
+    }
 
     /**
      * Harden the session cookie before it is issued (Sprint 5, H6):
@@ -30,7 +45,7 @@ class Auth {
      * on POST handlers that validate the token before touching Auth.
      * No-op once a session is active (params are fixed by then).
      */
-    public static function hardenSessionCookie(): void {
+    public function hardenSessionCookie(): void {
         if (session_status() !== PHP_SESSION_NONE) {
             return;
         }
@@ -43,14 +58,14 @@ class Auth {
         ]);
     }
 
-    private static function startSession() {
+    private function startSession(): void {
         if (session_status() === PHP_SESSION_NONE && !headers_sent()) {
-            self::registerDbSessionHandler();
-            self::hardenSessionCookie();
+            $this->registerDbSessionHandler();
+            $this->hardenSessionCookie();
             session_start();
         }
         if (session_status() === PHP_SESSION_ACTIVE) {
-            self::enforceIdleTimeout();
+            $this->enforceIdleTimeout();
         }
     }
 
@@ -59,7 +74,7 @@ class Auth {
      * IDLE_TIMEOUT_SECONDS. The activity stamp is refreshed on every
      * request that reaches this point.
      */
-    private static function enforceIdleTimeout(): void {
+    private function enforceIdleTimeout(): void {
         $lastActivity = isset($_SESSION['last_activity']) ? (int)$_SESSION['last_activity'] : 0;
         if ($lastActivity > 0 && (time() - $lastActivity) > self::IDLE_TIMEOUT_SECONDS) {
             $_SESSION = [];
@@ -85,7 +100,7 @@ class Auth {
      * it would read an empty file-based session and reject every
      * valid token.
      */
-    public static function registerDbSessionHandler(): void {
+    public function registerDbSessionHandler(): void {
         if (self::$dbSessionHandlerRegistered) {
             return;
         }
@@ -118,18 +133,17 @@ class Auth {
         }
     }
 
-    public static function login($userData) {
-        self::startSession();
+    public function login($userData): void {
+        $this->startSession();
         // Prevent Session Fixation attack
         session_regenerate_id(true);
         // Sprint 5 CSRF: a token issued before login must not survive it.
-        require_once __DIR__ . '/Csrf.php';
-        Csrf::rotate();
+        $this->csrf->rotate();
         $_SESSION['user_id'] = $userData['id'];
         $_SESSION['user_name'] = $userData['name'] ?? 'User';
         $_SESSION['user_email'] = $userData['email'] ?? '';
         // Normalize so legacy values ('admin', 'society') never leak into the session.
-        $_SESSION['role'] = Authorization::normalizeRole($userData['role'] ?? 'student');
+        $_SESSION['role'] = $this->authorization->normalizeRole($userData['role'] ?? 'student');
         self::$roleRefreshed = true;
 
         // Tag the DB session row with its owner (no-op on native sessions).
@@ -138,8 +152,8 @@ class Auth {
         }
     }
 
-    public static function logout() {
-        self::startSession();
+    public function logout(): void {
+        $this->startSession();
         // If no session could be started (e.g. headers already sent),
         // there is nothing to destroy.
         if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -159,15 +173,15 @@ class Auth {
         session_destroy();
     }
 
-    public static function isLoggedIn() {
-        self::startSession();
+    public function isLoggedIn(): bool {
+        $this->startSession();
         return isset($_SESSION['user_id']);
     }
 
-    public static function user() {
-        self::startSession();
-        if(self::isLoggedIn()) {
-            self::refreshRoleFromDatabase();
+    public function user(): ?array {
+        $this->startSession();
+        if ($this->isLoggedIn()) {
+            $this->refreshRoleFromDatabase();
             return [
                 'id' => $_SESSION['user_id'],
                 'name' => $_SESSION['user_name'] ?? 'User',
@@ -182,12 +196,12 @@ class Auth {
      * Does the logged-in user hold this permission? (RBAC, Sprint 5.)
      * Unknown permissions and logged-out users are denied.
      */
-    public static function can(string $permission): bool {
-        $user = self::user();
+    public function can(string $permission): bool {
+        $user = $this->user();
         if (!$user) {
             return false;
         }
-        return Authorization::can($user['role'] ?? 'student', $permission);
+        return $this->authorization->can($user['role'] ?? 'student', $permission);
     }
 
     /**
@@ -196,7 +210,7 @@ class Auth {
      * the user to log out and back in. On any failure the session role
      * is kept, so login never breaks because of this lookup.
      */
-    private static function refreshRoleFromDatabase(): void {
+    private function refreshRoleFromDatabase(): void {
         if (self::$roleRefreshed || !isset($_SESSION['user_id'])) {
             return;
         }
@@ -217,7 +231,7 @@ class Auth {
             $stmt->execute();
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row && isset($row['role'])) {
-                $_SESSION['role'] = Authorization::normalizeRole((string)$row['role']);
+                $_SESSION['role'] = $this->authorization->normalizeRole((string)$row['role']);
             }
         } catch (Throwable $e) {
             error_log("Role refresh failed, keeping session role: " . $e->getMessage());

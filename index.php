@@ -25,6 +25,7 @@ if ($currentUser) {
     }
     $bookmarkModel = new Bookmark($db);
     $bookmarkedIds = $bookmarkModel->getBookmarkedIds((int)$currentUser['id']);
+    $safeRedirect = new SafeRedirect();
 } else {
     require_once 'config/Database.php';
     require_once 'classes/Hashtag.php';
@@ -66,14 +67,14 @@ if ($currentUser) {
         <div class="compose-card">
             <form method="POST" action="post_action.php" id="compose-form">
                 <input type="hidden" name="action" value="create">
-                <?= Csrf::field() ?>
+                <?= $csrf->field() ?>
                 <div class="compose-flex">
                     <span class="avatar-md<?= avatarToneClass((int)$currentUser['id'], (string)$currentUser['role']) ?>"><?= htmlspecialchars(strtoupper(mb_substr(trim($currentUser['name']), 0, 1, 'UTF-8'))) ?></span>
                     <textarea id="compose-content" class="form-control" name="content" aria-label="Write a post" rows="2" maxlength="280" placeholder="What's happening on campus?!"></textarea>
                 </div>
                 <div class="compose-row">
                     <div class="compose-left-tools">
-                        <?php if (Auth::can('announcement.create')): ?>
+                        <?php if ($auth->can('announcement.create')): ?>
                             <label class="announcement-chip">
                                 <input type="checkbox" name="is_announcement" value="1" id="announcement-check">
                                 <span class="chip-content">
@@ -171,7 +172,7 @@ if ($currentUser) {
                     // Sprint 5 UI polish (M-7): same owner rule as every
                     // other post card — owner gets Edit + Delete, an
                     // admin gets Delete on anyone's post.
-                    $canDeleteAny = Auth::can('post.delete_any');
+                    $canDeleteAny = $auth->can('post.delete_any');
                     $authorInitial = strtoupper(mb_substr(trim($feedPost['author_name']), 0, 1, 'UTF-8'));
                 ?>
                 <?php $feedIsAnnouncement = !empty($feedPost['is_announcement']); ?>
@@ -192,7 +193,7 @@ if ($currentUser) {
                             ?>
                             <span class="post-card-time">&middot; <?= htmlspecialchars($feedPost['time_ago']) ?></span>
                             <?php
-                                $feedCanReport = $currentUser && !$isOwnPost && class_exists('Auth') && Auth::can('report.create');
+                                $feedCanReport = $currentUser && !$isOwnPost && $auth && $auth->can('report.create');
                                 $feedIsReported = false;
                                 if ($feedCanReport) {
                                     static $indexReportedCache = null;
@@ -221,8 +222,8 @@ if ($currentUser) {
                                         <?php endif; ?>
                                         <?php if ($isOwnPost || $canDeleteAny): ?>
                                             <form method="POST" action="post_action.php" class="js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin:0;">
-                                                <?= Csrf::field() ?>
-                                                <?= SafeRedirect::field() ?>
+                                                <?= $csrf->field() ?>
+                                                <?= $safeRedirect->field() ?>
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                                 <button type="submit" class="post-dropdown-item item-danger">
@@ -261,8 +262,8 @@ if ($currentUser) {
 
                         <?php if ($isOwnPost): ?>
                             <form id="post-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" class="edit-form" style="display: none;">
-                                <?= Csrf::field() ?>
-                                <?= SafeRedirect::field() ?>
+                                <?= $csrf->field() ?>
+                                <?= $safeRedirect->field() ?>
                                 <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                 <textarea name="content" class="form-control" rows="3" maxlength="280" required aria-label="Edit post"><?= htmlspecialchars($feedPost['content']) ?></textarea>

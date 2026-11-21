@@ -53,9 +53,9 @@ $flashMessage = $_SESSION['flash_message'] ?? null;
 unset($_SESSION['flash_type'], $_SESSION['flash_message']);
 
 $isOwner = $post && $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
-$canDelete = $isOwner || Auth::can('post.delete_any');
+$canDelete = $isOwner || $auth->can('post.delete_any');
 $isReported = false;
-if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
+if ($post && $currentUser && !$isOwner && $auth->can('report.create')) {
     $isReported = (new Report($db))->alreadyReported((int)$currentUser['id'], $postId);
 }
 ?>
@@ -101,7 +101,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                         <?= htmlspecialchars($post['author_name']) ?>
                     </div>
                     <div class="detail-meta">
-                        <?= htmlspecialchars(Authorization::displayLabel($post['author_role'] ?? 'student')) ?> &middot; <?= htmlspecialchars($post['time_ago']) ?>
+                        <?= htmlspecialchars($authorization->displayLabel($post['author_role'] ?? 'student')) ?> &middot; <?= htmlspecialchars($post['time_ago']) ?>
                     </div>
                 </div>
             </div>
@@ -126,13 +126,13 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                     <?php endif; ?>
                     <?php if ($canDelete): /* $canDelete already includes $isOwner (audit F13) */ ?>
                         <form method="POST" action="post_action.php" class="inline-form js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete">
-                            <?= Csrf::field() ?>
+                            <?= $csrf->field() ?>
                             <input type="hidden" name="action" value="delete">
                             <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                             <button type="submit" class="btn-text btn-text-danger">Delete</button>
                         </form>
                     <?php endif; ?>
-                    <?php if ($currentUser && !$isOwner && Auth::can('report.create')): ?>
+                    <?php if ($currentUser && !$isOwner && $auth->can('report.create')): ?>
                         <?php if ($isReported): ?>
                             <span class="btn-text" style="opacity: 0.6; cursor: default; display: inline-flex; align-items: center; gap: 4px;" title="You have reported this post">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>
@@ -157,7 +157,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
 
             <?php if ($isOwner): ?>
                 <form id="detail-edit-form" method="POST" action="post_action.php" class="edit-form" style="display: none; margin-top: 1rem;">
-                    <?= Csrf::field() ?>
+                    <?= $csrf->field() ?>
                     <input type="hidden" name="action" value="update">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <input type="hidden" name="return" value="<?= (int)$post['id'] ?>">
@@ -184,7 +184,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
         <?php if ($currentUser): ?>
             <div class="compose-card">
                 <form method="POST" action="reply_action.php" id="reply-form">
-                    <?= Csrf::field() ?>
+                    <?= $csrf->field() ?>
                     <input type="hidden" name="action" value="create">
                     <input type="hidden" name="post_id" value="<?= (int)$post['id'] ?>">
                     <div class="compose-flex">
@@ -227,7 +227,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                 <?php
                     $replyInitial = strtoupper(mb_substr(trim($reply['author_name']), 0, 1, 'UTF-8'));
                     $replyIsOwner = $currentUser && (int)$reply['user_id'] === (int)$currentUser['id'];
-                    $replyCanDelete = $replyIsOwner || Auth::can('reply.delete_any');
+                    $replyCanDelete = $replyIsOwner || $auth->can('reply.delete_any');
                 ?>
                 <div class="reply-card">
                     <span class="avatar-sm<?= avatarToneClass((int)$reply['user_id'], (string)($reply['author_role'] ?? '')) ?>"><?= htmlspecialchars($replyInitial) ?></span>
@@ -240,7 +240,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                         <p class="reply-content"><?= Hashtag::renderHashtagLinks(htmlspecialchars($reply['content'])) ?></p>
                         <?php if ($replyCanDelete): ?>
                             <form method="POST" action="reply_action.php" class="js-confirm-delete" data-confirm-title="Delete Reply" data-confirm-message="Are you sure you want to delete this reply? This action cannot be undone." data-confirm-btn="Delete" style="margin-top: 4px;">
-                                <?= Csrf::field() ?>
+                                <?= $csrf->field() ?>
                                 <input type="hidden" name="action" value="delete">
                                 <input type="hidden" name="reply_id" value="<?= (int)$reply['id'] ?>">
                                 <input type="hidden" name="return_post_id" value="<?= (int)$post['id'] ?>">

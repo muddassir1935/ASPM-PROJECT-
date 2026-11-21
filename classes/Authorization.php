@@ -2,11 +2,12 @@
 /**
  * Class Authorization
  *
- * Central role-based access control (Sprint 5 RBAC).
+ * Central role-based access control (Sprint 5 RBAC; converted to an
+ * instantiable injectable object in Intent 003, unit 006-helpers-objects, EF-4a).
  *
  * This is the ONE place that knows which role may do what. Controllers,
- * action handlers and views ask Authorization::can($role, $permission)
- * (or Auth::can($permission) for the logged-in user) instead of comparing
+ * action handlers and views ask $authorization->can($role, $permission)
+ * (or $auth->can($permission) for the logged-in user) instead of comparing
  * role strings inline, so adding a role or a permission means editing
  * this file only.
  *
@@ -71,7 +72,7 @@ class Authorization {
      * Normalize any stored role value to a current role name.
      * Unknown values fall back to 'student' (least privilege).
      */
-    public static function normalizeRole($role): string {
+    public function normalizeRole($role): string {
         $clean = is_string($role) ? strtolower(trim($role)) : '';
         if (isset(self::LEGACY_ROLE_MAP[$clean])) {
             return self::LEGACY_ROLE_MAP[$clean];
@@ -79,8 +80,8 @@ class Authorization {
         return in_array($clean, self::ROLES, true) ? $clean : self::ROLE_STUDENT;
     }
 
-    public static function isValidRole($role): bool {
-        return in_array(self::normalizeRole($role), self::ROLES, true)
+    public function isValidRole($role): bool {
+        return in_array($this->normalizeRole($role), self::ROLES, true)
             && (is_string($role) && in_array(strtolower(trim($role)), self::ROLES, true));
     }
 
@@ -88,8 +89,8 @@ class Authorization {
      * Does this role hold this permission?
      * Unknown permissions are denied (fail closed).
      */
-    public static function can($role, string $permission): bool {
-        $role = self::normalizeRole($role);
+    public function can($role, string $permission): bool {
+        $role = $this->normalizeRole($role);
         if (!isset(self::PERMISSIONS[$permission])) {
             return false;
         }
@@ -97,8 +98,8 @@ class Authorization {
     }
 
     /** All permissions held by a role (for the admin panel / docs). */
-    public static function permissionsFor($role): array {
-        $role = self::normalizeRole($role);
+    public function permissionsFor($role): array {
+        $role = $this->normalizeRole($role);
         $held = [];
         foreach (self::PERMISSIONS as $permission => $roles) {
             if (in_array($role, $roles, true)) {
@@ -112,14 +113,14 @@ class Authorization {
      * Official accounts (system + society admins) get the official
      * visual treatment (ink avatar tone, Announcement line).
      */
-    public static function isOfficialRole($role): bool {
-        $role = self::normalizeRole($role);
+    public function isOfficialRole($role): bool {
+        $role = $this->normalizeRole($role);
         return $role === self::ROLE_SYSTEM_ADMIN || $role === self::ROLE_SOCIETY_ADMIN;
     }
 
     /** Display label for a role, e.g. 'system_admin' => 'System Admin'. */
-    public static function displayLabel($role): string {
-        $role = self::normalizeRole($role);
+    public function displayLabel($role): string {
+        $role = $this->normalizeRole($role);
         return self::DISPLAY_LABELS[$role] ?? 'Student';
     }
 }

@@ -10,7 +10,7 @@ require_once __DIR__ . '/Model.php';
  * Works with both drivers Database supports (MySQL and SQLite): the
  * upsert syntax differs, so it is chosen from the PDO driver name.
  *
- * The `user_id` column is set by Auth::login() after a successful login
+ * The `user_id` column is set by the Auth service's login() after a successful login
  * and is deliberately NOT overwritten by write(): a session row created
  * at login keeps its owner even as its payload changes.
  *
@@ -129,7 +129,7 @@ class DbSessionHandler extends Model implements SessionHandlerInterface, Session
     }
 
     /**
-     * Tag a session row with its owner. Called by Auth::login() right
+     * Tag a session row with its owner. Called by the Auth service's login() right
      * after login; the row may not exist yet (PHP writes the payload at
      * shutdown), so this upserts a placeholder that write() then fills
      * without touching user_id.

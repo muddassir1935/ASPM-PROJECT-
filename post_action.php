@@ -20,8 +20,12 @@ require_once 'classes/Auth.php';
 require_once 'classes/Csrf.php';
 require_once 'classes/SafeRedirect.php';
 
+$authorization = new Authorization();
+$csrf = new Csrf();
+$auth = new Auth($authorization, $csrf);
+
 // Every post action requires a logged-in user.
-if (!Auth::isLoggedIn()) {
+if (!$auth->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }
@@ -37,11 +41,11 @@ $action = is_string($_POST['action'] ?? null) ? $_POST['action'] : '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Sprint 5 CSRF: refuse the request when the token is missing or wrong.
-    if (!Csrf::validatePost()) {
+    if (!$csrf->validatePost()) {
         $result = ['success' => false, 'message' => 'Security token expired. Please try again.'];
     } else {
         $db = Database::getInstance()->getConnection();
-        $controller = new PostController(new Post($db));
+        $controller = new PostController(new Post($db), null, $authorization, $auth);
 
         $postId = (int)($_POST['post_id'] ?? 0);
 
@@ -74,5 +78,6 @@ $_SESSION['flash_message'] = $result['message'];
 // SafeRedirect so it can only ever be a local page. A deleted post's own
 // detail page no longer exists, so that one falls back to the feed.
 $deletedId = ($action === 'delete' && !empty($result['success'])) ? (int)($_POST['post_id'] ?? 0) : null;
-header('Location: ' . SafeRedirect::target($_POST['return'] ?? 'index', 'index.php', $deletedId));
+$safeRedirect = new SafeRedirect();
+header('Location: ' . $safeRedirect->target($_POST['return'] ?? 'index', 'index.php', $deletedId));
 exit;

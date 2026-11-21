@@ -12,7 +12,8 @@ require_once 'classes/Auth.php';
 require_once 'includes/social_widgets.php';
 
 // Redirect before any output: header.php below starts sending HTML.
-if (!Auth::isLoggedIn()) {
+$auth = new Auth();
+if (!$auth->isLoggedIn()) {
     header('Location: login.php');
     exit;
 }

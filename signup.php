@@ -49,7 +49,7 @@ require_once 'includes/header.php';
         <?php endif; ?>
 
         <form method="POST" action="signup.php" autocomplete="off" id="signup-form">
-            <?= Csrf::field() ?>
+            <?= $csrf->field() ?>
             <div class="form-group">
                 <label class="form-label" for="name">Full Name</label>
                 <input 

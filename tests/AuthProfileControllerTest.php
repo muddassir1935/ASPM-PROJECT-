@@ -23,7 +23,9 @@ require_once __DIR__ . '/../classes/AuthController.php';
 require_once __DIR__ . '/../classes/ProfileController.php';
 
 // Start the session BEFORE any output so Csrf and Auth can manage $_SESSION.
-$csrf = Csrf::token();
+$csrfHelper = new Csrf();
+$authHelper = new Auth(null, $csrfHelper);
+$csrf = $csrfHelper->token();
 
 $passed = 0;
 $total = 0;
@@ -182,8 +184,8 @@ $r = $authCtrl->handleLogin('POST', [
     'email' => $regEmail,
     'password' => 'StrongPass123!'
 ]);
-$csrf = Csrf::token(); // rotated on login
-$loggedInUser = Auth::user();
+$csrf = $csrfHelper->token(); // rotated on login
+$loggedInUser = $authHelper->user();
 assertAPC('Login: valid credentials authenticate user and redirect to index.php',
     $r['redirect'] === 'index.php' && $r['status'] === 200 && $loggedInUser !== null && $loggedInUser['email'] === $regEmail);
 
@@ -316,17 +318,17 @@ echo "--- LOGOUT (AuthController::handleLogout) ---" . PHP_EOL;
 // GET logout does not log the user out
 $r = $authCtrl->handleLogout('GET', ['csrf_token' => $csrf]);
 assertAPC('Logout: GET redirects to index.php without logging out',
-    $r === ['redirect' => 'index.php', 'logged_out' => false] && Auth::isLoggedIn());
+    $r === ['redirect' => 'index.php', 'logged_out' => false] && $authHelper->isLoggedIn());
 
 // POST logout with bad CSRF does not log the user out
 $r = $authCtrl->handleLogout('POST', ['csrf_token' => 'bad']);
 assertAPC('Logout: bad CSRF redirects to index.php without logging out',
-    $r === ['redirect' => 'index.php', 'logged_out' => false] && Auth::isLoggedIn());
+    $r === ['redirect' => 'index.php', 'logged_out' => false] && $authHelper->isLoggedIn());
 
 // POST logout with valid CSRF logs the user out and redirects to login.php?logged_out=1
 $r = $authCtrl->handleLogout('POST', ['csrf_token' => $csrf]);
 assertAPC('Logout: valid POST logs out and redirects to login.php?logged_out=1',
-    $r === ['redirect' => 'login.php?logged_out=1', 'logged_out' => true] && !Auth::isLoggedIn());
+    $r === ['redirect' => 'login.php?logged_out=1', 'logged_out' => true] && !$authHelper->isLoggedIn());
 
 echo "--- PAGES DELEGATE TO CONTROLLERS ---" . PHP_EOL;
 $root = __DIR__ . '/..';

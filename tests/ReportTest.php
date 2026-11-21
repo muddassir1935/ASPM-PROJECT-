@@ -116,12 +116,13 @@ assertTest("listPending honors limit and offset",
 // --- SECTION 4: RBAC PERMISSIONS ---
 echo PHP_EOL . "--- REPORT RBAC PERMISSIONS ---" . PHP_EOL;
 
-assertTest("Student holds report.create permission", Authorization::can(Authorization::ROLE_STUDENT, 'report.create') === true);
-assertTest("Society admin holds report.create permission", Authorization::can(Authorization::ROLE_SOCIETY_ADMIN, 'report.create') === true);
-assertTest("System admin holds report.create permission", Authorization::can(Authorization::ROLE_SYSTEM_ADMIN, 'report.create') === true);
-assertTest("Student DOES NOT hold report.review permission", Authorization::can(Authorization::ROLE_STUDENT, 'report.review') === false);
-assertTest("Society admin DOES NOT hold report.review permission", Authorization::can(Authorization::ROLE_SOCIETY_ADMIN, 'report.review') === false);
-assertTest("System admin holds report.review permission", Authorization::can(Authorization::ROLE_SYSTEM_ADMIN, 'report.review') === true);
+$authz = new Authorization();
+assertTest("Student holds report.create permission", $authz->can(Authorization::ROLE_STUDENT, 'report.create') === true);
+assertTest("Society admin holds report.create permission", $authz->can(Authorization::ROLE_SOCIETY_ADMIN, 'report.create') === true);
+assertTest("System admin holds report.create permission", $authz->can(Authorization::ROLE_SYSTEM_ADMIN, 'report.create') === true);
+assertTest("Student DOES NOT hold report.review permission", $authz->can(Authorization::ROLE_STUDENT, 'report.review') === false);
+assertTest("Society admin DOES NOT hold report.review permission", $authz->can(Authorization::ROLE_SOCIETY_ADMIN, 'report.review') === false);
+assertTest("System admin holds report.review permission", $authz->can(Authorization::ROLE_SYSTEM_ADMIN, 'report.review') === true);
 
 // --- SECTION 5: ADMIN REVIEW WORKFLOWS ---
 echo PHP_EOL . "--- ADMIN REVIEW WORKFLOWS (DISMISS & ACTION) ---" . PHP_EOL;

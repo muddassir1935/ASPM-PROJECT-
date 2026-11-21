@@ -20,7 +20,8 @@ require_once __DIR__ . '/../classes/Csrf.php';
 require_once __DIR__ . '/../classes/AdminController.php';
 require_once __DIR__ . '/../classes/NotificationController.php';
 
-$csrf = Csrf::token();
+$csrfHelper = new Csrf();
+$csrf = $csrfHelper->token();
 $passed = 0;
 $total = 0;
 

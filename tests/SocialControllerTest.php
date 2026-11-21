@@ -18,7 +18,8 @@ require_once __DIR__ . '/../classes/SocialController.php';
 
 // Start the session BEFORE any output (CLI quirk, see RbacTest): once
 // headers_sent() is true, Csrf can no longer start the session.
-$csrf = Csrf::token();
+$csrfHelper = new Csrf();
+$csrf = $csrfHelper->token();
 
 $passed = 0;
 $total = 0;
@@ -52,7 +53,7 @@ $ok = ['csrf_token' => $csrf];
 
 echo "--- GUARDS (same codes and messages as before) ---" . PHP_EOL;
 
-// Logged out: no session user, so Auth::user() is null.
+// Logged out: no session user, so $auth->user() is null.
 $guest = SocialController::fromConnection($db);
 foreach (['handleLike', 'handleFollow', 'handleBookmark'] as $m) {
     $r = $guest->$m('POST', $ok + ['post_id' => $postId, 'user_id' => $danId]);

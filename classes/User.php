@@ -2,6 +2,13 @@
 require_once __DIR__ . '/Model.php';
 
 class User extends Model {
+    private Authorization $authorization;
+
+    public function __construct(PDO $dbConnection, ?Authorization $authorization = null) {
+        parent::__construct($dbConnection);
+        require_once __DIR__ . '/Authorization.php';
+        $this->authorization = $authorization ?? new Authorization();
+    }
 
     /**
      * Designed profile cover styles (Sprint 3 cover picker).
@@ -365,8 +372,7 @@ class User extends Model {
         if ((int)$userId <= 0) {
             return false;
         }
-        require_once __DIR__ . '/Authorization.php';
-        if (!class_exists('Authorization') || !Authorization::isValidRole($role)) {
+        if (!$this->authorization->isValidRole($role)) {
             return false;
         }
         $stmt = $this->db->prepare("UPDATE users SET role = :role WHERE id = :id");
