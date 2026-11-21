@@ -25,6 +25,7 @@ if ($currentUser) {
     }
     $bookmarkModel = new Bookmark($db);
     $bookmarkedIds = $bookmarkModel->getBookmarkedIds((int)$currentUser['id']);
+    $safeRedirect = new SafeRedirect();
 } else {
     require_once 'config/Database.php';
     require_once 'classes/Hashtag.php';
@@ -222,7 +223,7 @@ if ($currentUser) {
                                         <?php if ($isOwnPost || $canDeleteAny): ?>
                                             <form method="POST" action="post_action.php" class="js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin:0;">
                                                 <?= Csrf::field() ?>
-                                                <?= SafeRedirect::field() ?>
+                                                <?= $safeRedirect->field() ?>
                                                 <input type="hidden" name="action" value="delete">
                                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                                 <button type="submit" class="post-dropdown-item item-danger">
@@ -262,7 +263,7 @@ if ($currentUser) {
                         <?php if ($isOwnPost): ?>
                             <form id="post-edit-<?= (int)$feedPost['id'] ?>" method="POST" action="post_action.php" class="edit-form" style="display: none;">
                                 <?= Csrf::field() ?>
-                                <?= SafeRedirect::field() ?>
+                                <?= $safeRedirect->field() ?>
                                 <input type="hidden" name="action" value="update">
                                 <input type="hidden" name="post_id" value="<?= (int)$feedPost['id'] ?>">
                                 <textarea name="content" class="form-control" rows="3" maxlength="280" required aria-label="Edit post"><?= htmlspecialchars($feedPost['content']) ?></textarea>

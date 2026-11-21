@@ -237,6 +237,9 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     $isOwner = $currentUser && (int)$post['user_id'] === (int)$currentUser['id'];
     $canDeleteAny = $currentUser && class_exists('Auth') && Auth::can('post.delete_any');
     $canReport = $currentUser && !$isOwner && class_exists('Auth') && Auth::can('report.create');
+    $safeRedirect = isset($GLOBALS['safeRedirect']) && $GLOBALS['safeRedirect'] instanceof SafeRedirect
+        ? $GLOBALS['safeRedirect']
+        : new SafeRedirect();
 
     $isReported = false;
     if ($canReport) {
@@ -282,7 +285,7 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
         if ($isOwner || $canDeleteAny) {
             echo '<form method="POST" action="post_action.php" class="js-confirm-delete" data-confirm-title="Delete Post" data-confirm-message="Are you sure you want to delete this post? This action cannot be undone." data-confirm-btn="Delete" style="margin:0;">'
                 . Csrf::field()
-                . SafeRedirect::field()
+                . $safeRedirect->field()
                 . '<input type="hidden" name="action" value="delete">'
                 . '<input type="hidden" name="post_id" value="' . $postId . '">'
                 . '<button type="submit" class="post-dropdown-item item-danger">'
@@ -331,7 +334,7 @@ function renderPostCard(array $post, ?array $currentUser, array $bookmarkedIds =
     if ($isOwner) {
         echo '<form id="post-edit-' . $postId . '" method="POST" action="post_action.php" class="edit-form" style="display: none;">'
             . Csrf::field()
-            . SafeRedirect::field()
+            . $safeRedirect->field()
             . '<input type="hidden" name="action" value="update">'
             . '<input type="hidden" name="post_id" value="' . $postId . '">'
             . '<textarea name="content" class="form-control" rows="3" maxlength="280" required aria-label="Edit post">' . htmlspecialchars($post['content']) . '</textarea>'

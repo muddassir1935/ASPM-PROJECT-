@@ -214,19 +214,20 @@ assertTest("Profile feed past the end is clamped too", count($f1User['posts']) =
 
 // --- Audit F4: safe return targets after post actions ---
 require_once __DIR__ . '/../classes/SafeRedirect.php';
+$safeRedirect = new SafeRedirect();
 assertTest("Return to a profile tab is honoured",
-    SafeRedirect::target('profile.php?id=3&tab=likes') === 'profile.php?id=3&tab=likes');
-assertTest("Return to the admin panel is honoured", SafeRedirect::target('admin.php') === 'admin.php');
-assertTest("Legacy numeric return maps to the post page", SafeRedirect::target('42') === 'post.php?id=42');
-assertTest("Legacy 'index' maps to the feed", SafeRedirect::target('index') === 'index.php');
-assertTest("Absolute URLs are rejected (no open redirect)", SafeRedirect::target('https://evil.example/') === 'index.php');
-assertTest("Protocol-relative URLs are rejected", SafeRedirect::target('//evil.example/x') === 'index.php');
-assertTest("Unknown pages are rejected", SafeRedirect::target('logout.php') === 'index.php');
-assertTest("Header injection is rejected", SafeRedirect::target("index.php\r\nSet-Cookie: x=1") === 'index.php');
+    $safeRedirect->target('profile.php?id=3&tab=likes') === 'profile.php?id=3&tab=likes');
+assertTest("Return to the admin panel is honoured", $safeRedirect->target('admin.php') === 'admin.php');
+assertTest("Legacy numeric return maps to the post page", $safeRedirect->target('42') === 'post.php?id=42');
+assertTest("Legacy 'index' maps to the feed", $safeRedirect->target('index') === 'index.php');
+assertTest("Absolute URLs are rejected (no open redirect)", $safeRedirect->target('https://evil.example/') === 'index.php');
+assertTest("Protocol-relative URLs are rejected", $safeRedirect->target('//evil.example/x') === 'index.php');
+assertTest("Unknown pages are rejected", $safeRedirect->target('logout.php') === 'index.php');
+assertTest("Header injection is rejected", $safeRedirect->target("index.php\r\nSet-Cookie: x=1") === 'index.php');
 assertTest("Returning to a just-deleted post's page falls back to the feed",
-    SafeRedirect::target('post.php?id=42', 'index.php', 42) === 'index.php');
+    $safeRedirect->target('post.php?id=42', 'index.php', 42) === 'index.php');
 assertTest("Deleting from another page stays there",
-    SafeRedirect::target('explore.php?q=x', 'index.php', 42) === 'explore.php?q=x');
+    $safeRedirect->target('explore.php?q=x', 'index.php', 42) === 'explore.php?q=x');
 
 echo PHP_EOL . "=================================================" . PHP_EOL;
 echo "TEST SUMMARY: {$passed} / {$total} Passed" . PHP_EOL;

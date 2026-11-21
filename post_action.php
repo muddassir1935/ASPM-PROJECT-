@@ -74,5 +74,6 @@ $_SESSION['flash_message'] = $result['message'];
 // SafeRedirect so it can only ever be a local page. A deleted post's own
 // detail page no longer exists, so that one falls back to the feed.
 $deletedId = ($action === 'delete' && !empty($result['success'])) ? (int)($_POST['post_id'] ?? 0) : null;
-header('Location: ' . SafeRedirect::target($_POST['return'] ?? 'index', 'index.php', $deletedId));
+$safeRedirect = new SafeRedirect();
+header('Location: ' . $safeRedirect->target($_POST['return'] ?? 'index', 'index.php', $deletedId));
 exit;
