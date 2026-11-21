@@ -1,20 +1,15 @@
 <?php
 /**
- * Logout (Sprint 5: CSRF-protected).
+ * Logout Handler (Sprint 5: CSRF-protected).
  *
- * Logout is a state change, so it is a POST with a CSRF token like
- * every other action — the header renders it as a small form, not a
- * GET link. A stray GET (old bookmark, crawler) simply redirects to
- * the feed instead of logging the user out.
+ * Thin entry point (intent 003, unit 003-controllers-auth): delegates
+ * logout handling to AuthController::handleLogout().
  */
-require_once 'classes/Auth.php';
-require_once 'classes/Csrf.php';
+require_once 'config/Database.php';
+require_once 'classes/AuthController.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && Csrf::validatePost()) {
-    Auth::logout();
-    header("Location: login.php?logged_out=1");
-    exit;
-}
+$controller = AuthController::fromConnection(Database::getInstance()->getConnection());
+$response = $controller->handleLogout($_SERVER['REQUEST_METHOD'], $_POST);
 
-header("Location: index.php");
+header('Location: ' . $response['redirect']);
 exit;
