@@ -1,10 +1,10 @@
 ---
 unit: 003-controllers-auth
 intent: 003-evaluation-fixes
-phase: inception
-status: ready
+phase: construction
+status: completed
 created: 2026-11-18T08:00:00Z
-updated: 2026-11-18T08:08:17Z
+updated: 2026-11-21T19:45:00Z
 ---
 
 # Unit Brief: Controllers for Auth + Profile Actions
