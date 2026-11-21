@@ -32,13 +32,15 @@ class SocialController {
     private Bookmark $bookmarkModel;
     private Reply $replyModel;
     private ?array $currentUser;
+    private Authorization $authorization;
 
     public function __construct(Like $likeModel, Follow $followModel, Bookmark $bookmarkModel,
-                                Reply $replyModel, ?array $currentUser = null) {
+                                Reply $replyModel, ?array $currentUser = null, ?Authorization $authorization = null) {
         $this->likeModel = $likeModel;
         $this->followModel = $followModel;
         $this->bookmarkModel = $bookmarkModel;
         $this->replyModel = $replyModel;
+        $this->authorization = $authorization ?? new Authorization();
         $this->currentUser = $currentUser ?? Auth::user();
     }
 
@@ -244,6 +246,6 @@ class SocialController {
 
     /** Does the current user's role hold $permission? */
     private function can(string $permission): bool {
-        return Authorization::can($this->currentUser['role'] ?? 'student', $permission);
+        return $this->authorization->can($this->currentUser['role'] ?? 'student', $permission);
     }
 }

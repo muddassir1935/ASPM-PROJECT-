@@ -20,6 +20,12 @@ class Auth {
     private static ?DbSessionHandler $dbSessionHandler = null;
     private static bool $roleRefreshed = false;
 
+    private Authorization $authorization;
+
+    public function __construct(?Authorization $authorization = null) {
+        $this->authorization = $authorization ?? new Authorization();
+    }
+
     /**
      * Harden the session cookie before it is issued (Sprint 5, H6):
      * HttpOnly (JavaScript cannot read it), SameSite=Lax (cross-site
@@ -129,7 +135,7 @@ class Auth {
         $_SESSION['user_name'] = $userData['name'] ?? 'User';
         $_SESSION['user_email'] = $userData['email'] ?? '';
         // Normalize so legacy values ('admin', 'society') never leak into the session.
-        $_SESSION['role'] = Authorization::normalizeRole($userData['role'] ?? 'student');
+        $_SESSION['role'] = (new Authorization())->normalizeRole($userData['role'] ?? 'student');
         self::$roleRefreshed = true;
 
         // Tag the DB session row with its owner (no-op on native sessions).
@@ -187,7 +193,7 @@ class Auth {
         if (!$user) {
             return false;
         }
-        return Authorization::can($user['role'] ?? 'student', $permission);
+        return (new Authorization())->can($user['role'] ?? 'student', $permission);
     }
 
     /**
@@ -217,7 +223,7 @@ class Auth {
             $stmt->execute();
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if ($row && isset($row['role'])) {
-                $_SESSION['role'] = Authorization::normalizeRole((string)$row['role']);
+                $_SESSION['role'] = (new Authorization())->normalizeRole((string)$row['role']);
             }
         } catch (Throwable $e) {
             error_log("Role refresh failed, keeping session role: " . $e->getMessage());

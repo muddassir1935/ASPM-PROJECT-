@@ -60,7 +60,10 @@ function renderLeftNav(string $active): void {
     if ($viewerId > 0 && isset($GLOBALS['currentUser']) && is_array($GLOBALS['currentUser'])) {
         $u = $GLOBALS['currentUser'];
         $uInitial = strtoupper(mb_substr(trim($u['name'] ?? ''), 0, 1, 'UTF-8'));
-        $uRole = class_exists('Authorization') ? Authorization::displayLabel($u['role'] ?? '') : ($u['role'] ?? 'Student');
+        $authz = isset($GLOBALS['authorization']) && $GLOBALS['authorization'] instanceof Authorization
+            ? $GLOBALS['authorization']
+            : (class_exists('Authorization') ? new Authorization() : null);
+        $uRole = $authz ? $authz->displayLabel($u['role'] ?? '') : ($u['role'] ?? 'Student');
         $emailParts = explode('@', $u['email'] ?? '');
         $uHandle = '@' . ($emailParts[0] ?? 'user');
 

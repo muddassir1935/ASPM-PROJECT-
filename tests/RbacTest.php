@@ -49,6 +49,7 @@ function runTest($testName, $actualResult, $expectedResult) {
 // ---------------------------------------------------------
 echo "--- PERMISSION MATRIX (role x permission) ---\n";
 
+$authz = new Authorization();
 $matrix = [
     // permission => [student, society_admin, system_admin]
     'post.create' => [true, true, true],
@@ -66,17 +67,17 @@ $matrix = [
 $roles = ['student', 'society_admin', 'system_admin'];
 foreach ($matrix as $permission => $expected) {
     foreach ($roles as $i => $role) {
-        runTest("Authorization::can('{$role}', '{$permission}')",
-            Authorization::can($role, $permission), $expected[$i]);
+        runTest("Authorization->can('{$role}', '{$permission}')",
+            $authz->can($role, $permission), $expected[$i]);
     }
 }
 
 runTest("Unknown permission is denied (fail closed)",
-    Authorization::can('system_admin', 'does.not.exist'), false);
+    $authz->can('system_admin', 'does.not.exist'), false);
 runTest("Logged-out / unknown role falls back to student permissions",
-    Authorization::can('nobody', 'post.delete_any'), false);
+    $authz->can('nobody', 'post.delete_any'), false);
 runTest("Unknown role can still create posts (student fallback)",
-    Authorization::can('nobody', 'post.create'), true);
+    $authz->can('nobody', 'post.create'), true);
 
 // ---------------------------------------------------------
 // SECTION 2: ROLE NORMALIZATION
@@ -84,30 +85,30 @@ runTest("Unknown role can still create posts (student fallback)",
 echo "\n--- ROLE NORMALIZATION ---\n";
 
 runTest("Legacy 'admin' normalizes to system_admin",
-    Authorization::normalizeRole('admin'), 'system_admin');
+    $authz->normalizeRole('admin'), 'system_admin');
 runTest("Legacy 'society' normalizes to society_admin",
-    Authorization::normalizeRole('society'), 'society_admin');
+    $authz->normalizeRole('society'), 'society_admin');
 runTest("Unknown role normalizes to student (least privilege)",
-    Authorization::normalizeRole('superuser'), 'student');
+    $authz->normalizeRole('superuser'), 'student');
 runTest("Empty role normalizes to student",
-    Authorization::normalizeRole(''), 'student');
+    $authz->normalizeRole(''), 'student');
 runTest("isValidRole accepts the three current roles",
-    Authorization::isValidRole('society_admin'), true);
+    $authz->isValidRole('society_admin'), true);
 runTest("isValidRole rejects legacy 'admin' for assignment",
-    Authorization::isValidRole('admin'), false);
+    $authz->isValidRole('admin'), false);
 runTest("isValidRole rejects unknown roles",
-    Authorization::isValidRole('root'), false);
+    $authz->isValidRole('root'), false);
 runTest("permissionsFor('system_admin') holds all 14 permissions",
-    count(Authorization::permissionsFor('system_admin')), 14);
+    count($authz->permissionsFor('system_admin')), 14);
 runTest("system_admin can reset passwords, student cannot",
-    Authorization::can('system_admin', 'user.reset_password') === true
-        && Authorization::can('student', 'user.reset_password') === false
-        && Authorization::can('society_admin', 'user.reset_password') === false,
+    $authz->can('system_admin', 'user.reset_password') === true
+        && $authz->can('student', 'user.reset_password') === false
+        && $authz->can('society_admin', 'user.reset_password') === false,
     true);
 runTest("permissionsFor('student') holds 6 permissions",
-    count(Authorization::permissionsFor('student')), 6);
+    count($authz->permissionsFor('student')), 6);
 runTest("displayLabel('system_admin') is 'System Admin'",
-    Authorization::displayLabel('system_admin'), 'System Admin');
+    $authz->displayLabel('system_admin'), 'System Admin');
 
 // ---------------------------------------------------------
 // SECTION 3: CSRF TOKENS
@@ -223,7 +224,7 @@ $adminsBefore = $userModel->countSystemAdmins();
 runTest("setRole promotes a student to society_admin",
     $userModel->setRole($societyId, 'society_admin'), true);
 runTest("Promoted role reads back as society_admin",
-    Authorization::normalizeRole($userModel->getById($societyId)['role']), 'society_admin');
+    $authz->normalizeRole($userModel->getById($societyId)['role']), 'society_admin');
 runTest("setRole rejects legacy 'admin'",
     $userModel->setRole($studentId, 'admin'), false);
 runTest("setRole rejects unknown roles",

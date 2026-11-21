@@ -28,11 +28,14 @@ class AdminController extends Model {
     private Report $reportModel;
     private DbSessionHandler $sessionHandler;
     private ?array $currentUser;
+    private Authorization $authorization;
 
     public function __construct(PDO $db, ?User $userModel = null, ?Report $reportModel = null,
-                                ?DbSessionHandler $sessionHandler = null, ?array $currentUser = null) {
+                                ?DbSessionHandler $sessionHandler = null, ?array $currentUser = null,
+                                ?Authorization $authorization = null) {
         parent::__construct($db);
-        $this->userModel = $userModel ?? new User($db);
+        $this->authorization = $authorization ?? new Authorization();
+        $this->userModel = $userModel ?? new User($db, $this->authorization);
         $this->reportModel = $reportModel ?? new Report($db);
         $this->sessionHandler = $sessionHandler ?? new DbSessionHandler($db);
         $this->currentUser = $currentUser ?? Auth::user();
@@ -249,12 +252,12 @@ class AdminController extends Model {
             return ['success' => false, 'message' => 'You cannot change your own role.'];
         }
 
-        if (!Authorization::isValidRole($newRole)) {
+        if (!$this->authorization->isValidRole($newRole)) {
             return ['success' => false, 'message' => 'Invalid role selected.'];
         }
 
         if (
-            Authorization::normalizeRole($target['role']) === Authorization::ROLE_SYSTEM_ADMIN
+            $this->authorization->normalizeRole($target['role']) === Authorization::ROLE_SYSTEM_ADMIN
             && $newRole !== Authorization::ROLE_SYSTEM_ADMIN
             && $this->userModel->countSystemAdmins() <= 1
         ) {
@@ -266,7 +269,7 @@ class AdminController extends Model {
             $this->sessionHandler->destroySessionsForUser($targetId);
             return [
                 'success' => true,
-                'message' => $target['name'] . ' is now ' . Authorization::displayLabel($newRole) . '. Their sessions have been signed out.',
+                'message' => $target['name'] . ' is now ' . $this->authorization->displayLabel($newRole) . '. Their sessions have been signed out.',
             ];
         }
 
@@ -292,6 +295,6 @@ class AdminController extends Model {
     }
 
     private function can(string $permission): bool {
-        return Authorization::can($this->currentUser['role'] ?? 'student', $permission);
+        return $this->authorization->can($this->currentUser['role'] ?? 'student', $permission);
     }
 }

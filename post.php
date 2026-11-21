@@ -101,7 +101,7 @@ if ($post && $currentUser && !$isOwner && Auth::can('report.create')) {
                         <?= htmlspecialchars($post['author_name']) ?>
                     </div>
                     <div class="detail-meta">
-                        <?= htmlspecialchars(Authorization::displayLabel($post['author_role'] ?? 'student')) ?> &middot; <?= htmlspecialchars($post['time_ago']) ?>
+                        <?= htmlspecialchars($authorization->displayLabel($post['author_role'] ?? 'student')) ?> &middot; <?= htmlspecialchars($post['time_ago']) ?>
                     </div>
                 </div>
             </div>

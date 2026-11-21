@@ -139,7 +139,7 @@ $viewerFollowingIds = $currentUser
                             <div class="user-row">
                                 <a href="profile.php?id=<?= (int)$foundUser['id'] ?>" class="user-row-link">
                                     <span class="avatar-sm<?= avatarToneClass((int)$foundUser['id'], (string)($foundUser['role'] ?? '')) ?>"><?= htmlspecialchars($uInitial) ?></span>
-                                    <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($foundUser['role'] ?? 'student')) ?> &bull; <?= (int)$foundUser['follower_count'] ?> <?= pluralize((int)$foundUser['follower_count'], 'follower') ?></span></span>
+                                    <span class="user-row-text"><strong><?= htmlspecialchars($foundUser['name']) ?></strong><span><?= htmlspecialchars($authorization->displayLabel($foundUser['role'] ?? 'student')) ?> &bull; <?= (int)$foundUser['follower_count'] ?> <?= pluralize((int)$foundUser['follower_count'], 'follower') ?></span></span>
                                 </a>
                                 <?php if ($currentUser): ?>
                                     <button type="button" class="btn-follow<?= $uIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$foundUser['id'] ?>"><?= $uIsFollowing ? 'Following' : 'Follow' ?></button>

@@ -124,7 +124,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                                 <?php if (($row['role'] ?? 'student') !== 'student'): ?>
                                     <span class="role-badge role-badge-<?= htmlspecialchars($row['role']) ?>">
                                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                        <?= htmlspecialchars(Authorization::displayLabel($row['role'])) ?>
+                                        <?= htmlspecialchars($authorization->displayLabel($row['role'])) ?>
                                     </span>
                                 <?php endif; ?>
                             </div>
@@ -148,7 +148,7 @@ $reviewedReports = $reportModel->listReviewed(20);
                                 <input type="hidden" name="user_id" value="<?= (int)$row['id'] ?>">
                                 <select name="role" class="admin-role-select" aria-label="Role for <?= htmlspecialchars($row['name']) ?>">
                                     <?php foreach (Authorization::ROLES as $roleOption): ?>
-                                        <option value="<?= htmlspecialchars($roleOption) ?>"<?= Authorization::normalizeRole($row['role']) === $roleOption ? ' selected' : '' ?>><?= htmlspecialchars(Authorization::displayLabel($roleOption)) ?></option>
+                                        <option value="<?= htmlspecialchars($roleOption) ?>"<?= $authorization->normalizeRole($row['role']) === $roleOption ? ' selected' : '' ?>><?= htmlspecialchars($authorization->displayLabel($roleOption)) ?></option>
                                     <?php endforeach; ?>
                                 </select>
                                 <button type="submit" class="admin-btn-action">Update</button>

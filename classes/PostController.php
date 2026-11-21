@@ -12,15 +12,18 @@ require_once __DIR__ . '/Authorization.php';
 class PostController {
     private Post $postModel;
     private ?array $currentUser;
+    private Authorization $authorization;
 
     /**
      * PostController constructor.
      * 
      * @param Post $postModel Injected Post model instance
-     * @param array|null $currentUser Optional user array (defaults to Auth::user())
+     * @param array|null $currentUser Optional user array (defaults to Auth->user())
+     * @param Authorization|null $authorization Optional injected Authorization instance
      */
-    public function __construct(Post $postModel, ?array $currentUser = null) {
+    public function __construct(Post $postModel, ?array $currentUser = null, ?Authorization $authorization = null) {
         $this->postModel = $postModel;
+        $this->authorization = $authorization ?? new Authorization();
         $this->currentUser = $currentUser ?? Auth::user();
     }
 
@@ -63,7 +66,7 @@ class PostController {
         }
 
         $isAnnouncement = $asAnnouncement
-            && Authorization::can($this->currentUser['role'] ?? 'student', 'announcement.create');
+            && $this->authorization->can($this->currentUser['role'] ?? 'student', 'announcement.create');
         $newPostId = $this->postModel->create((int)$this->currentUser['id'], $content, $isAnnouncement);
         if ($newPostId) {
             return [
@@ -179,7 +182,7 @@ class PostController {
 
     /** Does the current user's role hold $permission? */
     private function can(string $permission): bool {
-        return Authorization::can($this->currentUser['role'] ?? 'student', $permission);
+        return $this->authorization->can($this->currentUser['role'] ?? 'student', $permission);
     }
 
     /**

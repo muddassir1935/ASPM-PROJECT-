@@ -150,7 +150,7 @@ if ($profile) {
             </div>
 
             <!-- Profile header card -->
-            <?php $profileIsAdmin = Authorization::isOfficialRole($profile['role'] ?? ''); ?>
+            <?php $profileIsAdmin = $authorization->isOfficialRole($profile['role'] ?? ''); ?>
             <div class="profile-card">
                 <div class="profile-cover cover-<?= htmlspecialchars($coverStyle) ?>" aria-hidden="true"></div>
                 <div class="profile-hero-row">
@@ -170,7 +170,7 @@ if ($profile) {
                         <?php if (($profile['role'] ?? 'student') !== 'student'): ?>
                             <span class="role-badge role-badge-<?= htmlspecialchars($profile['role'] ?? '') ?>">
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-                                <?= htmlspecialchars(Authorization::displayLabel($profile['role'] ?? '')) ?>
+                                <?= htmlspecialchars($authorization->displayLabel($profile['role'] ?? '')) ?>
                             </span>
                         <?php endif; ?>
                     </div>
@@ -315,7 +315,7 @@ if ($profile) {
                     <div class="user-row">
                         <a href="profile.php?id=<?= (int)$follower['id'] ?>" class="user-row-link">
                             <span class="avatar-sm<?= avatarToneClass((int)$follower['id'], (string)($follower['role'] ?? '')) ?>"><?= htmlspecialchars($fInitial) ?></span>
-                            <span class="user-row-text"><strong><?= htmlspecialchars($follower['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($follower['role'] ?? '')) ?></span></span>
+                            <span class="user-row-text"><strong><?= htmlspecialchars($follower['name']) ?></strong><span><?= htmlspecialchars($authorization->displayLabel($follower['role'] ?? '')) ?></span></span>
                         </a>
                         <?php if ($currentUser && !$fIsSelf): ?>
                             <button type="button" class="btn-follow<?= $fIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$follower['id'] ?>"><?= $fIsFollowing ? 'Following' : 'Follow' ?></button>
@@ -348,7 +348,7 @@ if ($profile) {
                     <div class="user-row">
                         <a href="profile.php?id=<?= (int)$followed['id'] ?>" class="user-row-link">
                             <span class="avatar-sm<?= avatarToneClass((int)$followed['id'], (string)($followed['role'] ?? '')) ?>"><?= htmlspecialchars($fInitial) ?></span>
-                            <span class="user-row-text"><strong><?= htmlspecialchars($followed['name']) ?></strong><span><?= htmlspecialchars(Authorization::displayLabel($followed['role'] ?? '')) ?></span></span>
+                            <span class="user-row-text"><strong><?= htmlspecialchars($followed['name']) ?></strong><span><?= htmlspecialchars($authorization->displayLabel($followed['role'] ?? '')) ?></span></span>
                         </a>
                         <?php if ($currentUser && !$fIsSelf): ?>
                             <button type="button" class="btn-follow<?= $fIsFollowing ? ' following' : '' ?>" data-follow-toggle data-user-id="<?= (int)$followed['id'] ?>"><?= $fIsFollowing ? 'Following' : 'Follow' ?></button>

@@ -25,6 +25,7 @@ if(file_exists(__DIR__ . '/../classes/Authorization.php')) {
 if(file_exists(__DIR__ . '/../classes/Csrf.php')) {
     require_once __DIR__ . '/../classes/Csrf.php';
 }
+$authorization = class_exists('Authorization') ? new Authorization() : null;
 $currentUser = class_exists('Auth') ? Auth::user() : null;
 
 // Sprint 5 (H3): if MySQL is down the app runs on the SQLite fallback —
@@ -46,7 +47,10 @@ try {
 // everyone else cycles six product tones.
 if (!function_exists('avatarToneClass')) {
     function avatarToneClass(int $userId, string $role = ''): string {
-        if (class_exists('Authorization') && Authorization::isOfficialRole($role)) {
+        $authz = isset($GLOBALS['authorization']) && $GLOBALS['authorization'] instanceof Authorization
+            ? $GLOBALS['authorization']
+            : (class_exists('Authorization') ? new Authorization() : null);
+        if ($authz && $authz->isOfficialRole($role)) {
             return ' avatar-admin';
         }
         return ' avatar-t' . (($userId % 6) + 1);
