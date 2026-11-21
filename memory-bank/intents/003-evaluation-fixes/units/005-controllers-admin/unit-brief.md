@@ -10,7 +10,7 @@ updated: 2026-11-22T00:45:00Z
 # Unit Brief: Controllers for Admin + Moderation Actions
 
 ## Assigned Owner
-**Qaim Mehdi** · Branch: `feature/fix-003-controllers-admin`
+**Unassigned** — to be allocated at the planning session · Branch: `feature/fix-003-controllers-admin`
 
 ## Purpose
 Fix the procedural-pages deduction (−1 mark, part 3 of 3): move admin and report-review request handling into a controller.

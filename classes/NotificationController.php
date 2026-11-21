@@ -53,7 +53,8 @@ class NotificationController extends Model {
                     ]
                 ];
             }
-            return ['status' => 200, 'body' => ['success' => false, 'message' => 'Unknown action.']];
+            // Unknown GET action: the pre-refactor page fell through to 405.
+            return ['status' => 405, 'body' => ['success' => false, 'message' => 'Method not allowed.']];
         }
 
         if ($method === 'POST') {
